@@ -1,0 +1,16 @@
+# Firebase
+firebase-debug.log
+.firebase/
+
+# Node
+node_modules/
+dist/
+lib/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db

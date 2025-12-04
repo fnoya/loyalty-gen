@@ -1,0 +1,539 @@
+openapi: 3.0.3
+info:
+  title: "LoyaltyGen API"
+  description: |
+    API RESTful para la plataforma de lealtad de clientes LoyaltyGen.
+    Permite gestionar clientes, programas de afinidad y cuentas de puntos de manera flexible y potente.
+  version: "1.0.0"
+
+servers:
+  - url: /api/v1
+    description: Servidor Principal
+
+tags:
+  - name: Clients
+    description: Operaciones sobre los clientes.
+  - name: Affinity Groups
+    description: Gestión de grupos de afinidad y membresías.
+  - name: Loyalty Accounts
+    description: Gestión de cuentas de lealtad, puntos y transacciones.
+
+security:
+  - BearerAuth: []
+
+paths:
+  # --------------------
+  # Clients Endpoints
+  # --------------------
+  /clients:
+    get:
+      tags: [Clients]
+      summary: Listar Clientes
+      description: Obtiene una lista paginada de clientes.
+      parameters:
+        - name: limit
+          in: query
+          description: Número máximo de clientes a devolver.
+          schema:
+            type: integer
+            default: 30
+        - name: next_cursor
+          in: query
+          description: Cursor para obtener la siguiente página de resultados.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Una lista paginada de clientes.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Client'
+                  paging:
+                    $ref: '#/components/schemas/Paging'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Clients]
+      summary: Crear un Cliente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateClientRequest'
+      responses:
+        '201':
+          description: Cliente creado exitosamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /clients/{client_id}:
+    get:
+      tags: [Clients]
+      summary: Obtener un Cliente
+      parameters:
+        - name: client_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Datos del cliente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    put:
+      tags: [Clients]
+      summary: Actualizar un Cliente
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateClientRequest'
+      responses:
+        '200':
+          description: Cliente actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    delete:
+      tags: [Clients]
+      summary: Eliminar un Cliente
+      description: Inicia el proceso de eliminación asíncrona de un cliente.
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+      responses:
+        '202':
+          description: Proceso de eliminación iniciado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # --------------------
+  # Affinity Groups Endpoints
+  # --------------------
+  /groups:
+    get:
+      tags: [Affinity Groups]
+      summary: Listar Grupos de Afinidad
+      responses:
+        '200':
+          description: Una lista de todos los grupos de afinidad.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Group'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Affinity Groups]
+      summary: Crear un Grupo de Afinidad
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGroupRequest'
+      responses:
+        '201':
+          description: Grupo creado exitosamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /groups/{group_id}/clients/{client_id}:
+    post:
+      tags: [Affinity Groups]
+      summary: Asignar Cliente a Grupo
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/ClientId'
+      responses:
+        '200':
+          description: Cliente añadido al grupo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    delete:
+      tags: [Affinity Groups]
+      summary: Desasignar Cliente de Grupo
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/ClientId'
+      responses:
+        '200':
+          description: Cliente eliminado del grupo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # --------------------
+  # Loyalty Accounts Endpoints
+  # --------------------
+  /clients/{client_id}/accounts:
+    get:
+      tags: [Loyalty Accounts]
+      summary: Listar Cuentas de un Cliente
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+      responses:
+        '200':
+          description: Una lista de las cuentas de lealtad del cliente.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LoyaltyAccount'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Loyalty Accounts]
+      summary: Crear una Cuenta de Lealtad
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAccountRequest'
+      responses:
+        '201':
+          description: Cuenta creada exitosamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoyaltyAccount'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  
+  /clients/{client_id}/accounts/{account_id}/credit:
+    post:
+      tags: [Loyalty Accounts]
+      summary: Acreditar Puntos
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+        - $ref: '#/components/parameters/AccountId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditDebitRequest'
+      responses:
+        '200':
+          description: Puntos acreditados. Devuelve la cuenta actualizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoyaltyAccount'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /clients/{client_id}/accounts/{account_id}/debit:
+    post:
+      tags: [Loyalty Accounts]
+      summary: Debitar Puntos
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+        - $ref: '#/components/parameters/AccountId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditDebitRequest'
+      responses:
+        '200':
+          description: Puntos debitados. Devuelve la cuenta actualizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoyaltyAccount'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /clients/{client_id}/accounts/{account_id}/transactions:
+    get:
+      tags: [Loyalty Accounts]
+      summary: Listar Transacciones de una Cuenta
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+        - $ref: '#/components/parameters/AccountId'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: next_cursor
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Una lista paginada de transacciones.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Transaction'
+                  paging:
+                    $ref: '#/components/schemas/Paging'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /clients/{client_id}/balance:
+    get:
+      tags: [Loyalty Accounts]
+      summary: Obtener Todos los Saldos de un Cliente
+      description: Consulta rápida de todos los saldos del cliente leyendo el campo desnormalizado.
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+      responses:
+        '200':
+          description: Un mapa con los IDs de cuenta y sus saldos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AllBalancesResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /clients/{client_id}/accounts/{account_id}/balance:
+    get:
+      tags: [Loyalty Accounts]
+      summary: Obtener Saldo de una Cuenta Específica
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+        - $ref: '#/components/parameters/AccountId'
+      responses:
+        '200':
+          description: El saldo de puntos de la cuenta.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BalanceResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+# --------------------
+# Reusable Components
+# --------------------
+components:
+  schemas:
+    # Entities
+    Client:
+      type: object
+      properties:
+        id: { type: string, description: "ID único del cliente en Firestore." }
+        name: { type: string }
+        email: { type: string, format: email }
+        extra_data: { type: object, additionalProperties: true }
+        affinityGroupIds: { type: array, items: { type: string } }
+        account_balances: { type: object, additionalProperties: { type: number }, description: "Mapa desnormalizado de saldos." }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    Group:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        created_at: { type: string, format: date-time }
+    LoyaltyAccount:
+      type: object
+      properties:
+        id: { type: string }
+        account_name: { type: string }
+        points: { type: integer }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    Transaction:
+      type: object
+      properties:
+        id: { type: string }
+        transaction_type: { type: string, enum: [credit, debit] }
+        amount: { type: number, description: "Siempre positivo." }
+        description: { type: string }
+        timestamp: { type: string, format: date-time }
+    
+    # Request Bodies
+    CreateClientRequest:
+      type: object
+      required: [name, email]
+      properties:
+        name: { type: string }
+        email: { type: string, format: email }
+        extra_data: { type: object, additionalProperties: true }
+    UpdateClientRequest:
+      type: object
+      properties:
+        name: { type: string }
+        extra_data: { type: object, additionalProperties: true }
+    CreateGroupRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        description: { type: string }
+    CreateAccountRequest:
+      type: object
+      required: [account_name]
+      properties:
+        account_name: { type: string }
+    CreditDebitRequest:
+      type: object
+      required: [amount]
+      properties:
+        amount: { type: number, minimum: 1 }
+        description: { type: string }
+
+    # Responses
+    AllBalancesResponse:
+      type: object
+      description: "Un mapa con los IDs de cuenta como clave y sus saldos como valor."
+      additionalProperties:
+        type: integer
+      example:
+        account-id-1: 100
+        account-id-2: 50
+    BalanceResponse:
+      type: object
+      properties:
+        points:
+          type: integer
+          example: 100
+    SuccessMessage:
+      type: object
+      properties:
+        message: { type: string }
+    Paging:
+      type: object
+      properties:
+        next_cursor: { type: string, nullable: true, description: "Cursor para la siguiente página." }
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+
+  parameters:
+    ClientId:
+      name: client_id
+      in: path
+      required: true
+      description: ID del cliente.
+      schema: { type: string }
+    GroupId:
+      name: group_id
+      in: path
+      required: true
+      description: ID del grupo de afinidad.
+      schema: { type: string }
+    AccountId:
+      name: account_id
+      in: path
+      required: true
+      description: ID de la cuenta de lealtad.
+      schema: { type: string }
+
+  responses:
+    NotFound:
+      description: El recurso especificado no fue encontrado.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unauthorized:
+      description: El token de autenticación falta, es inválido o ha expirado.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    BadRequest:
+      description: La petición está malformada o es inválida.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Conflict:
+      description: Conflicto, el recurso ya existe.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "ID Token de Firebase Authentication (JWT)"
