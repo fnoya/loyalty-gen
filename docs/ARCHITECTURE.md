@@ -24,7 +24,8 @@ graph TD
         C{API: Cloud Function Express}
         D[DB Transaccional: Cloud Firestore]
         E[Auth: Firebase Authentication]
-                I[Extensión BigQuery (futuro)] --onWrite--> I;
+        I[Extensión BigQuery (futuro)]
+        D --onWrite--> I;
     end
 
     A -->|Login| E;
