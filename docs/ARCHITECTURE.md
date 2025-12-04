@@ -58,14 +58,128 @@ El sistema se diseña para ser escalable, pero la implementación se realizará 
 -   **Problema:** No es eficiente realizar agregaciones complejas sobre la base de datos transaccional en tiempo real.
 -   **Solución (Fase 2 / Post-MVP):** Cuando surja la necesidad de business intelligence, se activará la sincronización de datos de Firestore a **Google BigQuery** a través de la extensión oficial de Firebase. Todas las consultas analíticas se realizarán contra BigQuery.
 
-## 4. Modelo de Datos (Firestore)
+## 4. Modelo de Datos (Estructura de Firestore)
 
-La estructura de colecciones y subcolecciones se mantiene. La desnormalización del campo `account_balances` es **crítica** para optimizar costos y latencia.
+Abandonamos el modelo relacional en favor de una estructura de colecciones y subcolecciones en Firestore, que es más flexible y escalable en este contexto.
+
+-   **`clients` (Colección Raíz)**
+    -   Documento: `clientId`
+        -   `name: string`
+        -   `email: string` (se debe garantizar unicidad a nivel de servicio)
+        -   `extra_data: map`
+        -   `created_at: timestamp`
+        -   `updated_at: timestamp`
+        -   `affinityGroupIds: array<string>` (Array con los IDs de los grupos a los que pertenece)
+        -   **`account_balances: map` (Campo Desnormalizado para Lecturas Rápidas)**
+
+-   **`affinityGroups` (Colección Raíz)**
+    -   Documento: `groupId`
+        -   `name: string`
+        -   `description: string`
+        -   `created_at: timestamp`
+
+-   **`loyaltyAccounts` (Subcolección de Cliente)**
+    -   Ruta: `clients/{clientId}/loyaltyAccounts/{accountId}`
+    -   Documento: `accountId`
+        -   `account_name: string`
+        -   `points: number` (integer)
+        -   `created_at: timestamp`
+        -   `updated_at: timestamp`
+
+-   **`pointTransactions` (Subcolección de Cuenta de Lealtad)**
+    -   Ruta: `clients/{clientId}/loyaltyAccounts/{accountId}/transactions/{transactionId}`
+    -   Documento: `transactionId`
+        -   `transaction_type: "credit" | "debit"`
+        -   `amount: number` (siempre positivo)
+        -   `description: string`
+        -   `timestamp: timestamp`
+
+> **Nota Crítica sobre Desnormalización:**
+> La sincronización del campo `account_balances` en `client` mediante transacciones atómicas de Firestore es **mandatoria** para garantizar la consistencia de los datos y es aún más crítica a esta escala.
 
 ## 5. Arquitectura de la API (Monolito Modular vs. Microservicios)
 
 -   **Decisión Inicial:** Se mantiene el enfoque de **"monolito modular serverless"** para el MVP.
 -   **Consideración de Escala:** Los requisitos de alta escalabilidad hacen probable que en el futuro sea necesario desacoplar dominios en microservicios. La arquitectura modular actual está pensada para facilitar esta transición.
 
-*--(El resto de las secciones: Manejo de Errores, Operaciones Asíncronas, Indexación, Seguridad, etc., se mantienen como en la versión anterior.)--*
+## 6. Estructura de la API
+
+La API REST se basa en una aplicación Express desplegada como una única Cloud Function (`api`). Firebase Hosting se configurará para redirigir todas las peticiones de `/api/*` a esta función.
+
+## 7. Estrategia de Manejo de Errores
+
+Se implementará un flujo de manejo de errores centralizado para mejorar la robustez y la experiencia del desarrollador.
+
+1.  **Capa de Servicio (`*.service.ts`):** Cuando ocurre un error de negocio predecible (ej. saldo insuficiente), la lógica de servicio **lanza una clase de error personalizada** (ej. `class InsufficientBalanceError extends Error {}`).
+2.  **Capa de Controlador/Ruta:** Los controladores son agnósticos a los errores y simplemente llaman a los servicios dentro de un bloque `try...catch` (o usan un wrapper para rutas asíncronas).
+3.  **Middleware de Error (Express):** Un middleware de manejo de errores, colocado al final de la pila de Express, intercepta cualquier error lanzado. Este middleware:
+    -   Identifica el tipo de error (usando `instanceof`).
+    -   Mapea el error a un código de estado HTTP y a un formato de respuesta de error estandarizado, como se define en `API-DESIGN.md`.
+    -   Envía la respuesta JSON estandarizada al cliente.
+
+## 8. Operaciones Asíncronas (Eliminación en Cascada)
+
+La eliminación de un cliente y todos sus datos anidados (cuentas, transacciones) es una operación compleja en Firestore que no puede completarse en una única llamada atómica a la API.
+
+-   **Estrategia:** La eliminación se gestionará de forma asíncrona.
+-   **Implementación Recomendada:**
+    1.  **Extensión "Delete User Data":** La opción preferida es utilizar la extensión oficial de Firebase. Se puede configurar para que se active al eliminar un usuario de Firebase Auth o se puede invocar manualmente. Esto delega la lógica de borrado recursivo a una solución probada y mantenida.
+    2.  **Cloud Function Personalizada (Alternativa):** Si se requiere más control, se puede crear una Cloud Function específica para esta tarea. La función debe leer y eliminar documentos en lotes (`WriteBatch`) para evitar exceder los límites de tiempo de ejecución y memoria.
+-   **Impacto en la API:** La petición `DELETE /clients/{client_id}` no esperará a que se complete el borrado. Devolverá una respuesta `202. Accepted` para indicar que el proceso ha comenzado.
+
+## 9. Estrategia de Indexación en Firestore
+
+Firestore crea índices automáticos para consultas simples, pero las queries más complejas requieren una estrategia de indexación manual.
+
+-   **Índices Compuestos:** Para cualquier consulta que filtre por un campo y ordene por otro, se deberá crear un **índice compuesto**.
+-   **Ejemplo:** Una consulta que busque clientes por `email` (`where('email', '==', ...)`) y los ordene por fecha de creación (`orderBy('created_at', 'desc')`) necesitará un índice compuesto.
+-   **Desarrollo:** Durante el desarrollo con el Emulador de Firebase, la consola registrará mensajes de error con un enlace directo para crear el índice faltante en la consola de Google Cloud. Es una práctica obligatoria revisar estos logs y crear los índices necesarios.
+
+## 10. Seguridad de la Arquitectura
+
+### 10.1. Principio de Menor Privilegio (PoLP)
+
+La seguridad se refuerza aplicando el Principio de Menor Privilegio a las cuentas de servicio.
+
+-   **Requisito:** La cuenta de servicio asociada a la Cloud Function `api` **no debe** tener roles amplios como `Editor`. Debe tener únicamente los permisos de IAM estrictamente necesarios para su operación.
+-   **Roles Mínimos:**
+    -   `roles/datastore.user`: Para leer y escribir en Cloud Firestore.
+    -   `roles/cloudfunctions.invoker`: Para permitir que sea invocada a través de HTTP.
+    -   Permisos específicos si interactúa con otros servicios.
+
+## 11. Arquitectura del Frontend (Aplicación Cliente)
+
+-   **Framework:** **Next.js (v14+)** con **App Router**.
+-   **Estilos:** **Tailwind CSS**.
+-   **Componentes UI:** **Shadcn/ui**.
+-   **Gestión de Estado:** **Zustand**.
+-   **Alojamiento (Hosting):**
+    -   **Plataforma:** **Firebase Hosting**.
+    -   **Justificación:**
+        -   **CDN Global:** Distribución de contenido estático de baja latencia.
+        -   **Integración Nativa:** Se integra perfectamente con Cloud Functions, permitiendo reescribir rutas (`rewrites`) para que `/api/*` apunte a la función de backend. Esto simplifica la configuración de CORS y la gestión de URLs.
+        -   **Seguridad:** Provee certificados SSL automáticos y gratuitos.
+
+## 12. Estructura de Directorios del Proyecto
+
+El agente de IA deberá generar la estructura estándar de un proyecto de Firebase Functions con TypeScript.
+
+```
+/loyalty-gen
+├── functions/
+│   ├── src/
+│   │   ├── api/
+│   │   │   ├── routes/
+│   │   │   └── middleware/
+│   │   ├── core/
+│   │   ├── models/
+│   │   ├── services/
+│   │   ├── schemas/
+│   │   └── index.ts
+│   └── ...
+├── .firebaserc
+├── firebase.json
+├── firestore.rules
+└── .gitignore
+```
 
