@@ -14,39 +14,39 @@
 ## 2. Diagrama de Componentes de Alto Nivel (MVP)
 
 ```mermaid
-graph TD
-    %% Nodos
-    A[Next.js App]
+graph TD;
+    %% Nodos base
+    A[Next.js App];
 
-    subgraph Usuario_Final_Admin
-        A
-    end
+    subgraph Usuario_Final_Admin;
+        A;
+    end;
 
-    subgraph GCP_Firebase
-        B(Firebase Hosting)
-        C{{API: Cloud Function Express}}
-        D[DB Transaccional: Cloud Firestore]
-        E[Auth: Firebase Authentication]
-        I[Extension BigQuery futuro]
-    end
+    subgraph GCP_Firebase;
+        B(Firebase Hosting);
+        C{API: Cloud Function Express};
+        D[DB Transaccional: Cloud Firestore];
+        E[Auth: Firebase Authentication];
+        I[Extension BigQuery futuro];
+    end;
 
-    H[Data Warehouse: BigQuery]
+    H[Data Warehouse: BigQuery];
 
     %% Relaciones
-    A -->|Login| E
-    A -->|Peticion HTTPS| B
-    B -->|Rewrite /api/*| C
-    
-    A -->|Busqueda/Query| C
-    C -->|Lee/Escribe (CRUD)| D
-    C -->|Verifica Token| E
-    
-    D -- onWrite --> I
-    I -->|Carga datos| H
+    A -->|Login| E;
+    A -->|Peticion HTTPS| B;
+    B -->|Rewrite /api/*| C;
+
+    A -->|Busqueda/Query| C;
+    C -->|Lee/Escribe CRUD| D;
+    C -->|Verifica Token| E;
+
+    D -- onWrite --> I;
+    I -->|Carga datos| H;
 
     %% Estilos
-    style A fill:#cde4ff
-    style H fill:#d5cde4
+    style A fill:#cde4ff;
+    style H fill:#d5cde4;
 ```
 
 ## 3. Estrategias para la Escalabilidad
