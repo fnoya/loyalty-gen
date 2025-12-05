@@ -2,27 +2,316 @@
 
 Este documento desglosa el trabajo necesario para implementar la primera versión (MVP) de la plataforma LoyaltyGen. Está dividido en Épicas y Tareas, con instrucciones específicas para cada una, diseñadas para ser ejecutadas por agentes de IA.
 
+> **Nota para Agentes de IA:** 
+> - Cada tarea incluye **Dependencias**, **Archivos a Crear/Modificar**, **Criterios de Aceptación** y una **Lista de Verificación**.
+> - Completa las tareas en orden numérico dentro de cada épica.
+> - Antes de comenzar una tarea, verifica que sus dependencias estén completadas.
+> - Consulta siempre los documentos de referencia indicados (`openapi.yaml`, `docs/*.md`).
+
 ---
 
 ## Épica 1: Configuración del Proyecto y Core del Backend
 
 **Objetivo:** Establecer la estructura base del backend, incluyendo la configuración del proyecto, dependencias y los middlewares esenciales para la operativa de la API.
 
-### Tarea 1.1: Andamiaje del Proyecto Backend
--   **Instrucción para el agente:**
-    1.  Crea un nuevo directorio `functions/` si no existe.
-    2.  Dentro de `functions/`, inicializa un proyecto de Node.js (`npm init -y`) y crea la estructura de directorios (`src/api/routes`, `src/api/middleware`, `src/core`, `src/services`, `src/schemas`) como se define en el diagrama de `docs/ARCHITECTURE.md`.
-    3.  Instala las dependencias de producción: `express`, `firebase-admin`, `firebase-functions`, `zod`, `cors`.
-    4.  Instala las dependencias de desarrollo: `typescript`, `@types/node`, `@types/express`, `ts-node`, `eslint`, `prettier` y las configuraciones relevantes.
-    5.  Crea un archivo `tsconfig.json` que active el modo `strict` y configure la salida de compilación al directorio `lib/`.
-    6.  En `functions/src/index.ts`, configura la aplicación de Express, añade el middleware de `cors` y exporta la app como una Cloud Function de tipo `onRequest` llamada `api`.
+**Orden de Ejecución:** Tarea 1.1 → Tarea 1.2 → Tarea 1.3
 
-### Tarea 1.2: Implementación de Middlewares Esenciales
--   **Instrucción para el agente:**
-    1.  Crea el archivo `src/api/middleware/auth.middleware.ts`.
-    2.  Implementa una función de middleware que verifique el token JWT proporcionado en el encabezado `Authorization: Bearer <token>` utilizando el `firebase-admin.auth()`.
-    3.  Si el token es válido, decodifícalo y adjunta los datos del usuario (ej. `uid`) al objeto `request`. Si es inválido, responde con un error `401 Unauthorized` usando el formato de `openapi.yaml`.
-    4.  Crea un middleware de manejo de errores global que capture excepciones y las formatee según el schema `Error` definido en `openapi.yaml`.
+---
+
+### Tarea 1.1: Andamiaje del Proyecto Backend
+
+**Dependencias:** Ninguna (tarea inicial)
+
+**Documentos de Referencia:**
+-   `docs/ARCHITECTURE.md` - Sección 12 (Estructura de Directorios)
+-   `docs/GUIDELINES.md` - Secciones 1, 2, 4
+
+**Archivos a Crear:**
+```
+functions/
+├── src/
+│   ├── api/
+│   │   ├── routes/          # (vacío por ahora)
+│   │   └── middleware/      # (vacío por ahora)
+│   ├── core/
+│   │   └── errors.ts        # Clases de error personalizadas
+│   ├── services/            # (vacío por ahora)
+│   ├── schemas/             # (vacío por ahora)
+│   └── index.ts             # Punto de entrada de la Cloud Function
+├── package.json
+├── tsconfig.json
+├── .eslintrc.js
+└── .prettierrc
+```
+
+**Instrucciones Detalladas:**
+1.  Crea el directorio `functions/` en la raíz del proyecto.
+2.  Dentro de `functions/`, ejecuta `npm init -y`.
+3.  Crea la estructura de directorios exacta mostrada arriba.
+4.  Instala las dependencias de producción:
+    ```bash
+    npm install express firebase-admin firebase-functions zod cors
+    ```
+5.  Instala las dependencias de desarrollo:
+    ```bash
+    npm install -D typescript @types/node @types/express @types/cors ts-node eslint @typescript-eslint/parser @typescript-eslint/eslint-plugin prettier eslint-config-prettier
+    ```
+6.  Crea `tsconfig.json` con la siguiente configuración:
+    ```json
+    {
+      "compilerOptions": {
+        "target": "ES2020",
+        "module": "commonjs",
+        "lib": ["ES2020"],
+        "outDir": "./lib",
+        "rootDir": "./src",
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "resolveJsonModule": true,
+        "declaration": true,
+        "declarationMap": true
+      },
+      "include": ["src/**/*"],
+      "exclude": ["node_modules", "lib"]
+    }
+    ```
+7.  Crea `.eslintrc.js` con reglas de TypeScript estrictas (prohibir `any`).
+8.  Crea `.prettierrc` con configuración estándar.
+9.  En `src/index.ts`, configura Express con CORS y exporta como Cloud Function:
+    ```typescript
+    import * as functions from 'firebase-functions';
+    import express from 'express';
+    import cors from 'cors';
+
+    const app = express();
+    app.use(cors({ origin: true }));
+    app.use(express.json());
+
+    // Las rutas se añadirán en tareas posteriores
+    app.get('/health', (req, res) => res.json({ status: 'ok' }));
+
+    export const api = functions.https.onRequest(app);
+    ```
+10. En `src/core/errors.ts`, crea las clases de error base:
+    ```typescript
+    export class AppError extends Error {
+      constructor(public code: string, message: string, public statusCode: number) {
+        super(message);
+        this.name = 'AppError';
+      }
+    }
+    
+    export class NotFoundError extends AppError {
+      constructor(resource: string, id: string) {
+        super('RESOURCE_NOT_FOUND', `${resource} con ID '${id}' no fue encontrado.`, 404);
+      }
+    }
+    
+    export class ConflictError extends AppError {
+      constructor(message: string) {
+        super('CONFLICT', message, 409);
+      }
+    }
+    
+    export class ValidationError extends AppError {
+      constructor(message: string) {
+        super('VALIDATION_FAILED', message, 400);
+      }
+    }
+    
+    export class InsufficientBalanceError extends AppError {
+      constructor() {
+        super('INSUFFICIENT_BALANCE', 'El saldo de la cuenta es insuficiente para realizar el débito.', 400);
+      }
+    }
+    ```
+11. Añade los scripts a `package.json`:
+    ```json
+    "scripts": {
+      "build": "tsc",
+      "serve": "npm run build && firebase emulators:start --only functions",
+      "lint": "eslint src/**/*.ts",
+      "lint:fix": "eslint src/**/*.ts --fix"
+    }
+    ```
+
+**Criterios de Aceptación:**
+-   [ ] El proyecto compila sin errores (`npm run build`)
+-   [ ] ESLint no reporta errores (`npm run lint`)
+-   [ ] La estructura de directorios coincide con la especificada
+-   [ ] El endpoint `/health` responde con `{"status": "ok"}`
+
+---
+
+### Tarea 1.2: Implementación del Middleware de Autenticación
+
+**Dependencias:** Tarea 1.1 completada
+
+**Documentos de Referencia:**
+-   `openapi.yaml` - Sección `securitySchemes` y `components/responses/Unauthorized`
+-   `docs/API-DESIGN.md` - Sección 3 (Autenticación)
+-   `docs/GUIDELINES.md` - Sección 9 (Logging Seguro)
+
+**Archivos a Crear:**
+```
+functions/src/api/middleware/
+├── auth.middleware.ts
+└── index.ts
+```
+
+**Instrucciones Detalladas:**
+1.  Crea `src/api/middleware/auth.middleware.ts`:
+    ```typescript
+    import { Request, Response, NextFunction } from 'express';
+    import * as admin from 'firebase-admin';
+    
+    // Extender el tipo Request para incluir el usuario autenticado
+    declare global {
+      namespace Express {
+        interface Request {
+          user?: admin.auth.DecodedIdToken;
+        }
+      }
+    }
+    
+    export const authMiddleware = async (
+      req: Request,
+      res: Response,
+      next: NextFunction
+    ): Promise<void> => {
+      const authHeader = req.headers.authorization;
+      
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        res.status(401).json({
+          error: {
+            code: 'INVALID_TOKEN',
+            message: 'El token de autenticación falta o tiene un formato inválido.'
+          }
+        });
+        return;
+      }
+      
+      const token = authHeader.split('Bearer ')[1];
+      
+      try {
+        const decodedToken = await admin.auth().verifyIdToken(token);
+        req.user = decodedToken;
+        next();
+      } catch (error) {
+        // NO registrar el token en los logs (política de seguridad)
+        console.error('Error verificando token de autenticación');
+        res.status(401).json({
+          error: {
+            code: 'INVALID_TOKEN',
+            message: 'El token de autenticación es inválido o ha expirado.'
+          }
+        });
+      }
+    };
+    ```
+2.  Crea `src/api/middleware/index.ts` para exportar todos los middlewares:
+    ```typescript
+    export { authMiddleware } from './auth.middleware';
+    ```
+
+**Criterios de Aceptación:**
+-   [ ] El middleware extrae correctamente el token del header `Authorization: Bearer <token>`
+-   [ ] Responde con `401` y formato de error correcto cuando el token falta
+-   [ ] Responde con `401` y formato de error correcto cuando el token es inválido
+-   [ ] Adjunta `req.user` con los datos decodificados cuando el token es válido
+-   [ ] NO registra el token ni información sensible en los logs
+
+---
+
+### Tarea 1.3: Implementación del Middleware de Manejo de Errores
+
+**Dependencias:** Tareas 1.1 y 1.2 completadas
+
+**Documentos de Referencia:**
+-   `openapi.yaml` - Schema `Error`
+-   `docs/ARCHITECTURE.md` - Sección 7 (Estrategia de Manejo de Errores)
+-   `docs/API-DESIGN.md` - Sección 4.2 (Respuestas de Error Estandarizadas)
+
+**Archivos a Crear/Modificar:**
+```
+functions/src/api/middleware/
+└── error.middleware.ts  # CREAR
+functions/src/index.ts   # MODIFICAR (añadir middleware al final)
+```
+
+**Instrucciones Detalladas:**
+1.  Crea `src/api/middleware/error.middleware.ts`:
+    ```typescript
+    import { Request, Response, NextFunction } from 'express';
+    import { ZodError } from 'zod';
+    import { AppError } from '../../core/errors';
+    
+    export const errorMiddleware = (
+      err: Error,
+      req: Request,
+      res: Response,
+      _next: NextFunction
+    ): void => {
+      // Manejar errores de validación de Zod
+      if (err instanceof ZodError) {
+        const firstError = err.errors[0];
+        res.status(400).json({
+          error: {
+            code: 'VALIDATION_FAILED',
+            message: `El campo '${firstError.path.join('.')}' ${firstError.message.toLowerCase()}`
+          }
+        });
+        return;
+      }
+      
+      // Manejar errores de aplicación personalizados
+      if (err instanceof AppError) {
+        res.status(err.statusCode).json({
+          error: {
+            code: err.code,
+            message: err.message
+          }
+        });
+        return;
+      }
+      
+      // Registrar errores no esperados (sin stack trace en producción)
+      console.error('Error no manejado:', err.message);
+      
+      // Error genérico para errores no manejados
+      res.status(500).json({
+        error: {
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Ocurrió un error inesperado en el servidor.'
+        }
+      });
+    };
+    ```
+2.  Añade la exportación en `src/api/middleware/index.ts`:
+    ```typescript
+    export { authMiddleware } from './auth.middleware';
+    export { errorMiddleware } from './error.middleware';
+    ```
+3.  Modifica `src/index.ts` para usar el middleware de errores **al final** de la pila:
+    ```typescript
+    import { errorMiddleware } from './api/middleware';
+    
+    // ... (rutas se añadirán aquí)
+    
+    // Middleware de errores DEBE ir al final
+    app.use(errorMiddleware);
+    
+    export const api = functions.https.onRequest(app);
+    ```
+
+**Criterios de Aceptación:**
+-   [ ] Los errores de Zod se formatean correctamente con código `VALIDATION_FAILED`
+-   [ ] Los errores `AppError` se formatean con su código y statusCode correspondiente
+-   [ ] Los errores no manejados devuelven `500` con `INTERNAL_SERVER_ERROR`
+-   [ ] El formato de respuesta coincide exactamente con el schema `Error` de `openapi.yaml`
+-   [ ] No se exponen stack traces en las respuestas
 
 ---
 
@@ -30,18 +319,971 @@ Este documento desglosa el trabajo necesario para implementar la primera versió
 
 **Objetivo:** Desarrollar todos los endpoints de la API definidos en el contrato de OpenAPI.
 
-### Tarea 2.1: Endpoints del Dominio "Clients"
--   **Instrucción para el agente:**
-    1.  Crea los schemas de Zod para las peticiones de cliente en `src/schemas/client.schema.ts`.
-    2.  Crea el archivo de rutas `src/api/routes/client.routes.ts`.
-    3.  Implementa todos los endpoints del recurso `/clients` (`GET`, `POST`, `PUT`, `DELETE`) según las especificaciones de `openapi.yaml`.
-    4.  La lógica de negocio para interactuar con Firestore debe residir en un nuevo archivo `src/services/client.service.ts`.
-    5.  Para el endpoint de búsqueda `GET /clients`, implementa un filtro básico que utilice consultas `startsWith` de Firestore, como se describe en la estrategia MVP de `ARCHITECTURE.md`.
+**Orden de Ejecución:** Tarea 2.1 → Tarea 2.2 → Tarea 2.3 → Tarea 2.4
 
-### Tarea 2.2: Endpoints de los Dominios "Groups" y "Accounts"
--   **Instrucción para el agente:**
-    1.  Siguiendo el mismo patrón que la Tarea 2.1, implementa todos los endpoints para los dominios de Grupos y Cuentas de Lealtad, como se definen en `openapi.yaml`.
-    2.  **Crítico:** Para las operaciones de `credit` y `debit`, la implementación en el servicio **debe** utilizar transacciones de Firestore para actualizar atómicamente tanto el documento de la cuenta como el mapa desnormalizado `account_balances` en el documento del cliente. Esta es una regla mandatoria de `docs/GUIDELINES.md`.
+---
+
+### Tarea 2.1: Schemas de Zod y Tipos de TypeScript
+
+**Dependencias:** Épica 1 completada
+
+**Documentos de Referencia:**
+-   `openapi.yaml` - Sección `components/schemas`
+-   `docs/GUIDELINES.md` - Sección 3 (Zod como Única Fuente de Verdad)
+
+**Archivos a Crear:**
+```
+functions/src/schemas/
+├── client.schema.ts
+├── group.schema.ts
+├── account.schema.ts
+├── transaction.schema.ts
+├── common.schema.ts
+└── index.ts
+```
+
+**Instrucciones Detalladas:**
+1.  Crea `src/schemas/common.schema.ts` con schemas compartidos:
+    ```typescript
+    import { z } from 'zod';
+    
+    export const paginationParamsSchema = z.object({
+      limit: z.coerce.number().int().min(1).max(100).default(30),
+      next_cursor: z.string().optional()
+    });
+    
+    export type PaginationParams = z.infer<typeof paginationParamsSchema>;
+    
+    export interface PaginatedResponse<T> {
+      data: T[];
+      paging: {
+        next_cursor: string | null;
+      };
+    }
+    ```
+
+2.  Crea `src/schemas/client.schema.ts`:
+    ```typescript
+    import { z } from 'zod';
+    
+    export const createClientSchema = z.object({
+      name: z.string().min(1, 'El nombre es requerido'),
+      email: z.string().email('Debe ser un email válido'),
+      extra_data: z.record(z.unknown()).optional()
+    });
+    
+    export const updateClientSchema = z.object({
+      name: z.string().min(1).optional(),
+      extra_data: z.record(z.unknown()).optional()
+    });
+    
+    export const clientSchema = z.object({
+      id: z.string(),
+      name: z.string(),
+      email: z.string().email(),
+      extra_data: z.record(z.unknown()).optional(),
+      affinityGroupIds: z.array(z.string()),
+      account_balances: z.record(z.number()),
+      created_at: z.date(),
+      updated_at: z.date()
+    });
+    
+    export type CreateClientRequest = z.infer<typeof createClientSchema>;
+    export type UpdateClientRequest = z.infer<typeof updateClientSchema>;
+    export type Client = z.infer<typeof clientSchema>;
+    ```
+
+3.  Crea `src/schemas/group.schema.ts`:
+    ```typescript
+    import { z } from 'zod';
+    
+    export const createGroupSchema = z.object({
+      name: z.string().min(1, 'El nombre es requerido'),
+      description: z.string().optional()
+    });
+    
+    export const groupSchema = z.object({
+      id: z.string(),
+      name: z.string(),
+      description: z.string().optional(),
+      created_at: z.date()
+    });
+    
+    export type CreateGroupRequest = z.infer<typeof createGroupSchema>;
+    export type Group = z.infer<typeof groupSchema>;
+    ```
+
+4.  Crea `src/schemas/account.schema.ts`:
+    ```typescript
+    import { z } from 'zod';
+    
+    export const createAccountSchema = z.object({
+      account_name: z.string().min(1, 'El nombre de la cuenta es requerido')
+    });
+    
+    export const creditDebitSchema = z.object({
+      amount: z.number().int().min(1, 'La cantidad debe ser al menos 1'),
+      description: z.string().optional()
+    });
+    
+    export const loyaltyAccountSchema = z.object({
+      id: z.string(),
+      account_name: z.string(),
+      points: z.number().int(),
+      created_at: z.date(),
+      updated_at: z.date()
+    });
+    
+    export type CreateAccountRequest = z.infer<typeof createAccountSchema>;
+    export type CreditDebitRequest = z.infer<typeof creditDebitSchema>;
+    export type LoyaltyAccount = z.infer<typeof loyaltyAccountSchema>;
+    ```
+
+5.  Crea `src/schemas/transaction.schema.ts`:
+    ```typescript
+    import { z } from 'zod';
+    
+    export const transactionSchema = z.object({
+      id: z.string(),
+      transaction_type: z.enum(['credit', 'debit']),
+      amount: z.number().int().positive(),
+      description: z.string().optional(),
+      timestamp: z.date()
+    });
+    
+    export type Transaction = z.infer<typeof transactionSchema>;
+    ```
+
+6.  Crea `src/schemas/index.ts` exportando todo:
+    ```typescript
+    export * from './common.schema';
+    export * from './client.schema';
+    export * from './group.schema';
+    export * from './account.schema';
+    export * from './transaction.schema';
+    ```
+
+**Criterios de Aceptación:**
+-   [ ] Todos los schemas validan correctamente según `openapi.yaml`
+-   [ ] Los tipos de TypeScript se infieren de los schemas (no hay interfaces manuales duplicadas)
+-   [ ] El código compila sin errores de tipo
+
+---
+
+### Tarea 2.2: Endpoints del Dominio "Clients"
+
+**Dependencias:** Tarea 2.1 completada
+
+**Documentos de Referencia:**
+-   `openapi.yaml` - Sección `paths: /clients*`
+-   `docs/ARCHITECTURE.md` - Sección 4 (Modelo de Datos) y Sección 3.1 (Estrategia de Búsqueda MVP)
+-   `docs/SPECS.md` - Módulo de Clientes
+
+**Archivos a Crear:**
+```
+functions/src/
+├── services/
+│   └── client.service.ts
+├── api/routes/
+│   └── client.routes.ts
+```
+
+**Archivos a Modificar:**
+```
+functions/src/index.ts  # Registrar las rutas
+```
+
+**Instrucciones Detalladas:**
+
+1.  Crea `src/services/client.service.ts` con la lógica de negocio:
+    ```typescript
+    import * as admin from 'firebase-admin';
+    import { CreateClientRequest, UpdateClientRequest, Client, PaginationParams, PaginatedResponse } from '../schemas';
+    import { NotFoundError, ConflictError } from '../core/errors';
+    
+    const db = admin.firestore();
+    const clientsCollection = db.collection('clients');
+    
+    export class ClientService {
+      async create(data: CreateClientRequest): Promise<Client> {
+        // Verificar email único
+        const existing = await clientsCollection.where('email', '==', data.email).limit(1).get();
+        if (!existing.empty) {
+          throw new ConflictError('El correo electrónico proporcionado ya está en uso.');
+        }
+        
+        const now = admin.firestore.Timestamp.now();
+        const docRef = clientsCollection.doc();
+        const clientData = {
+          ...data,
+          affinityGroupIds: [],
+          account_balances: {},
+          created_at: now,
+          updated_at: now
+        };
+        
+        await docRef.set(clientData);
+        
+        return {
+          id: docRef.id,
+          ...data,
+          affinityGroupIds: [],
+          account_balances: {},
+          created_at: now.toDate(),
+          updated_at: now.toDate()
+        };
+      }
+      
+      async list(params: PaginationParams): Promise<PaginatedResponse<Client>> {
+        let query = clientsCollection.orderBy('created_at', 'desc').limit(params.limit + 1);
+        
+        if (params.next_cursor) {
+          const cursorDoc = await clientsCollection.doc(params.next_cursor).get();
+          if (cursorDoc.exists) {
+            query = query.startAfter(cursorDoc);
+          }
+        }
+        
+        const snapshot = await query.get();
+        const docs = snapshot.docs;
+        const hasMore = docs.length > params.limit;
+        const resultDocs = hasMore ? docs.slice(0, -1) : docs;
+        
+        const data = resultDocs.map(doc => this.docToClient(doc));
+        
+        return {
+          data,
+          paging: {
+            next_cursor: hasMore ? resultDocs[resultDocs.length - 1].id : null
+          }
+        };
+      }
+      
+      async getById(id: string): Promise<Client> {
+        const doc = await clientsCollection.doc(id).get();
+        if (!doc.exists) {
+          throw new NotFoundError('Cliente', id);
+        }
+        return this.docToClient(doc);
+      }
+      
+      async update(id: string, data: UpdateClientRequest): Promise<Client> {
+        const docRef = clientsCollection.doc(id);
+        const doc = await docRef.get();
+        
+        if (!doc.exists) {
+          throw new NotFoundError('Cliente', id);
+        }
+        
+        const updateData = {
+          ...data,
+          updated_at: admin.firestore.Timestamp.now()
+        };
+        
+        await docRef.update(updateData);
+        
+        return this.getById(id);
+      }
+      
+      async delete(id: string): Promise<void> {
+        const docRef = clientsCollection.doc(id);
+        const doc = await docRef.get();
+        
+        if (!doc.exists) {
+          throw new NotFoundError('Cliente', id);
+        }
+        
+        // Marcar para eliminación asíncrona (la extensión de Firebase se encargará)
+        await docRef.delete();
+      }
+      
+      private docToClient(doc: admin.firestore.DocumentSnapshot): Client {
+        const data = doc.data()!;
+        return {
+          id: doc.id,
+          name: data.name,
+          email: data.email,
+          extra_data: data.extra_data,
+          affinityGroupIds: data.affinityGroupIds || [],
+          account_balances: data.account_balances || {},
+          created_at: data.created_at.toDate(),
+          updated_at: data.updated_at.toDate()
+        };
+      }
+    }
+    
+    export const clientService = new ClientService();
+    ```
+
+2.  Crea `src/api/routes/client.routes.ts`:
+    ```typescript
+    import { Router } from 'express';
+    import { clientService } from '../../services/client.service';
+    import { createClientSchema, updateClientSchema, paginationParamsSchema } from '../../schemas';
+    import { authMiddleware } from '../middleware';
+    
+    const router = Router();
+    
+    // Todas las rutas requieren autenticación
+    router.use(authMiddleware);
+    
+    // GET /clients - Listar clientes
+    router.get('/', async (req, res, next) => {
+      try {
+        const params = paginationParamsSchema.parse(req.query);
+        const result = await clientService.list(params);
+        res.json(result);
+      } catch (error) {
+        next(error);
+      }
+    });
+    
+    // POST /clients - Crear cliente
+    router.post('/', async (req, res, next) => {
+      try {
+        const data = createClientSchema.parse(req.body);
+        const client = await clientService.create(data);
+        res.status(201).json(client);
+      } catch (error) {
+        next(error);
+      }
+    });
+    
+    // GET /clients/:client_id - Obtener cliente
+    router.get('/:client_id', async (req, res, next) => {
+      try {
+        const client = await clientService.getById(req.params.client_id);
+        res.json(client);
+      } catch (error) {
+        next(error);
+      }
+    });
+    
+    // PUT /clients/:client_id - Actualizar cliente
+    router.put('/:client_id', async (req, res, next) => {
+      try {
+        const data = updateClientSchema.parse(req.body);
+        const client = await clientService.update(req.params.client_id, data);
+        res.json(client);
+      } catch (error) {
+        next(error);
+      }
+    });
+    
+    // DELETE /clients/:client_id - Eliminar cliente
+    router.delete('/:client_id', async (req, res, next) => {
+      try {
+        await clientService.delete(req.params.client_id);
+        res.status(202).json({ 
+          message: 'El proceso de eliminación del cliente ha comenzado.' 
+        });
+      } catch (error) {
+        next(error);
+      }
+    });
+    
+    export default router;
+    ```
+
+3.  Modifica `src/index.ts` para registrar las rutas:
+    ```typescript
+    import clientRoutes from './api/routes/client.routes';
+    
+    // Registrar rutas de la API v1
+    app.use('/api/v1/clients', clientRoutes);
+    ```
+
+**Criterios de Aceptación:**
+-   [ ] `POST /clients` crea un cliente y retorna `201 Created`
+-   [ ] `POST /clients` retorna `409 Conflict` si el email ya existe
+-   [ ] `GET /clients` retorna lista paginada con `next_cursor`
+-   [ ] `GET /clients/:id` retorna el cliente o `404 Not Found`
+-   [ ] `PUT /clients/:id` actualiza el cliente o `404 Not Found`
+-   [ ] `DELETE /clients/:id` retorna `202 Accepted` o `404 Not Found`
+-   [ ] Todos los endpoints requieren autenticación (retornan `401` sin token)
+-   [ ] Las respuestas de error siguen el formato `{ error: { code, message } }`
+
+---
+
+### Tarea 2.3: Endpoints del Dominio "Groups"
+
+**Dependencias:** Tarea 2.2 completada
+
+**Documentos de Referencia:**
+-   `openapi.yaml` - Sección `paths: /groups*`
+-   `docs/ARCHITECTURE.md` - Sección 4 (Modelo de Datos: affinityGroups)
+
+**Archivos a Crear:**
+```
+functions/src/
+├── services/
+│   └── group.service.ts
+├── api/routes/
+│   └── group.routes.ts
+```
+
+**Instrucciones Detalladas:**
+
+1.  Crea `src/services/group.service.ts`:
+    ```typescript
+    import * as admin from 'firebase-admin';
+    import { CreateGroupRequest, Group } from '../schemas';
+    import { NotFoundError } from '../core/errors';
+    
+    const db = admin.firestore();
+    const groupsCollection = db.collection('affinityGroups');
+    const clientsCollection = db.collection('clients');
+    
+    export class GroupService {
+      async create(data: CreateGroupRequest): Promise<Group> {
+        const now = admin.firestore.Timestamp.now();
+        const docRef = groupsCollection.doc();
+        const groupData = {
+          ...data,
+          created_at: now
+        };
+        
+        await docRef.set(groupData);
+        
+        return {
+          id: docRef.id,
+          ...data,
+          created_at: now.toDate()
+        };
+      }
+      
+      async list(): Promise<Group[]> {
+        const snapshot = await groupsCollection.orderBy('name').get();
+        return snapshot.docs.map(doc => this.docToGroup(doc));
+      }
+      
+      async addClientToGroup(groupId: string, clientId: string): Promise<void> {
+        const groupRef = groupsCollection.doc(groupId);
+        const clientRef = clientsCollection.doc(clientId);
+        
+        const [groupDoc, clientDoc] = await Promise.all([
+          groupRef.get(),
+          clientRef.get()
+        ]);
+        
+        if (!groupDoc.exists) {
+          throw new NotFoundError('Grupo', groupId);
+        }
+        if (!clientDoc.exists) {
+          throw new NotFoundError('Cliente', clientId);
+        }
+        
+        // Usar arrayUnion para añadir sin duplicados
+        await clientRef.update({
+          affinityGroupIds: admin.firestore.FieldValue.arrayUnion(groupId),
+          updated_at: admin.firestore.Timestamp.now()
+        });
+      }
+      
+      async removeClientFromGroup(groupId: string, clientId: string): Promise<void> {
+        const groupRef = groupsCollection.doc(groupId);
+        const clientRef = clientsCollection.doc(clientId);
+        
+        const [groupDoc, clientDoc] = await Promise.all([
+          groupRef.get(),
+          clientRef.get()
+        ]);
+        
+        if (!groupDoc.exists) {
+          throw new NotFoundError('Grupo', groupId);
+        }
+        if (!clientDoc.exists) {
+          throw new NotFoundError('Cliente', clientId);
+        }
+        
+        await clientRef.update({
+          affinityGroupIds: admin.firestore.FieldValue.arrayRemove(groupId),
+          updated_at: admin.firestore.Timestamp.now()
+        });
+      }
+      
+      private docToGroup(doc: admin.firestore.DocumentSnapshot): Group {
+        const data = doc.data()!;
+        return {
+          id: doc.id,
+          name: data.name,
+          description: data.description,
+          created_at: data.created_at.toDate()
+        };
+      }
+    }
+    
+    export const groupService = new GroupService();
+    ```
+
+2.  Crea `src/api/routes/group.routes.ts`:
+    ```typescript
+    import { Router } from 'express';
+    import { groupService } from '../../services/group.service';
+    import { createGroupSchema } from '../../schemas';
+    import { authMiddleware } from '../middleware';
+    
+    const router = Router();
+    
+    router.use(authMiddleware);
+    
+    // GET /groups - Listar grupos
+    router.get('/', async (req, res, next) => {
+      try {
+        const groups = await groupService.list();
+        res.json(groups);
+      } catch (error) {
+        next(error);
+      }
+    });
+    
+    // POST /groups - Crear grupo
+    router.post('/', async (req, res, next) => {
+      try {
+        const data = createGroupSchema.parse(req.body);
+        const group = await groupService.create(data);
+        res.status(201).json(group);
+      } catch (error) {
+        next(error);
+      }
+    });
+    
+    // POST /groups/:group_id/clients/:client_id - Asignar cliente a grupo
+    router.post('/:group_id/clients/:client_id', async (req, res, next) => {
+      try {
+        await groupService.addClientToGroup(req.params.group_id, req.params.client_id);
+        res.json({ message: 'Client added to group' });
+      } catch (error) {
+        next(error);
+      }
+    });
+    
+    // DELETE /groups/:group_id/clients/:client_id - Desasignar cliente de grupo
+    router.delete('/:group_id/clients/:client_id', async (req, res, next) => {
+      try {
+        await groupService.removeClientFromGroup(req.params.group_id, req.params.client_id);
+        res.json({ message: 'Client removed from group' });
+      } catch (error) {
+        next(error);
+      }
+    });
+    
+    export default router;
+    ```
+
+3.  Registra las rutas en `src/index.ts`:
+    ```typescript
+    import groupRoutes from './api/routes/group.routes';
+    app.use('/api/v1/groups', groupRoutes);
+    ```
+
+**Criterios de Aceptación:**
+-   [ ] `POST /groups` crea un grupo y retorna `201 Created`
+-   [ ] `GET /groups` retorna un array con todos los grupos
+-   [ ] `POST /groups/:group_id/clients/:client_id` añade cliente al grupo
+-   [ ] `DELETE /groups/:group_id/clients/:client_id` remueve cliente del grupo
+-   [ ] Ambas operaciones de asignación retornan `404` si grupo o cliente no existen
+-   [ ] El array `affinityGroupIds` del cliente se actualiza correctamente
+
+---
+
+### Tarea 2.4: Endpoints del Dominio "Accounts" (Cuentas de Lealtad)
+
+**Dependencias:** Tarea 2.3 completada
+
+**Documentos de Referencia:**
+-   `openapi.yaml` - Sección `paths: /clients/{client_id}/accounts*`
+-   `docs/ARCHITECTURE.md` - Sección 4 (Modelo de Datos: loyaltyAccounts, pointTransactions)
+-   `docs/GUIDELINES.md` - Sección 6 (Manejo de Desnormalización: CRÍTICO)
+
+**Archivos a Crear:**
+```
+functions/src/
+├── services/
+│   └── account.service.ts
+├── api/routes/
+│   └── account.routes.ts
+```
+
+**⚠️ ADVERTENCIA CRÍTICA:**
+> Las operaciones de `credit` y `debit` **DEBEN** usar transacciones de Firestore para actualizar atómicamente:
+> 1. El campo `points` en el documento de la cuenta
+> 2. El mapa `account_balances` en el documento del cliente
+> 
+> Ver `docs/GUIDELINES.md` sección 6 y `docs/ARCHITECTURE.md` nota sobre desnormalización.
+
+**Instrucciones Detalladas:**
+
+1.  Crea `src/services/account.service.ts`:
+    ```typescript
+    import * as admin from 'firebase-admin';
+    import { CreateAccountRequest, CreditDebitRequest, LoyaltyAccount, Transaction, PaginationParams, PaginatedResponse } from '../schemas';
+    import { NotFoundError, InsufficientBalanceError } from '../core/errors';
+    
+    const db = admin.firestore();
+    
+    export class AccountService {
+      private getAccountPath(clientId: string, accountId: string) {
+        return `clients/${clientId}/loyaltyAccounts/${accountId}`;
+      }
+      
+      private getTransactionsPath(clientId: string, accountId: string) {
+        return `clients/${clientId}/loyaltyAccounts/${accountId}/transactions`;
+      }
+      
+      async create(clientId: string, data: CreateAccountRequest): Promise<LoyaltyAccount> {
+        const clientRef = db.collection('clients').doc(clientId);
+        const clientDoc = await clientRef.get();
+        
+        if (!clientDoc.exists) {
+          throw new NotFoundError('Cliente', clientId);
+        }
+        
+        const now = admin.firestore.Timestamp.now();
+        const accountRef = clientRef.collection('loyaltyAccounts').doc();
+        
+        const accountData = {
+          account_name: data.account_name,
+          points: 0,
+          created_at: now,
+          updated_at: now
+        };
+        
+        // Usar transacción para crear cuenta y actualizar account_balances
+        await db.runTransaction(async (transaction) => {
+          transaction.set(accountRef, accountData);
+          transaction.update(clientRef, {
+            [`account_balances.${accountRef.id}`]: 0,
+            updated_at: now
+          });
+        });
+        
+        return {
+          id: accountRef.id,
+          account_name: data.account_name,
+          points: 0,
+          created_at: now.toDate(),
+          updated_at: now.toDate()
+        };
+      }
+      
+      async listByClient(clientId: string): Promise<LoyaltyAccount[]> {
+        const clientRef = db.collection('clients').doc(clientId);
+        const clientDoc = await clientRef.get();
+        
+        if (!clientDoc.exists) {
+          throw new NotFoundError('Cliente', clientId);
+        }
+        
+        const snapshot = await clientRef.collection('loyaltyAccounts').orderBy('created_at').get();
+        return snapshot.docs.map(doc => this.docToAccount(doc));
+      }
+      
+      async credit(clientId: string, accountId: string, data: CreditDebitRequest): Promise<LoyaltyAccount> {
+        return this.adjustBalance(clientId, accountId, data, 'credit');
+      }
+      
+      async debit(clientId: string, accountId: string, data: CreditDebitRequest): Promise<LoyaltyAccount> {
+        return this.adjustBalance(clientId, accountId, data, 'debit');
+      }
+      
+      private async adjustBalance(
+        clientId: string, 
+        accountId: string, 
+        data: CreditDebitRequest, 
+        type: 'credit' | 'debit'
+      ): Promise<LoyaltyAccount> {
+        const clientRef = db.collection('clients').doc(clientId);
+        const accountRef = clientRef.collection('loyaltyAccounts').doc(accountId);
+        const transactionsRef = accountRef.collection('transactions');
+        
+        // CRÍTICO: Usar transacción atómica
+        const result = await db.runTransaction(async (transaction) => {
+          const [clientDoc, accountDoc] = await Promise.all([
+            transaction.get(clientRef),
+            transaction.get(accountRef)
+          ]);
+          
+          if (!clientDoc.exists) {
+            throw new NotFoundError('Cliente', clientId);
+          }
+          if (!accountDoc.exists) {
+            throw new NotFoundError('Cuenta', accountId);
+          }
+          
+          const accountData = accountDoc.data()!;
+          const currentPoints = accountData.points || 0;
+          const delta = type === 'credit' ? data.amount : -data.amount;
+          const newPoints = currentPoints + delta;
+          
+          if (newPoints < 0) {
+            throw new InsufficientBalanceError();
+          }
+          
+          const now = admin.firestore.Timestamp.now();
+          
+          // Crear transacción
+          const transactionDoc = transactionsRef.doc();
+          transaction.set(transactionDoc, {
+            transaction_type: type,
+            amount: data.amount,
+            description: data.description || '',
+            timestamp: now
+          });
+          
+          // Actualizar cuenta
+          transaction.update(accountRef, {
+            points: newPoints,
+            updated_at: now
+          });
+          
+          // CRÍTICO: Actualizar balance desnormalizado en cliente
+          transaction.update(clientRef, {
+            [`account_balances.${accountId}`]: newPoints,
+            updated_at: now
+          });
+          
+          return {
+            id: accountDoc.id,
+            account_name: accountData.account_name,
+            points: newPoints,
+            created_at: accountData.created_at.toDate(),
+            updated_at: now.toDate()
+          };
+        });
+        
+        return result;
+      }
+      
+      async getBalance(clientId: string, accountId: string): Promise<{ points: number }> {
+        const clientRef = db.collection('clients').doc(clientId);
+        const accountRef = clientRef.collection('loyaltyAccounts').doc(accountId);
+        
+        const [clientDoc, accountDoc] = await Promise.all([
+          clientRef.get(),
+          accountRef.get()
+        ]);
+        
+        if (!clientDoc.exists) {
+          throw new NotFoundError('Cliente', clientId);
+        }
+        if (!accountDoc.exists) {
+          throw new NotFoundError('Cuenta', accountId);
+        }
+        
+        const accountData = accountDoc.data()!;
+        return { points: accountData.points || 0 };
+      }
+      
+      async getAllBalances(clientId: string): Promise<Record<string, number>> {
+        const clientRef = db.collection('clients').doc(clientId);
+        const clientDoc = await clientRef.get();
+        
+        if (!clientDoc.exists) {
+          throw new NotFoundError('Cliente', clientId);
+        }
+        
+        return clientDoc.data()!.account_balances || {};
+      }
+      
+      async listTransactions(
+        clientId: string, 
+        accountId: string, 
+        params: PaginationParams
+      ): Promise<PaginatedResponse<Transaction>> {
+        const clientRef = db.collection('clients').doc(clientId);
+        const accountRef = clientRef.collection('loyaltyAccounts').doc(accountId);
+        
+        const [clientDoc, accountDoc] = await Promise.all([
+          clientRef.get(),
+          accountRef.get()
+        ]);
+        
+        if (!clientDoc.exists) {
+          throw new NotFoundError('Cliente', clientId);
+        }
+        if (!accountDoc.exists) {
+          throw new NotFoundError('Cuenta', accountId);
+        }
+        
+        let query = accountRef.collection('transactions')
+          .orderBy('timestamp', 'desc')
+          .limit(params.limit + 1);
+        
+        if (params.next_cursor) {
+          const cursorDoc = await accountRef.collection('transactions').doc(params.next_cursor).get();
+          if (cursorDoc.exists) {
+            query = query.startAfter(cursorDoc);
+          }
+        }
+        
+        const snapshot = await query.get();
+        const docs = snapshot.docs;
+        const hasMore = docs.length > params.limit;
+        const resultDocs = hasMore ? docs.slice(0, -1) : docs;
+        
+        const data = resultDocs.map(doc => this.docToTransaction(doc));
+        
+        return {
+          data,
+          paging: {
+            next_cursor: hasMore ? resultDocs[resultDocs.length - 1].id : null
+          }
+        };
+      }
+      
+      private docToAccount(doc: admin.firestore.DocumentSnapshot): LoyaltyAccount {
+        const data = doc.data()!;
+        return {
+          id: doc.id,
+          account_name: data.account_name,
+          points: data.points || 0,
+          created_at: data.created_at.toDate(),
+          updated_at: data.updated_at.toDate()
+        };
+      }
+      
+      private docToTransaction(doc: admin.firestore.DocumentSnapshot): Transaction {
+        const data = doc.data()!;
+        return {
+          id: doc.id,
+          transaction_type: data.transaction_type,
+          amount: data.amount,
+          description: data.description,
+          timestamp: data.timestamp.toDate()
+        };
+      }
+    }
+    
+    export const accountService = new AccountService();
+    ```
+
+2.  Crea `src/api/routes/account.routes.ts`:
+    ```typescript
+    import { Router } from 'express';
+    import { accountService } from '../../services/account.service';
+    import { createAccountSchema, creditDebitSchema, paginationParamsSchema } from '../../schemas';
+    import { authMiddleware } from '../middleware';
+    
+    const router = Router({ mergeParams: true }); // Para acceder a :client_id del router padre
+    
+    router.use(authMiddleware);
+    
+    // GET /clients/:client_id/accounts - Listar cuentas
+    router.get('/', async (req, res, next) => {
+      try {
+        const accounts = await accountService.listByClient(req.params.client_id);
+        res.json(accounts);
+      } catch (error) {
+        next(error);
+      }
+    });
+    
+    // POST /clients/:client_id/accounts - Crear cuenta
+    router.post('/', async (req, res, next) => {
+      try {
+        const data = createAccountSchema.parse(req.body);
+        const account = await accountService.create(req.params.client_id, data);
+        res.status(201).json(account);
+      } catch (error) {
+        next(error);
+      }
+    });
+    
+    // POST /clients/:client_id/accounts/:account_id/credit - Acreditar puntos
+    router.post('/:account_id/credit', async (req, res, next) => {
+      try {
+        const data = creditDebitSchema.parse(req.body);
+        const account = await accountService.credit(
+          req.params.client_id, 
+          req.params.account_id, 
+          data
+        );
+        res.json(account);
+      } catch (error) {
+        next(error);
+      }
+    });
+    
+    // POST /clients/:client_id/accounts/:account_id/debit - Debitar puntos
+    router.post('/:account_id/debit', async (req, res, next) => {
+      try {
+        const data = creditDebitSchema.parse(req.body);
+        const account = await accountService.debit(
+          req.params.client_id, 
+          req.params.account_id, 
+          data
+        );
+        res.json(account);
+      } catch (error) {
+        next(error);
+      }
+    });
+    
+    // GET /clients/:client_id/accounts/:account_id/balance - Saldo de cuenta
+    router.get('/:account_id/balance', async (req, res, next) => {
+      try {
+        const balance = await accountService.getBalance(
+          req.params.client_id, 
+          req.params.account_id
+        );
+        res.json(balance);
+      } catch (error) {
+        next(error);
+      }
+    });
+    
+    // GET /clients/:client_id/accounts/:account_id/transactions - Transacciones
+    router.get('/:account_id/transactions', async (req, res, next) => {
+      try {
+        const params = paginationParamsSchema.parse(req.query);
+        const transactions = await accountService.listTransactions(
+          req.params.client_id, 
+          req.params.account_id, 
+          params
+        );
+        res.json(transactions);
+      } catch (error) {
+        next(error);
+      }
+    });
+    
+    export default router;
+    ```
+
+3.  Crea rutas adicionales para balance total. Modifica `src/api/routes/client.routes.ts`:
+    ```typescript
+    import { accountService } from '../../services/account.service';
+    
+    // GET /clients/:client_id/balance - Todos los saldos del cliente
+    router.get('/:client_id/balance', async (req, res, next) => {
+      try {
+        const balances = await accountService.getAllBalances(req.params.client_id);
+        res.json(balances);
+      } catch (error) {
+        next(error);
+      }
+    });
+    ```
+
+4.  Registra las rutas en `src/index.ts`:
+    ```typescript
+    import accountRoutes from './api/routes/account.routes';
+    
+    // Las rutas de accounts son sub-rutas de clients
+    app.use('/api/v1/clients/:client_id/accounts', accountRoutes);
+    ```
+
+**Criterios de Aceptación:**
+-   [ ] `POST /clients/:id/accounts` crea cuenta con `points: 0`
+-   [ ] `GET /clients/:id/accounts` lista todas las cuentas del cliente
+-   [ ] `POST .../credit` incrementa puntos correctamente
+-   [ ] `POST .../debit` decrementa puntos correctamente
+-   [ ] `POST .../debit` retorna `400 INSUFFICIENT_BALANCE` si saldo insuficiente
+-   [ ] **CRÍTICO:** Las operaciones credit/debit actualizan `account_balances` en el cliente
+-   [ ] Las operaciones credit/debit crean registro en `transactions`
+-   [ ] `GET .../transactions` retorna lista paginada
+-   [ ] `GET /clients/:id/balance` retorna el mapa desnormalizado
 
 ---
 
@@ -49,23 +1291,761 @@ Este documento desglosa el trabajo necesario para implementar la primera versió
 
 **Objetivo:** Construir la interfaz de usuario principal para la gestión de clientes, permitiendo a un administrador realizar las operaciones más críticas.
 
+**Orden de Ejecución:** Tarea 3.1 → Tarea 3.2 → Tarea 3.3 → Tarea 3.4 → Tarea 3.5
+
+---
+
 ### Tarea 3.1: Andamiaje del Proyecto Frontend
--   **Instrucción para el agente:**
-    1.  En el directorio raíz del proyecto (fuera de `functions/`), inicializa una nueva aplicación Next.js (v14+ con App Router) usando TypeScript y Tailwind CSS.
-    2.  Sigue la guía en `docs/UI-UX-GUIDELINES.md` para instalar y configurar `shadcn/ui`.
-    3.  Configura la fuente "Inter" y los colores primarios de la marca en `tailwind.config.js`.
 
-### Tarea 3.2: Implementación del Layout y Listado de Clientes
--   **Instrucción para el agente:**
-    1.  Implementa el layout principal de la aplicación, que debe incluir un menú lateral de navegación colapsable.
-    2.  Desarrolla la página de listado de clientes para que cumpla los Criterios de Aceptación de las historias de usuario **HU1** y **HU7** (`docs/USER-STORIES.md`).
-    3.  La página debe mostrar una tabla de clientes, gestionar los estados de carga con `Skeletons`, mostrar el estado vacío si no hay datos, e incluir una barra de búsqueda funcional.
+**Dependencias:** Ninguna (puede ejecutarse en paralelo con Épica 1 y 2)
 
-### Tarea 3.3: Implementación del Flujo CRUD de Clientes
--   **Instrucción para el agente:**
-    1.  Desarrolla el formulario y la página para la creación de un nuevo cliente, cumpliendo con la **HU2**.
-    2.  Desarrolla la página de detalle del cliente, cumpliendo con la **HU4** (enfocándose en mostrar la información del cliente, el resto se puede añadir en tareas futuras).
-    3.  Implementa el flujo de eliminación, asegurándote de que el `AlertDialog` de confirmación se utilice como se exige en la **HU3**.
+**Documentos de Referencia:**
+-   `docs/UI-UX-GUIDELINES.md` - Sección 2 (Identidad Visual) y 3 (Guía de Componentes)
+-   `docs/ARCHITECTURE.md` - Sección 11 (Arquitectura del Frontend)
+
+**Estructura de Directorios a Crear:**
+```
+web/                        # Directorio del frontend (en raíz, fuera de functions/)
+├── app/
+│   ├── layout.tsx          # Layout raíz
+│   ├── page.tsx            # Página de inicio (redirect a dashboard)
+│   ├── globals.css         # Estilos globales + Tailwind
+│   └── dashboard/
+│       ├── layout.tsx      # Layout del dashboard con sidebar
+│       └── clients/
+│           └── page.tsx    # Página de listado (implementar en 3.2)
+├── components/
+│   ├── ui/                 # Componentes de shadcn/ui
+│   └── layout/
+│       └── sidebar.tsx     # Menú lateral
+├── lib/
+│   ├── utils.ts            # Utilidades (cn de shadcn)
+│   └── api.ts              # Cliente API
+├── hooks/
+│   └── use-debounce.ts     # Hook de debounce
+├── tailwind.config.ts
+├── next.config.js
+├── package.json
+└── tsconfig.json
+```
+
+**Instrucciones Detalladas:**
+
+1.  En la **raíz del proyecto** (fuera de `functions/`), crea la aplicación Next.js:
+    ```bash
+    npx create-next-app@latest web --typescript --tailwind --eslint --app --src-dir=false --import-alias="@/*"
+    ```
+
+2.  Entra al directorio y configura shadcn/ui:
+    ```bash
+    cd web
+    npx shadcn-ui@latest init
+    ```
+    Cuando pregunte, selecciona:
+    - Style: Default
+    - Base color: Slate
+    - CSS variables: Yes
+
+3.  Instala los componentes de shadcn/ui necesarios:
+    ```bash
+    npx shadcn-ui@latest add button input label table skeleton toast alert-dialog dropdown-menu card badge select combobox
+    ```
+
+4.  Instala dependencias adicionales:
+    ```bash
+    npm install zustand lucide-react date-fns
+    npm install -D @types/node
+    ```
+
+5.  Configura la fuente "Inter" en `app/layout.tsx`:
+    ```typescript
+    import { Inter } from 'next/font/google';
+    
+    const inter = Inter({ subsets: ['latin'] });
+    
+    export default function RootLayout({ children }) {
+      return (
+        <html lang="es">
+          <body className={inter.className}>{children}</body>
+        </html>
+      );
+    }
+    ```
+
+6.  Actualiza `tailwind.config.ts` con los colores de la marca según `UI-UX-GUIDELINES.md`:
+    ```typescript
+    // Los colores ya están configurados por shadcn, pero asegúrate de que:
+    // - primary usa blue-600
+    // - background usa slate-50
+    // - card usa white
+    ```
+
+7.  Crea `lib/api.ts` - Cliente para comunicarse con la API:
+    ```typescript
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
+    
+    export async function fetchApi<T>(
+      endpoint: string, 
+      options: RequestInit = {}
+    ): Promise<T> {
+      const token = await getAuthToken(); // Implementar con Firebase Auth
+      
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          ...options.headers,
+        },
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error?.message || 'Error en la petición');
+      }
+      
+      return response.json();
+    }
+    ```
+
+8.  Crea `hooks/use-debounce.ts`:
+    ```typescript
+    import { useState, useEffect } from 'react';
+    
+    export function useDebounce<T>(value: T, delay: number): T {
+      const [debouncedValue, setDebouncedValue] = useState<T>(value);
+      
+      useEffect(() => {
+        const handler = setTimeout(() => {
+          setDebouncedValue(value);
+        }, delay);
+        
+        return () => clearTimeout(handler);
+      }, [value, delay]);
+      
+      return debouncedValue;
+    }
+    ```
+
+**Criterios de Aceptación:**
+-   [ ] El proyecto Next.js se crea sin errores
+-   [ ] `npm run dev` inicia el servidor de desarrollo correctamente
+-   [ ] `npm run build` compila sin errores
+-   [ ] Los componentes de shadcn/ui están instalados en `components/ui/`
+-   [ ] La fuente Inter se carga correctamente
+-   [ ] Los colores siguen la paleta definida en `UI-UX-GUIDELINES.md`
+
+---
+
+### Tarea 3.2: Implementación del Layout Principal y Sidebar
+
+**Dependencias:** Tarea 3.1 completada
+
+**Documentos de Referencia:**
+-   `docs/UI-UX-GUIDELINES.md` - Sección 4.a (Flujo CRUD)
+
+**Archivos a Crear:**
+```
+web/
+├── components/layout/
+│   ├── sidebar.tsx
+│   └── header.tsx
+├── app/dashboard/
+│   └── layout.tsx
+```
+
+**Instrucciones Detalladas:**
+
+1.  Crea `components/layout/sidebar.tsx`:
+    ```typescript
+    'use client';
+    
+    import Link from 'next/link';
+    import { usePathname } from 'next/navigation';
+    import { Users, Tags, LayoutDashboard, ChevronLeft, ChevronRight } from 'lucide-react';
+    import { Button } from '@/components/ui/button';
+    import { cn } from '@/lib/utils';
+    import { useState } from 'react';
+    
+    const navItems = [
+      { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+      { href: '/dashboard/clients', icon: Users, label: 'Clientes' },
+      { href: '/dashboard/groups', icon: Tags, label: 'Grupos' },
+    ];
+    
+    export function Sidebar() {
+      const pathname = usePathname();
+      const [collapsed, setCollapsed] = useState(false);
+      
+      return (
+        <aside className={cn(
+          "h-screen bg-white border-r border-slate-200 transition-all duration-300",
+          collapsed ? "w-16" : "w-64"
+        )}>
+          <div className="flex items-center justify-between p-4 border-b">
+            {!collapsed && <h1 className="text-xl font-bold text-slate-900">LoyaltyGen</h1>}
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => setCollapsed(!collapsed)}
+              aria-label={collapsed ? "Expandir menú" : "Colapsar menú"}
+            >
+              {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </Button>
+          </div>
+          
+          <nav className="p-2 space-y-1">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors",
+                  pathname === item.href 
+                    ? "bg-blue-50 text-blue-600" 
+                    : "text-slate-600 hover:bg-slate-50"
+                )}
+              >
+                <item.icon className="h-5 w-5" />
+                {!collapsed && <span>{item.label}</span>}
+              </Link>
+            ))}
+          </nav>
+        </aside>
+      );
+    }
+    ```
+
+2.  Crea `app/dashboard/layout.tsx`:
+    ```typescript
+    import { Sidebar } from '@/components/layout/sidebar';
+    import { Toaster } from '@/components/ui/toaster';
+    
+    export default function DashboardLayout({
+      children,
+    }: {
+      children: React.ReactNode;
+    }) {
+      return (
+        <div className="flex min-h-screen bg-slate-50">
+          <Sidebar />
+          <main className="flex-1 p-6">
+            {children}
+          </main>
+          <Toaster />
+        </div>
+      );
+    }
+    ```
+
+3.  Crea `app/page.tsx` con redirección:
+    ```typescript
+    import { redirect } from 'next/navigation';
+    
+    export default function Home() {
+      redirect('/dashboard/clients');
+    }
+    ```
+
+**Criterios de Aceptación:**
+-   [ ] El sidebar se muestra a la izquierda de la pantalla
+-   [ ] El sidebar es colapsable (muestra solo iconos cuando está colapsado)
+-   [ ] Los items de navegación tienen el hover correcto
+-   [ ] El item activo se resalta con fondo azul
+-   [ ] La página raíz redirige a `/dashboard/clients`
+
+---
+
+### Tarea 3.3: Página de Listado de Clientes
+
+**Dependencias:** Tarea 3.2 completada
+
+**Documentos de Referencia:**
+-   `docs/USER-STORIES.md` - **HU1** y **HU7**
+
+**Archivos a Crear:**
+```
+web/
+├── components/
+│   ├── clients/
+│   │   ├── clients-table.tsx
+│   │   ├── client-search.tsx
+│   │   └── client-actions.tsx
+│   └── empty-state.tsx
+├── app/dashboard/clients/
+│   └── page.tsx
+```
+
+**Instrucciones Detalladas:**
+
+1.  Crea `components/empty-state.tsx`:
+    ```typescript
+    import { LucideIcon } from 'lucide-react';
+    import { Button } from '@/components/ui/button';
+    
+    interface EmptyStateProps {
+      icon: LucideIcon;
+      title: string;
+      description: string;
+      action?: {
+        label: string;
+        onClick: () => void;
+      };
+    }
+    
+    export function EmptyState({ icon: Icon, title, description, action }: EmptyStateProps) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <Icon className="h-12 w-12 text-slate-300 mb-4" />
+          <h3 className="text-lg font-medium text-slate-900 mb-1">{title}</h3>
+          <p className="text-sm text-slate-500 mb-4">{description}</p>
+          {action && (
+            <Button onClick={action.onClick}>
+              {action.label}
+            </Button>
+          )}
+        </div>
+      );
+    }
+    ```
+
+2.  Crea `components/clients/client-search.tsx`:
+    ```typescript
+    'use client';
+    
+    import { Search, X } from 'lucide-react';
+    import { Input } from '@/components/ui/input';
+    import { Button } from '@/components/ui/button';
+    
+    interface ClientSearchProps {
+      value: string;
+      onChange: (value: string) => void;
+      onClear: () => void;
+    }
+    
+    export function ClientSearch({ value, onChange, onClear }: ClientSearchProps) {
+      return (
+        <div className="relative w-full max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            type="text"
+            placeholder="Buscar cliente..."
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="pl-10 pr-10"
+          />
+          {value && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6"
+              onClick={onClear}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      );
+    }
+    ```
+
+3.  Crea `components/clients/clients-table.tsx` - Tabla con skeleton y acciones (ver HU1 para detalles completos)
+
+4.  Crea `app/dashboard/clients/page.tsx`:
+    ```typescript
+    'use client';
+    
+    import { useState, useEffect } from 'react';
+    import { useRouter } from 'next/navigation';
+    import { Users, Plus } from 'lucide-react';
+    import { Button } from '@/components/ui/button';
+    import { ClientsTable } from '@/components/clients/clients-table';
+    import { ClientSearch } from '@/components/clients/client-search';
+    import { EmptyState } from '@/components/empty-state';
+    import { useDebounce } from '@/hooks/use-debounce';
+    import { fetchApi } from '@/lib/api';
+    
+    export default function ClientsPage() {
+      const router = useRouter();
+      const [clients, setClients] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [searchTerm, setSearchTerm] = useState('');
+      const debouncedSearch = useDebounce(searchTerm, 300);
+      
+      useEffect(() => {
+        loadClients();
+      }, []);
+      
+      async function loadClients() {
+        setLoading(true);
+        try {
+          const response = await fetchApi('/clients');
+          setClients(response.data);
+        } catch (error) {
+          console.error('Error loading clients:', error);
+        } finally {
+          setLoading(false);
+        }
+      }
+      
+      // Filtrado cliente-side para MVP (ver HU7)
+      const filteredClients = clients.filter(client => 
+        client.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        client.email.toLowerCase().includes(debouncedSearch.toLowerCase())
+      );
+      
+      const hasNoClients = !loading && clients.length === 0;
+      const hasNoResults = !loading && clients.length > 0 && filteredClients.length === 0;
+      
+      return (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-slate-900">Clientes</h1>
+            <Button onClick={() => router.push('/dashboard/clients/new')}>
+              <Plus className="h-4 w-4 mr-2" />
+              Crear Nuevo Cliente
+            </Button>
+          </div>
+          
+          {!hasNoClients && (
+            <ClientSearch
+              value={searchTerm}
+              onChange={setSearchTerm}
+              onClear={() => setSearchTerm('')}
+            />
+          )}
+          
+          {loading ? (
+            <ClientsTable.Skeleton />
+          ) : hasNoClients ? (
+            <EmptyState
+              icon={Users}
+              title="Aún no se han creado clientes"
+              description="Comienza creando tu primer cliente"
+              action={{
+                label: 'Crear Nuevo Cliente',
+                onClick: () => router.push('/dashboard/clients/new')
+              }}
+            />
+          ) : hasNoResults ? (
+            <EmptyState
+              icon={Users}
+              title={`No se encontraron clientes para "${searchTerm}"`}
+              description="Intenta con otro término de búsqueda"
+              action={{
+                label: 'Limpiar búsqueda',
+                onClick: () => setSearchTerm('')
+              }}
+            />
+          ) : (
+            <ClientsTable clients={filteredClients} onRefresh={loadClients} />
+          )}
+        </div>
+      );
+    }
+    ```
+
+**Criterios de Aceptación:**
+-   [ ] La tabla muestra las columnas "Nombre" y "Email"
+-   [ ] El skeleton se muestra mientras cargan los datos
+-   [ ] El estado vacío se muestra cuando no hay clientes
+-   [ ] El estado vacío de búsqueda se muestra cuando no hay resultados
+-   [ ] La búsqueda tiene debounce de 300ms
+-   [ ] La búsqueda filtra por nombre y email (case-insensitive)
+-   [ ] El menú de acciones tiene opciones Ver, Editar, Eliminar
+
+---
+
+### Tarea 3.4: Formulario y Página de Creación de Cliente
+
+**Dependencias:** Tarea 3.3 completada
+
+**Documentos de Referencia:**
+-   `docs/USER-STORIES.md` - **HU2**
+-   `openapi.yaml` - Schema `CreateClientRequest`
+
+**Archivos a Crear:**
+```
+web/
+├── components/clients/
+│   └── client-form.tsx
+├── app/dashboard/clients/
+│   └── new/
+│       └── page.tsx
+```
+
+**Instrucciones Detalladas:**
+
+1.  Instala react-hook-form y resolver de Zod:
+    ```bash
+    npm install react-hook-form @hookform/resolvers zod
+    ```
+
+2.  Crea `components/clients/client-form.tsx`:
+    ```typescript
+    'use client';
+    
+    import { useForm } from 'react-hook-form';
+    import { zodResolver } from '@hookform/resolvers/zod';
+    import { z } from 'zod';
+    import { Loader2 } from 'lucide-react';
+    import { Button } from '@/components/ui/button';
+    import { Input } from '@/components/ui/input';
+    import { Label } from '@/components/ui/label';
+    
+    const clientFormSchema = z.object({
+      name: z.string().min(1, 'El nombre es requerido'),
+      email: z.string().email('Debe ser un email válido'),
+    });
+    
+    type ClientFormData = z.infer<typeof clientFormSchema>;
+    
+    interface ClientFormProps {
+      onSubmit: (data: ClientFormData) => Promise<void>;
+      isSubmitting: boolean;
+      serverError?: string;
+    }
+    
+    export function ClientForm({ onSubmit, isSubmitting, serverError }: ClientFormProps) {
+      const { register, handleSubmit, formState: { errors, isValid } } = useForm<ClientFormData>({
+        resolver: zodResolver(clientFormSchema),
+        mode: 'onChange'
+      });
+      
+      return (
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-md">
+          <div className="space-y-2">
+            <Label htmlFor="name">Nombre</Label>
+            <Input
+              id="name"
+              {...register('name')}
+              aria-invalid={!!errors.name}
+            />
+            {errors.name && (
+              <p className="text-sm text-red-500">{errors.name.message}</p>
+            )}
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              {...register('email')}
+              aria-invalid={!!errors.email || !!serverError}
+            />
+            {errors.email && (
+              <p className="text-sm text-red-500">{errors.email.message}</p>
+            )}
+            {serverError && (
+              <p className="text-sm text-red-500">{serverError}</p>
+            )}
+          </div>
+          
+          <Button type="submit" disabled={!isValid || isSubmitting}>
+            {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            Guardar
+          </Button>
+        </form>
+      );
+    }
+    ```
+
+3.  Crea `app/dashboard/clients/new/page.tsx`:
+    ```typescript
+    'use client';
+    
+    import { useState } from 'react';
+    import { useRouter } from 'next/navigation';
+    import { ArrowLeft } from 'lucide-react';
+    import { Button } from '@/components/ui/button';
+    import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+    import { ClientForm } from '@/components/clients/client-form';
+    import { useToast } from '@/components/ui/use-toast';
+    import { fetchApi } from '@/lib/api';
+    
+    export default function NewClientPage() {
+      const router = useRouter();
+      const { toast } = useToast();
+      const [isSubmitting, setIsSubmitting] = useState(false);
+      const [serverError, setServerError] = useState<string>();
+      
+      async function handleSubmit(data: { name: string; email: string }) {
+        setIsSubmitting(true);
+        setServerError(undefined);
+        
+        try {
+          await fetchApi('/clients', {
+            method: 'POST',
+            body: JSON.stringify(data),
+          });
+          
+          toast({
+            title: 'Cliente creado',
+            description: 'El cliente ha sido creado exitosamente.',
+          });
+          
+          router.push('/dashboard/clients');
+        } catch (error: any) {
+          if (error.message.includes('ya está en uso')) {
+            setServerError('El correo electrónico proporcionado ya está en uso.');
+          } else {
+            toast({
+              title: 'Error',
+              description: error.message,
+              variant: 'destructive',
+            });
+          }
+        } finally {
+          setIsSubmitting(false);
+        }
+      }
+      
+      return (
+        <div className="space-y-6">
+          <Button variant="ghost" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Volver
+          </Button>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Crear Nuevo Cliente</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ClientForm 
+                onSubmit={handleSubmit}
+                isSubmitting={isSubmitting}
+                serverError={serverError}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+    ```
+
+**Criterios de Aceptación:**
+-   [ ] El formulario valida campos obligatorios (nombre, email)
+-   [ ] El botón Guardar está deshabilitado cuando el formulario es inválido
+-   [ ] El spinner se muestra durante el envío
+-   [ ] Error 409 (email duplicado) se muestra junto al campo email
+-   [ ] Tras éxito, redirige a listado y muestra toast
+
+---
+
+### Tarea 3.5: Flujo de Eliminación de Cliente
+
+**Dependencias:** Tarea 3.3 completada
+
+**Documentos de Referencia:**
+-   `docs/USER-STORIES.md` - **HU3**
+
+**Archivos a Crear:**
+```
+web/components/clients/
+└── delete-client-dialog.tsx
+```
+
+**Instrucciones Detalladas:**
+
+1.  Crea `components/clients/delete-client-dialog.tsx`:
+    ```typescript
+    'use client';
+    
+    import { useState } from 'react';
+    import { Loader2 } from 'lucide-react';
+    import {
+      AlertDialog,
+      AlertDialogAction,
+      AlertDialogCancel,
+      AlertDialogContent,
+      AlertDialogDescription,
+      AlertDialogFooter,
+      AlertDialogHeader,
+      AlertDialogTitle,
+    } from '@/components/ui/alert-dialog';
+    import { useToast } from '@/components/ui/use-toast';
+    import { fetchApi } from '@/lib/api';
+    
+    interface DeleteClientDialogProps {
+      clientId: string;
+      clientName: string;
+      open: boolean;
+      onOpenChange: (open: boolean) => void;
+      onDeleted: () => void;
+    }
+    
+    export function DeleteClientDialog({
+      clientId,
+      clientName,
+      open,
+      onOpenChange,
+      onDeleted,
+    }: DeleteClientDialogProps) {
+      const { toast } = useToast();
+      const [isDeleting, setIsDeleting] = useState(false);
+      
+      async function handleDelete() {
+        setIsDeleting(true);
+        
+        try {
+          await fetchApi(`/clients/${clientId}`, { method: 'DELETE' });
+          
+          toast({
+            title: 'Proceso iniciado',
+            description: 'El proceso de eliminación del cliente ha comenzado.',
+          });
+          
+          onOpenChange(false);
+          onDeleted();
+        } catch (error: any) {
+          toast({
+            title: 'Error',
+            description: error.message,
+            variant: 'destructive',
+          });
+        } finally {
+          setIsDeleting(false);
+        }
+      }
+      
+      return (
+        <AlertDialog open={open} onOpenChange={onOpenChange}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Eliminar cliente?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta acción es irreversible. Se eliminarán todos los datos de 
+                <strong> {clientName}</strong>, incluyendo sus cuentas de lealtad 
+                y transacciones.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="bg-red-500 hover:bg-red-600"
+              >
+                {isDeleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Eliminar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      );
+    }
+    ```
+
+2.  Integra el diálogo en la tabla de clientes (actualizar `clients-table.tsx`)
+
+**Criterios de Aceptación:**
+-   [ ] El AlertDialog se abre al hacer clic en "Eliminar"
+-   [ ] El diálogo muestra el mensaje de advertencia correcto
+-   [ ] El botón Cancelar cierra el diálogo
+-   [ ] El botón Eliminar muestra spinner durante la petición
+-   [ ] Tras éxito, se cierra el diálogo y muestra toast
 
 ---
 
@@ -73,9 +2053,441 @@ Este documento desglosa el trabajo necesario para implementar la primera versió
 
 **Objetivo:** Asegurar que la implementación es robusta, correcta y cumple con los estándares de calidad definidos.
 
-### Tarea 4.1: Suite de Pruebas de la API
--   **Instrucción para el agente:**
-    1.  Configura `Jest` y `firebase-functions-test` en el proyecto de `functions/`.
-    2.  Escribe pruebas de integración para todos los endpoints de la API.
-    3.  Las pruebas deben validar tanto los casos de éxito como los de error definidos en `openapi.yaml`.
-    4.  El objetivo es alcanzar una cobertura de código superior al 80%, como se indica en `docs/GUIDELINES.md`.
+**Orden de Ejecución:** Tarea 4.1 → Tarea 4.2
+
+---
+
+### Tarea 4.1: Configuración del Entorno de Pruebas
+
+**Dependencias:** Épica 1 completada
+
+**Documentos de Referencia:**
+-   `docs/GUIDELINES.md` - Sección 5 (Testing)
+-   `docs/SPECS.md` - Sección 2.d (Pruebas)
+
+**Archivos a Crear:**
+```
+functions/
+├── jest.config.js
+├── src/__tests__/
+│   ├── setup.ts
+│   └── helpers/
+│       └── firebase-mock.ts
+```
+
+**Instrucciones Detalladas:**
+
+1.  Instala las dependencias de testing:
+    ```bash
+    cd functions
+    npm install -D jest @types/jest ts-jest firebase-functions-test supertest @types/supertest
+    ```
+
+2.  Crea `jest.config.js`:
+    ```javascript
+    module.exports = {
+      preset: 'ts-jest',
+      testEnvironment: 'node',
+      roots: ['<rootDir>/src'],
+      testMatch: ['**/__tests__/**/*.test.ts'],
+      setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
+      collectCoverageFrom: [
+        'src/**/*.ts',
+        '!src/__tests__/**',
+        '!src/index.ts'
+      ],
+      coverageThreshold: {
+        global: {
+          branches: 80,
+          functions: 80,
+          lines: 80,
+          statements: 80
+        }
+      }
+    };
+    ```
+
+3.  Crea `src/__tests__/setup.ts`:
+    ```typescript
+    import * as admin from 'firebase-admin';
+    
+    // Mock de Firebase Admin
+    jest.mock('firebase-admin', () => {
+      const firestoreMock = {
+        collection: jest.fn().mockReturnThis(),
+        doc: jest.fn().mockReturnThis(),
+        get: jest.fn(),
+        set: jest.fn(),
+        update: jest.fn(),
+        delete: jest.fn(),
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        startAfter: jest.fn().mockReturnThis(),
+        runTransaction: jest.fn(),
+      };
+      
+      return {
+        initializeApp: jest.fn(),
+        firestore: jest.fn(() => firestoreMock),
+        auth: jest.fn(() => ({
+          verifyIdToken: jest.fn(),
+        })),
+      };
+    });
+    
+    // Limpiar mocks entre tests
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+    ```
+
+4.  Crea `src/__tests__/helpers/firebase-mock.ts`:
+    ```typescript
+    import * as admin from 'firebase-admin';
+    
+    // Helper para crear snapshots de documentos mock
+    export function createMockDocSnapshot(id: string, data: object | null) {
+      return {
+        id,
+        exists: data !== null,
+        data: () => data,
+        ref: {
+          id,
+          collection: jest.fn(),
+        }
+      };
+    }
+    
+    // Helper para crear snapshots de queries mock
+    export function createMockQuerySnapshot(docs: Array<{ id: string; data: object }>) {
+      return {
+        empty: docs.length === 0,
+        docs: docs.map(doc => createMockDocSnapshot(doc.id, doc.data)),
+      };
+    }
+    ```
+
+5.  Añade scripts a `package.json`:
+    ```json
+    "scripts": {
+      "test": "jest",
+      "test:watch": "jest --watch",
+      "test:coverage": "jest --coverage"
+    }
+    ```
+
+**Criterios de Aceptación:**
+-   [ ] `npm test` ejecuta sin errores de configuración
+-   [ ] Los mocks de Firebase están configurados correctamente
+-   [ ] El threshold de cobertura está configurado al 80%
+
+---
+
+### Tarea 4.2: Suite de Pruebas de la API
+
+**Dependencias:** Tarea 4.1 y Épica 2 completadas
+
+**Documentos de Referencia:**
+-   `openapi.yaml` - Todos los endpoints y respuestas
+-   `docs/API-DESIGN.md` - Formato de respuestas de error
+
+**Archivos a Crear:**
+```
+functions/src/__tests__/
+├── services/
+│   ├── client.service.test.ts
+│   ├── group.service.test.ts
+│   └── account.service.test.ts
+├── api/
+│   ├── client.routes.test.ts
+│   ├── group.routes.test.ts
+│   └── account.routes.test.ts
+└── middleware/
+    ├── auth.middleware.test.ts
+    └── error.middleware.test.ts
+```
+
+**Instrucciones Detalladas:**
+
+1.  Crea `src/__tests__/middleware/auth.middleware.test.ts`:
+    ```typescript
+    import { Request, Response, NextFunction } from 'express';
+    import * as admin from 'firebase-admin';
+    import { authMiddleware } from '../../api/middleware/auth.middleware';
+    
+    describe('Auth Middleware', () => {
+      let mockRequest: Partial<Request>;
+      let mockResponse: Partial<Response>;
+      let nextFunction: NextFunction;
+      
+      beforeEach(() => {
+        mockRequest = {
+          headers: {}
+        };
+        mockResponse = {
+          status: jest.fn().mockReturnThis(),
+          json: jest.fn(),
+        };
+        nextFunction = jest.fn();
+      });
+      
+      it('should return 401 when Authorization header is missing', async () => {
+        await authMiddleware(
+          mockRequest as Request,
+          mockResponse as Response,
+          nextFunction
+        );
+        
+        expect(mockResponse.status).toHaveBeenCalledWith(401);
+        expect(mockResponse.json).toHaveBeenCalledWith({
+          error: {
+            code: 'INVALID_TOKEN',
+            message: expect.any(String)
+          }
+        });
+        expect(nextFunction).not.toHaveBeenCalled();
+      });
+      
+      it('should return 401 when token format is invalid', async () => {
+        mockRequest.headers = { authorization: 'InvalidFormat' };
+        
+        await authMiddleware(
+          mockRequest as Request,
+          mockResponse as Response,
+          nextFunction
+        );
+        
+        expect(mockResponse.status).toHaveBeenCalledWith(401);
+      });
+      
+      it('should call next() with user data when token is valid', async () => {
+        const mockDecodedToken = { uid: 'test-uid', email: 'test@example.com' };
+        mockRequest.headers = { authorization: 'Bearer valid-token' };
+        
+        (admin.auth().verifyIdToken as jest.Mock).mockResolvedValue(mockDecodedToken);
+        
+        await authMiddleware(
+          mockRequest as Request,
+          mockResponse as Response,
+          nextFunction
+        );
+        
+        expect(nextFunction).toHaveBeenCalled();
+        expect(mockRequest.user).toEqual(mockDecodedToken);
+      });
+    });
+    ```
+
+2.  Crea `src/__tests__/services/client.service.test.ts`:
+    ```typescript
+    import { clientService } from '../../services/client.service';
+    import { createMockDocSnapshot, createMockQuerySnapshot } from '../helpers/firebase-mock';
+    import * as admin from 'firebase-admin';
+    
+    describe('ClientService', () => {
+      const mockFirestore = admin.firestore();
+      
+      describe('create', () => {
+        it('should create a new client successfully', async () => {
+          // Mock: email no existe
+          (mockFirestore.collection('clients').where as jest.Mock)
+            .mockReturnValue({
+              limit: jest.fn().mockReturnValue({
+                get: jest.fn().mockResolvedValue({ empty: true })
+              })
+            });
+          
+          // Mock: crear documento
+          const mockDocRef = { id: 'new-client-id', set: jest.fn() };
+          (mockFirestore.collection('clients').doc as jest.Mock)
+            .mockReturnValue(mockDocRef);
+          
+          const result = await clientService.create({
+            name: 'Test Client',
+            email: 'test@example.com'
+          });
+          
+          expect(result.id).toBe('new-client-id');
+          expect(result.name).toBe('Test Client');
+          expect(result.email).toBe('test@example.com');
+          expect(mockDocRef.set).toHaveBeenCalled();
+        });
+        
+        it('should throw ConflictError when email already exists', async () => {
+          // Mock: email existe
+          (mockFirestore.collection('clients').where as jest.Mock)
+            .mockReturnValue({
+              limit: jest.fn().mockReturnValue({
+                get: jest.fn().mockResolvedValue({ empty: false })
+              })
+            });
+          
+          await expect(
+            clientService.create({ name: 'Test', email: 'existing@example.com' })
+          ).rejects.toThrow('ya está en uso');
+        });
+      });
+      
+      describe('getById', () => {
+        it('should return client when found', async () => {
+          const mockData = {
+            name: 'Test',
+            email: 'test@example.com',
+            affinityGroupIds: [],
+            account_balances: {},
+            created_at: { toDate: () => new Date() },
+            updated_at: { toDate: () => new Date() },
+          };
+          
+          (mockFirestore.collection('clients').doc('client-1').get as jest.Mock)
+            .mockResolvedValue(createMockDocSnapshot('client-1', mockData));
+          
+          const result = await clientService.getById('client-1');
+          
+          expect(result.id).toBe('client-1');
+          expect(result.name).toBe('Test');
+        });
+        
+        it('should throw NotFoundError when client does not exist', async () => {
+          (mockFirestore.collection('clients').doc('nonexistent').get as jest.Mock)
+            .mockResolvedValue(createMockDocSnapshot('nonexistent', null));
+          
+          await expect(
+            clientService.getById('nonexistent')
+          ).rejects.toThrow('no fue encontrado');
+        });
+      });
+    });
+    ```
+
+3.  Crea `src/__tests__/services/account.service.test.ts`:
+    ```typescript
+    import { accountService } from '../../services/account.service';
+    import * as admin from 'firebase-admin';
+    
+    describe('AccountService', () => {
+      const mockFirestore = admin.firestore();
+      
+      describe('credit', () => {
+        it('should credit points atomically', async () => {
+          const mockTransaction = {
+            get: jest.fn(),
+            set: jest.fn(),
+            update: jest.fn(),
+          };
+          
+          // Simular cliente y cuenta existentes
+          mockTransaction.get.mockResolvedValueOnce(
+            { exists: true, data: () => ({ account_balances: {} }) }
+          );
+          mockTransaction.get.mockResolvedValueOnce(
+            { exists: true, data: () => ({ points: 100, account_name: 'Test' }) }
+          );
+          
+          (mockFirestore.runTransaction as jest.Mock).mockImplementation(
+            async (fn) => fn(mockTransaction)
+          );
+          
+          const result = await accountService.credit('client-1', 'account-1', {
+            amount: 50,
+            description: 'Test credit'
+          });
+          
+          expect(result.points).toBe(150);
+          expect(mockTransaction.update).toHaveBeenCalled();
+        });
+      });
+      
+      describe('debit', () => {
+        it('should throw InsufficientBalanceError when balance is insufficient', async () => {
+          const mockTransaction = {
+            get: jest.fn(),
+          };
+          
+          mockTransaction.get.mockResolvedValueOnce(
+            { exists: true, data: () => ({}) }
+          );
+          mockTransaction.get.mockResolvedValueOnce(
+            { exists: true, data: () => ({ points: 30 }) }
+          );
+          
+          (mockFirestore.runTransaction as jest.Mock).mockImplementation(
+            async (fn) => fn(mockTransaction)
+          );
+          
+          await expect(
+            accountService.debit('client-1', 'account-1', { amount: 50 })
+          ).rejects.toThrow('insuficiente');
+        });
+      });
+    });
+    ```
+
+4.  **Escribe pruebas similares para:**
+    -   `group.service.test.ts` - Crear grupo, asignar/desasignar cliente
+    -   `error.middleware.test.ts` - Formateo de ZodError, AppError, errores genéricos
+    -   Pruebas de integración con supertest para las rutas
+
+**Criterios de Aceptación:**
+-   [ ] Todas las pruebas pasan (`npm test`)
+-   [ ] La cobertura de código es superior al 80% (`npm run test:coverage`)
+-   [ ] Se prueban tanto casos de éxito como de error
+-   [ ] Las pruebas de middleware validan el formato de respuesta de error
+-   [ ] Las pruebas de servicios validan la lógica de negocio crítica (transacciones atómicas)
+
+---
+
+## Resumen de Dependencias entre Tareas
+
+```
+Épica 1: Configuración del Proyecto y Core del Backend
+├── Tarea 1.1: Andamiaje (inicio)
+├── Tarea 1.2: Auth Middleware (depende de 1.1)
+└── Tarea 1.3: Error Middleware (depende de 1.1, 1.2)
+
+Épica 2: Implementación de la API
+├── Tarea 2.1: Schemas de Zod (depende de Épica 1)
+├── Tarea 2.2: Endpoints Clients (depende de 2.1)
+├── Tarea 2.3: Endpoints Groups (depende de 2.2)
+└── Tarea 2.4: Endpoints Accounts (depende de 2.3) [CRÍTICA: transacciones atómicas]
+
+Épica 3: Frontend (puede ejecutarse en paralelo con Épica 1 y 2)
+├── Tarea 3.1: Andamiaje Next.js (inicio)
+├── Tarea 3.2: Layout y Sidebar (depende de 3.1)
+├── Tarea 3.3: Listado de Clientes (depende de 3.2) [HU1, HU7]
+├── Tarea 3.4: Crear Cliente (depende de 3.3) [HU2]
+└── Tarea 3.5: Eliminar Cliente (depende de 3.3) [HU3]
+
+Épica 4: Calidad y Pruebas
+├── Tarea 4.1: Config Testing (depende de Épica 1)
+└── Tarea 4.2: Suite de Pruebas (depende de 4.1, Épica 2)
+```
+
+---
+
+## Checklist de Finalización del MVP
+
+Antes de considerar el MVP como completo, verifica:
+
+**Backend:**
+-   [ ] Todos los endpoints de `openapi.yaml` están implementados
+-   [ ] El middleware de autenticación funciona correctamente
+-   [ ] El formato de errores es consistente con `API-DESIGN.md`
+-   [ ] Las operaciones de credit/debit usan transacciones atómicas
+-   [ ] La cobertura de pruebas es superior al 80%
+-   [ ] El código compila sin errores de TypeScript
+
+**Frontend:**
+-   [ ] El listado de clientes funciona (HU1)
+-   [ ] La creación de clientes funciona (HU2)
+-   [ ] La eliminación de clientes funciona con confirmación (HU3)
+-   [ ] La búsqueda de clientes funciona (HU7)
+-   [ ] Todos los estados (carga, vacío, error) están implementados
+-   [ ] La UI sigue las guías de `UI-UX-GUIDELINES.md`
+
+**Integración:**
+-   [ ] El frontend se comunica correctamente con el backend
+-   [ ] La autenticación con Firebase Auth funciona
+-   [ ] El deploy a Firebase Hosting funciona
+-   [ ] El deploy de Cloud Functions funciona
