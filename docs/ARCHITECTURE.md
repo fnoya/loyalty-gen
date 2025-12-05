@@ -15,28 +15,28 @@
 
 ```mermaid
 graph TD
-    subgraph "Usuario Final (Admin)"
+    subgraph UsuarioFinalAdmin [Usuario Final (Admin)]
         A[Next.js App]
     end
 
-    subgraph "Google Cloud Platform / Firebase"
+    subgraph GCPFirebase [Google Cloud Platform / Firebase]
         B(Firebase Hosting)
         C{API: Cloud Function Express}
         D[DB Transaccional: Cloud Firestore]
         E[Auth: Firebase Authentication]
-        I[Extensión BigQuery (futuro)]
-        D --onWrite--> I;
+        I[Extension BigQuery - futuro]
+        D --onWrite--> I
     end
 
-    A -->|Login| E;
-    A -->|Petición HTTPS| B;
-    B -->|Rewrite /api/*| C;
+    A -->|Login| E
+    A -->|Peticion HTTPS| B
+    B -->|Rewrite /api/*| C
     
-    A -->|Búsqueda/Query| C;
-    C -->|Lee/Escribe (CRUD)| D;
-    C -->|Verifica Token| E;
+    A -->|Busqueda/Query| C
+    C -->|Lee/Escribe (CRUD)| D
+    C -->|Verifica Token| E
     
-    I -->|Carga datos| H[Data Warehouse: BigQuery];
+    I -->|Carga datos| H[Data Warehouse: BigQuery]
 
     style A fill:#cde4ff
     style H fill:#d5cde4
