@@ -33,6 +33,70 @@ Para eliminar la duplicación y prevenir la desincronización entre la validaci�
     ```
 3.  **Eliminar Interfaces Manuales:** Los archivos `app/models/*.model.ts` no deben existir para objetos que ya están definidos por un schema de Zod. El schema es la única fuente de verdad.
 
+## 3.1. Convenciones para Campos de Cliente
+
+Para habilitar búsquedas eficientes en Firestore, se han establecido las siguientes convenciones para el modelo de Cliente:
+
+### 3.1.1. Campos de Nombre Separados
+
+-   **Requerimiento:** Los nombres de los clientes deben almacenarse en campos separados para permitir búsquedas específicas.
+-   **Campos requeridos:**
+    -   `firstName: string` - Primer nombre del cliente
+    -   `firstSurname: string` - Primer apellido del cliente
+-   **Campos opcionales:**
+    -   `secondName?: string` - Segundo nombre del cliente
+    -   `secondSurname?: string` - Segundo apellido del cliente
+
+### 3.1.2. Campos Normalizados para Búsqueda Case-Insensitive
+
+-   **Requerimiento:** Para cada campo de texto que necesite ser buscado de manera case-insensitive, se debe almacenar una versión normalizada con el sufijo `_lower`.
+-   **Generación automática:** Los campos `_lower` deben ser generados automáticamente por el servicio antes de guardar en Firestore.
+-   **Campos normalizados del Cliente:**
+    -   `firstName_lower: string` - toLowerCase() de firstName
+    -   `secondName_lower?: string` - toLowerCase() de secondName (si existe)
+    -   `firstSurname_lower: string` - toLowerCase() de firstSurname
+    -   `secondSurname_lower?: string` - toLowerCase() de secondSurname (si existe)
+-   **Documento de identidad:**
+    -   `identity_document.number_lower: string` - toLowerCase() del número de documento
+
+**Ejemplo de implementación:**
+```typescript
+// En el servicio de clientes
+function normalizeClientForSearch(client: CreateClientInput): ClientDocument {
+  return {
+    ...client,
+    firstName_lower: client.firstName.toLowerCase(),
+    secondName_lower: client.secondName?.toLowerCase() || null,
+    firstSurname_lower: client.firstSurname.toLowerCase(),
+    secondSurname_lower: client.secondSurname?.toLowerCase() || null,
+    identity_document: client.identity_document ? {
+      ...client.identity_document,
+      number_lower: client.identity_document.number.toLowerCase()
+    } : null
+  };
+}
+```
+
+### 3.1.3. Números de Teléfono
+
+-   **Campo:** `phoneNumbers: string[]` - Array de números de teléfono
+-   **Formato:** Los números de teléfono deben almacenarse como strings, permitiendo caracteres comunes: dígitos, `+`, `-`, espacios, y paréntesis.
+-   **Validación:** Pattern regex: `^[0-9+\\-\\s()]+$`
+
+### 3.1.4. Migración de Datos Existentes
+
+Si existen clientes con el schema antiguo (campo único `name`):
+1.  Implementar un script de migración que divida `name` en `firstName` y `firstSurname`
+2.  Generar los campos `_lower` correspondientes
+3.  Actualizar las reglas de seguridad de Firestore para requerir los nuevos campos
+
+### 3.1.5. Referencia de Documentación
+
+Para más detalles sobre la estrategia de búsqueda y las limitaciones de Firestore, consultar:
+-   `docs/FIRESTORE-SEARCH-SOLUTION.md` - Solución completa de búsqueda
+-   `docs/ARCHITECTURE.md` - Modelo de datos actualizado
+-   `openapi.yaml` - Especificación del endpoint `/clients/search`
+
 ## 4. Estructura de la Lógica de Negocio
 
 -   **Rutas/Controladores (`app/api/routes/`):** Deben ser "delgados". Su única responsabilidad es validar la entrada (vía middleware), llamar al servicio apropiado y manejar la respuesta HTTP. No deben contener lógica de negocio.

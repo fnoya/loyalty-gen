@@ -142,6 +142,84 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /clients/search:
+    get:
+      tags: [Clients]
+      summary: Buscar Clientes
+      description: |
+        Busca clientes en Firestore usando consultas de prefijo (startsWith) sobre campos indexados.
+        
+        **Tipos de búsqueda soportados:**
+        - **Búsqueda por nombre:** Ingresa uno o más nombres/apellidos separados por espacios (ej: "Francisco Noya")
+        - **Búsqueda por documento:** Ingresa el número de documento de identidad (ej: "2889956")
+        - **Búsqueda por teléfono:** Ingresa dígitos del número de teléfono (ej: "099123456")
+        
+        **Limitaciones:**
+        - Las búsquedas son case-insensitive pero requieren coincidencia exacta de prefijo
+        - No hay soporte para búsquedas fuzzy o tolerancia a errores tipográficos
+        - Las búsquedas de teléfono solo soportan startsWith (no endsWith)
+        - Para búsquedas avanzadas, considere integrar Algolia/Elasticsearch (post-MVP)
+        
+        Ver `docs/FIRESTORE-SEARCH-SOLUTION.md` para detalles técnicos completos.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: |
+            Query de búsqueda. Ejemplos:
+            - "Francisco" (busca en todos los campos de nombre)
+            - "Francisco Noya" (busca firstName="Francisco" AND firstSurname="Noya")
+            - "2889956" (busca en documento de identidad y teléfonos)
+        - name: limit
+          in: query
+          description: Número máximo de resultados a devolver.
+          schema:
+            type: integer
+            default: 30
+            maximum: 100
+        - name: next_cursor
+          in: query
+          description: Cursor para obtener la siguiente página de resultados.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Resultados de la búsqueda de clientes.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Client'
+                  paging:
+                    $ref: '#/components/schemas/Paging'
+                  metadata:
+                    type: object
+                    properties:
+                      total_results:
+                        type: integer
+                        description: "Número total de resultados encontrados."
+                      query:
+                        type: string
+                        description: "Query de búsqueda procesada."
+                      search_type:
+                        type: string
+                        enum: [name, number, multi_field]
+                        description: "Tipo de búsqueda ejecutada."
+        '400':
+          description: Query de búsqueda inválida o vacía.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   # --------------------
   # Affinity Groups Endpoints
   # --------------------
@@ -724,7 +802,8 @@ components:
           $ref: '#/components/schemas/ClientName'
         email: { type: string, format: email, nullable: true, description: "Email del cliente (opcional si se proporciona documento de identidad)." }
         identity_document:
-          $ref: '#/components/schemas/IdentityDocument'
+          allOf:
+            - $ref: '#/components/schemas/IdentityDocument'
           nullable: true
           description: "Documento de identidad del cliente (opcional si se proporciona email)."
         phones:
@@ -838,13 +917,14 @@ components:
     CreateClientRequest:
       type: object
       description: "Petición para crear un nuevo cliente. Al menos uno de 'email' o 'identity_document' debe estar presente."
-      required: [name]
+      required: [firstName, firstSurname]
       properties:
         name:
           $ref: '#/components/schemas/ClientName'
         email: { type: string, format: email, description: "Email del cliente (opcional si se proporciona documento de identidad)." }
         identity_document:
-          $ref: '#/components/schemas/IdentityDocument'
+          allOf:
+            - $ref: '#/components/schemas/IdentityDocument'
           description: "Documento de identidad del cliente (opcional si se proporciona email)."
         phones:
           type: array

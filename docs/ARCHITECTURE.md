@@ -56,7 +56,14 @@ El sistema se diseña para ser escalable, pero la implementación se realizará 
 ### 3.1. Estrategia de Búsqueda
 
 -   **Problema a Largo Plazo:** Firestore no es un motor de búsqueda de texto completo, lo que limita las búsquedas sobre millones de documentos.
--   **Solución Fase 1 (MVP):** Para el lanzamiento inicial, la búsqueda de clientes se implementará utilizando las **capacidades de consulta nativas de Firestore**. Esto implica principalmente consultas de prefijo (`startsWith`) sobre campos indexados. Se aceptan las limitaciones de esta aproximación (sensibilidad a mayúsculas/minúsculas, sin tolerancia a typos).
+-   **Solución Fase 1 (MVP):** Para el lanzamiento inicial, la búsqueda de clientes se implementará utilizando las **capacidades de consulta nativas de Firestore** con las siguientes características:
+    -   **Búsqueda por nombre:** Consultas de prefijo (`startsWith`) sobre campos de nombre separados (`firstName`, `secondName`, `firstSurname`, `secondSurname`)
+    -   **Búsqueda multi-campo:** Soporte para consultas como "Francisco Noya" que buscan `firstName startsWith "Francisco" AND firstSurname startsWith "Noya"`
+    -   **Búsqueda por documento de identidad:** Consultas de prefijo sobre `identity_document.number`
+    -   **Búsqueda por teléfono:** Consultas de prefijo sobre el array `phoneNumbers`
+    -   **Case-insensitive:** Mediante campos normalizados `_lower` (ej: `firstName_lower`)
+    -   **Limitaciones aceptadas:** No hay soporte para `endsWith` en teléfonos (solo `startsWith`), sin tolerancia a typos, sin búsqueda fuzzy
+    -   Ver documentación detallada en `docs/FIRESTORE-SEARCH-SOLUTION.md`
 -   **Solución Fase 2 (Post-MVP):** Cuando la base de usuarios crezca hasta un punto en que la búsqueda nativa sea insuficiente, se ejecutará la estrategia de integrar un servicio dedicado como **Algolia/Elasticsearch**. La arquitectura está diseñada para que este cambio afecte principalmente al frontend y a la adición de una función de sincronización, sin requerir una reescritura del core de la API.
 
 ### 3.2. Estrategia de Análisis de Datos (Analytics)
@@ -106,6 +113,12 @@ Abandonamos el modelo relacional en favor de una estructura de colecciones y sub
 > - Si `email` está presente, debe ser único en toda la colección.
 > - Si `identity_document` está presente, la combinación de `type` + `number` debe ser única.
 > - Se recomienda crear índices compuestos para búsquedas eficientes por `identity_document.type` y `identity_document.number`.
+>
+> **Nota sobre Campos de Nombre:**
+> - Los campos de nombre se han separado en componentes individuales (firstName, secondName, firstSurname, secondSurname) para permitir búsquedas efectivas en Firestore.
+> - Los campos `_lower` son versiones en minúsculas almacenadas para permitir búsquedas case-insensitive, ya que Firestore es sensible a mayúsculas/minúsculas.
+> - `firstName` y `firstSurname` son requeridos; `secondName` y `secondSurname` son opcionales.
+> - Ver `docs/FIRESTORE-SEARCH-SOLUTION.md` para detalles completos sobre la estrategia de búsqueda.
 
 > **Nota sobre Datos de Contacto y Dirección:**
 > - Los campos `phones` y `addresses` son arrays que pueden estar vacíos.
