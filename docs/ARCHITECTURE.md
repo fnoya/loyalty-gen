@@ -132,6 +132,7 @@ Dado que el sistema maneja información sensible sobre créditos, débitos y bal
         -   `resource_id: string` - ID del recurso principal afectado
         -   `client_id: string | null` - ID del cliente relacionado (para facilitar consultas por cliente)
         -   `account_id: string | null` - ID de la cuenta relacionada (para facilitar consultas por cuenta)
+        -   `group_id: string | null` - ID del grupo relacionado (para operaciones de grupos de afinidad)
         -   `transaction_id: string | null` - ID de la transacción relacionada (solo para operaciones de crédito/débito)
         -   `actor: map` - Información del usuario que realizó la acción
             -   `uid: string` - ID del usuario autenticado (Firebase Auth UID)
@@ -149,6 +150,7 @@ Dado que el sistema maneja información sensible sobre créditos, débitos y bal
 > Se deben crear índices compuestos para las siguientes consultas frecuentes:
 > - Por `client_id` + `timestamp` (DESC) - Para ver auditoría de un cliente
 > - Por `account_id` + `timestamp` (DESC) - Para ver auditoría de una cuenta
+> - Por `group_id` + `timestamp` (DESC) - Para ver auditoría de un grupo
 > - Por `transaction_id` - Para ver auditoría de una transacción específica
 > - Por `actor.uid` + `timestamp` (DESC) - Para ver acciones de un usuario específico
 > - Por `action` + `timestamp` (DESC) - Para filtrar por tipo de acción
@@ -156,8 +158,9 @@ Dado que el sistema maneja información sensible sobre créditos, débitos y bal
 > **Política de Retención:**
 > Los registros de auditoría deben conservarse por un período mínimo de 5 años para cumplir con requisitos regulatorios. Se debe implementar una política de archivado a BigQuery para registros antiguos.
 
-> **Nota sobre Rendimiento:**
-> Los registros de auditoría se escriben de forma asíncrona después de completar la operación principal para no afectar el rendimiento de las operaciones críticas. Sin embargo, para operaciones financieras (crédito/débito), el registro de auditoría se crea dentro de la misma transacción atómica para garantizar consistencia.
+> **Nota sobre Rendimiento y Atomicidad:**
+> - **Operaciones financieras** (`POINTS_CREDITED`, `POINTS_DEBITED`): El registro de auditoría **DEBE** crearse dentro de la misma transacción atómica de Firestore que actualiza el balance. Esto garantiza consistencia entre la operación y su auditoría.
+> - **Operaciones no financieras** (todas las demás): Los registros de auditoría se crean después de completar la operación principal. Si la creación del registro falla, se debe loguear el error pero no revertir la operación.
 
 ## 5. Arquitectura de la API (Monolito Modular vs. Microservicios)
 

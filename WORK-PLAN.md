@@ -1416,6 +1416,7 @@ functions/src/
       resource_id: z.string(),
       client_id: z.string().nullable(),
       account_id: z.string().nullable(),
+      group_id: z.string().nullable(),
       transaction_id: z.string().nullable(),
       actor: auditActorSchema,
       changes: auditChangesSchema.nullable().optional(),
@@ -1428,6 +1429,7 @@ functions/src/
       next_cursor: z.string().optional(),
       client_id: z.string().optional(),
       account_id: z.string().optional(),
+      group_id: z.string().optional(),
       action: auditActionSchema.optional(),
       from_date: z.coerce.date().optional(),
       to_date: z.coerce.date().optional()
@@ -1445,7 +1447,8 @@ functions/src/
 2.  Crea `src/services/audit.service.ts`:
     ```typescript
     import * as admin from 'firebase-admin';
-    import { AuditAction, AuditResourceType, AuditActor, AuditChanges, AuditMetadata, AuditLog, AuditFilterParams, PaginatedResponse } from '../schemas';
+    import { AuditAction, AuditResourceType, AuditActor, AuditChanges, AuditMetadata, AuditLog, AuditFilterParams } from '../schemas';
+    import { PaginatedResponse } from '../schemas/common.schema';
     import { NotFoundError } from '../core/errors';
 
     const db = admin.firestore();
@@ -1457,6 +1460,7 @@ functions/src/
       resourceId: string;
       clientId?: string | null;
       accountId?: string | null;
+      groupId?: string | null;
       transactionId?: string | null;
       actor: AuditActor;
       changes?: AuditChanges | null;
@@ -1466,7 +1470,7 @@ functions/src/
     export class AuditService {
       /**
        * Crea un registro de auditoría de forma asíncrona (no bloquea la operación principal).
-       * Para operaciones financieras, usar createAuditLogInTransaction.
+       * Para operaciones financieras (POINTS_CREDITED, POINTS_DEBITED), usar createAuditLogInTransaction.
        */
       async createAuditLog(params: CreateAuditLogParams): Promise<void> {
         const now = admin.firestore.Timestamp.now();
@@ -1478,6 +1482,7 @@ functions/src/
           resource_id: params.resourceId,
           client_id: params.clientId || null,
           account_id: params.accountId || null,
+          group_id: params.groupId || null,
           transaction_id: params.transactionId || null,
           actor: params.actor,
           changes: params.changes || null,
@@ -1492,7 +1497,7 @@ functions/src/
 
       /**
        * Crea un registro de auditoría dentro de una transacción existente.
-       * CRÍTICO: Usar para operaciones de crédito/débito.
+       * CRÍTICO: Usar para operaciones de crédito/débito (POINTS_CREDITED, POINTS_DEBITED).
        */
       createAuditLogInTransaction(
         transaction: admin.firestore.Transaction,
@@ -1507,6 +1512,7 @@ functions/src/
           resource_id: params.resourceId,
           client_id: params.clientId || null,
           account_id: params.accountId || null,
+          group_id: params.groupId || null,
           transaction_id: params.transactionId || null,
           actor: params.actor,
           changes: params.changes || null,
@@ -1630,6 +1636,7 @@ functions/src/
           resource_id: data.resource_id,
           client_id: data.client_id,
           account_id: data.account_id,
+          group_id: data.group_id,
           transaction_id: data.transaction_id,
           actor: data.actor,
           changes: data.changes,

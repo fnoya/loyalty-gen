@@ -701,6 +701,7 @@ components:
         resource_id: { type: string, description: "ID del recurso principal afectado." }
         client_id: { type: string, nullable: true, description: "ID del cliente relacionado." }
         account_id: { type: string, nullable: true, description: "ID de la cuenta de lealtad relacionada." }
+        group_id: { type: string, nullable: true, description: "ID del grupo de afinidad relacionado." }
         transaction_id: { type: string, nullable: true, description: "ID de la transacción relacionada (solo para crédito/débito)." }
         actor:
           $ref: '#/components/schemas/AuditActor'
