@@ -17,15 +17,39 @@ El diseño y comportamiento de los endpoints deben seguir las convenciones estab
 -   **`POST /clients`**
     -   **Descripción:** Crea un nuevo cliente. Requiere al menos uno de los identificadores: email o documento de identidad.
     -   **Request Body:**
-        -   `name: string` (obligatorio)
+        -   `name: object` (obligatorio)
+            -   `firstName: string` (obligatorio, 1-50 caracteres, solo letras, espacios, guiones, apóstrofes)
+            -   `secondName: string` (opcional, máximo 50 caracteres)
+            -   `firstLastName: string` (obligatorio, 1-50 caracteres, solo letras, espacios, guiones, apóstrofes)
+            -   `secondLastName: string` (opcional, máximo 50 caracteres)
         -   `email: string` (opcional, debe ser único si se proporciona)
         -   `identity_document: object` (opcional, debe ser único si se proporciona)
             -   `type: string` (obligatorio si identity_document está presente, valores: "cedula_identidad", "pasaporte")
             -   `number: string` (obligatorio si identity_document está presente, alfanumérico)
+        -   `phones: array` (opcional, puede estar vacío)
+            -   `type: string` (valores: "mobile", "home", "work", "other")
+            -   `number: string` (formato E.164 preferido, ej: "+598 99 123 456")
+            -   `extension: string` (opcional, solo dígitos, máximo 10 caracteres)
+            -   `isPrimary: boolean` (solo uno puede ser true)
+        -   `addresses: array` (opcional, puede estar vacío)
+            -   `type: string` (valores: "home", "work", "other")
+            -   `street: string` (obligatorio, máximo 100 caracteres)
+            -   `buildingBlock: string` (opcional, máximo 50 caracteres)
+            -   `number: string` (obligatorio, máximo 20 caracteres)
+            -   `apartment: string` (opcional, máximo 20 caracteres)
+            -   `locality: string` (obligatorio, máximo 100 caracteres)
+            -   `state: string` (obligatorio, máximo 100 caracteres)
+            -   `postalCode: string` (obligatorio, máximo 20 caracteres)
+            -   `country: string` (obligatorio, código ISO 3166-1 alpha-2, ej: "UY", "AR")
+            -   `isPrimary: boolean` (solo una puede ser true)
         -   `extra_data: object` (opcional)
-    -   **Validación:** Al menos uno de `email` o `identity_document` debe estar presente.
+    -   **Validación:** 
+        -   Al menos uno de `email` o `identity_document` debe estar presente.
+        -   Solo un teléfono puede tener `isPrimary: true`.
+        -   Solo una dirección puede tener `isPrimary: true`.
+        -   Los códigos de país deben validarse contra ISO 3166-1 alpha-2.
     -   **Respuesta Exitosa (201 Created):** Devuelve el objeto del cliente creado.
-    -   **Respuesta de Error (400 Bad Request):** Si no se proporciona ningún identificador (ni email ni documento de identidad).
+    -   **Respuesta de Error (400 Bad Request):** Si no se proporciona ningún identificador (ni email ni documento de identidad), o si las validaciones de formato fallan.
     -   **Respuesta de Error (409 Conflict):** Si el email o el documento de identidad ya existe.
     -   **🔍 Auditoría:** Debe crear un registro de auditoría con `action: CLIENT_CREATED`, incluyendo los datos del cliente creado en `changes.after`.
 
@@ -36,14 +60,23 @@ El diseño y comportamiento de los endpoints deben seguir las convenciones estab
 
 -   **`GET /clients/{client_id}`**
     -   **Descripción:** Obtiene un cliente por su ID.
-    -   **Respuesta Exitosa (200 OK):** Devuelve el objeto del cliente.
+    -   **Respuesta Exitosa (200 OK):** Devuelve el objeto del cliente completo, incluyendo todos los campos de nombre, teléfonos y direcciones.
     -   **Respuesta de Error (404 Not Found):** Si el cliente no existe.
 
 -   **`PUT /clients/{client_id}`**
     -   **Descripción:** Actualiza los datos de un cliente. No se permite modificar el email ni el documento de identidad una vez creados.
     -   **Request Body:**
-        -   `name: string` (opcional)
+        -   `name: object` (opcional, si se proporciona, puede incluir cualquier combinación de campos)
+            -   `firstName: string` (opcional)
+            -   `secondName: string` (opcional)
+            -   `firstLastName: string` (opcional)
+            -   `secondLastName: string` (opcional)
+        -   `phones: array` (opcional, reemplaza la lista completa de teléfonos)
+        -   `addresses: array` (opcional, reemplaza la lista completa de direcciones)
         -   `extra_data: object` (opcional)
+    -   **Validación:**
+        -   Si se proporciona `phones`, validar que solo uno tenga `isPrimary: true`.
+        -   Si se proporciona `addresses`, validar que solo una tenga `isPrimary: true`.
     -   **Respuesta Exitosa (200 OK):** Devuelve el objeto del cliente actualizado.
     -   **🔍 Auditoría:** Debe crear un registro de auditoría con `action: CLIENT_UPDATED`, incluyendo el estado anterior en `changes.before` y el estado posterior en `changes.after`.
 
@@ -143,6 +176,34 @@ El diseño y comportamiento de los endpoints deben seguir las convenciones estab
 -   **Autorización a Nivel de Servicio (Defensa en Profundidad):** Para operaciones críticas (ej. crear transacciones), la lógica de servicio (`*.service.ts`) debe realizar una verificación adicional para confirmar que el `uid` del usuario autenticado corresponde al propietario del recurso que se está intentando modificar.
 -   **Validación en Base de Datos:** Las Reglas de Seguridad de Firestore también deben usarse para validar el schema y el contenido de los datos en el servidor, rechazando escrituras malformadas como una capa de seguridad adicional a la validación de Zod en la API.
 -   **Límites de Tasa (Rate Limiting):** La API debe implementar un límite de tasa (ej. 100 peticiones por minuto por cliente/IP) para prevenir abusos y ataques de denegación de servicio. Un middleware en Express se encargará de esta lógica.
+
+#### Protección de Información Personal Identificable (PII)
+
+Los campos del modelo de Cliente contienen **Información Personal Identificable (PII)** que debe protegerse con las máximas medidas de seguridad:
+
+-   **Campos PII Sensibles:**
+    -   `name` (nombre completo estructurado)
+    -   `email`
+    -   `identity_document`
+    -   `phones` (números telefónicos)
+    -   `addresses` (direcciones físicas completas)
+    -   `extra_data` (puede contener información sensible según el caso de uso)
+
+-   **Política de Logging:**
+    -   **PROHIBIDO:** Registrar en logs de aplicación: `email`, `name`, `identity_document`, `phones`, `addresses`, o cualquier campo de `extra_data`.
+    -   **PERMITIDO:** Registrar solo los IDs de recursos (`client_id`, `account_id`), códigos de error, y eventos de seguridad.
+    -   **Excepciones:** Los registros de auditoría en la colección `auditLogs` de Firestore **SÍ** deben incluir estos datos en `changes.before` y `changes.after`, pero con permisos de acceso extremadamente restrictivos.
+
+-   **Validación y Sanitización:**
+    -   Todos los campos de entrada deben validarse contra patrones seguros usando Zod para prevenir inyección de código.
+    -   Los números telefónicos deben validarse contra el formato E.164.
+    -   Los códigos de país deben validarse contra la lista oficial ISO 3166-1 alpha-2.
+    -   Las expresiones regulares para validar nombres deben permitir solo caracteres alfabéticos, espacios, guiones y apóstrofes.
+
+-   **Almacenamiento Seguro:**
+    -   Todos los datos PII deben almacenarse en Firestore con reglas de seguridad restrictivas.
+    -   Solo usuarios autenticados y autorizados pueden acceder a datos PII.
+    -   Considerar encriptación adicional a nivel de aplicación para campos extremadamente sensibles en futuras versiones.
 
 ### b. Rendimiento
 

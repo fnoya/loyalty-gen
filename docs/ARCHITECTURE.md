@@ -70,12 +70,32 @@ Abandonamos el modelo relacional en favor de una estructura de colecciones y sub
 
 -   **`clients` (Colección Raíz)**
     -   Documento: `clientId`
-        -   `name: string`
+        -   `name: map` (estructura de nombre del cliente)
+            -   `firstName: string` (Primer Nombre, obligatorio)
+            -   `secondName: string | null` (Segundo Nombre, opcional)
+            -   `firstLastName: string` (Primer Apellido, obligatorio)
+            -   `secondLastName: string | null` (Segundo Apellido, opcional)
         -   `email: string | null` (opcional, se debe garantizar unicidad a nivel de servicio si existe)
         -   `identity_document: map | null` (opcional, estructura de documento de identidad)
             -   `type: string` (tipo de documento: "cedula_identidad", "pasaporte")
             -   `number: string` (número alfanumérico del documento)
-        -   `extra_data: map`
+        -   `phones: array<map>` (array de números telefónicos, puede estar vacío)
+            -   `type: string` (tipo de teléfono: "mobile", "home", "work", "other")
+            -   `number: string` (número telefónico, preferiblemente en formato E.164)
+            -   `extension: string | null` (extensión telefónica, opcional)
+            -   `isPrimary: boolean` (indica si es el teléfono principal, solo uno puede ser true)
+        -   `addresses: array<map>` (array de direcciones físicas, puede estar vacío)
+            -   `type: string` (tipo de dirección: "home", "work", "other")
+            -   `street: string` (calle)
+            -   `buildingBlock: string | null` (edificio, manzana, etc., opcional)
+            -   `number: string` (número de dirección)
+            -   `apartment: string | null` (apartamento, opcional)
+            -   `locality: string` (localidad o ciudad)
+            -   `state: string` (departamento, provincia o estado)
+            -   `postalCode: string` (código postal)
+            -   `country: string` (código de país ISO 3166-1 alpha-2, ej: "UY", "AR")
+            -   `isPrimary: boolean` (indica si es la dirección principal, solo una puede ser true)
+        -   `extra_data: map` (datos adicionales en formato clave-valor)
         -   `created_at: timestamp`
         -   `updated_at: timestamp`
         -   `affinityGroupIds: array<string>` (Array con los IDs de los grupos a los que pertenece)
@@ -86,6 +106,14 @@ Abandonamos el modelo relacional en favor de una estructura de colecciones y sub
 > - Si `email` está presente, debe ser único en toda la colección.
 > - Si `identity_document` está presente, la combinación de `type` + `number` debe ser única.
 > - Se recomienda crear índices compuestos para búsquedas eficientes por `identity_document.type` y `identity_document.number`.
+
+> **Nota sobre Datos de Contacto y Dirección:**
+> - Los campos `phones` y `addresses` son arrays que pueden estar vacíos.
+> - Solo un elemento en cada array puede tener `isPrimary: true`.
+> - Los números telefónicos deben validarse en formato E.164 cuando sea posible (+código_país número).
+> - Los códigos de país en direcciones deben seguir el estándar ISO 3166-1 alpha-2.
+> - Se recomienda crear índices compuestos para búsquedas por `name.firstLastName` y `name.secondLastName`.
+> - **Seguridad:** Los campos `phones` y `addresses` contienen PII y NO deben registrarse en logs de aplicación.
 
 -   **`affinityGroups` (Colección Raíz)**
     -   Documento: `groupId`
