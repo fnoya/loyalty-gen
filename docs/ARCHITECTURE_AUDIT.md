@@ -166,6 +166,7 @@ service cloud.firestore {
 6. Configurar sincronización a BigQuery (medio) — Extensión o Pub/Sub pipeline.
 7. Añadir idempotency-key para endpoints monetarios (medio) — Evitar duplicados por retries.
 8. Estimar costes y alertas de facturación (medio) — Configurar alertas de presupuesto.
+8. Estimar costes y alertas de facturación (media) — Configurar alertas de presupuesto.
 9. Evaluar Cloud Run para endpoints críticos (baja/medio) — Pruebas de rendimiento.
 10. Implementar endpoint/status para borrados asíncronos (medio) — UX para operaciones largas.
 
@@ -176,3 +177,7 @@ service cloud.firestore {
 - Transformar cada ítem de la checklist en issues con prioridad y asignar a sprint.
 - Implementar tests automáticos en CI con Firebase Emulator.
 - Hacer una proof-of-concept de búsqueda con Typesense y medir latencia.
+
+---
+
+Fin del contenido del archivo.
