@@ -18,7 +18,7 @@ Recomendaciones:
 
 Ejemplo: actualización atómica de balance (TypeScript) — usar en servicios:
 
-```typescript
+```typescript name=examples/updateBalance.ts
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
 const db = getFirestore();
@@ -66,7 +66,7 @@ Notas: usar idempotency-key y manejar errores para reintentos.
 
 Ejemplo breve de middleware de errores (Express + TypeScript):
 
-```typescript
+```typescript name=examples/errorMiddleware.ts
 import { Request, Response, NextFunction } from 'express';
 
 class BusinessError extends Error { constructor(public code: string, message: string) { super(message); } }
@@ -93,7 +93,7 @@ Recomendaciones:
 
 Ejemplo de reglas de Firestore (snippet):
 
-```rules
+```rules name=examples/firestore.rules
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -165,6 +165,7 @@ service cloud.firestore {
 5. Crear pipeline de sincronización para motor de búsqueda (medio) — Integrar Typesense/Algolia y pruebas.
 6. Configurar sincronización a BigQuery (medio) — Extensión o Pub/Sub pipeline.
 7. Añadir idempotency-key para endpoints monetarios (medio) — Evitar duplicados por retries.
+8. Estimar costes y alertas de facturación (medio) — Configurar alertas de presupuesto.
 8. Estimar costes y alertas de facturación (media) — Configurar alertas de presupuesto.
 9. Evaluar Cloud Run para endpoints críticos (baja/medio) — Pruebas de rendimiento.
 10. Implementar endpoint/status para borrados asíncronos (medio) — UX para operaciones largas.
