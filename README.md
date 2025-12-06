@@ -141,6 +141,10 @@ erDiagram
     CLIENTS ||--o{ LOYALTY_ACCOUNTS : "tiene"
     CLIENTS }o--o{ AFFINITY_GROUPS : "pertenece a"
     LOYALTY_ACCOUNTS ||--o{ TRANSACTIONS : "registra"
+    AUDIT_LOGS }o--o| CLIENTS : "audita"
+    AUDIT_LOGS }o--o| LOYALTY_ACCOUNTS : "audita"
+    AUDIT_LOGS }o--o| TRANSACTIONS : "audita"
+    AUDIT_LOGS }o--o| AFFINITY_GROUPS : "audita"
 
     CLIENTS {
         string id PK
@@ -176,6 +180,21 @@ erDiagram
         enum transaction_type "credit|debit"
         int amount
         string description
+        timestamp timestamp
+    }
+
+    AUDIT_LOGS {
+        string id PK
+        string action "tipo de accion"
+        string resource_type
+        string resource_id
+        string client_id FK "opcional"
+        string account_id FK "opcional"
+        string group_id FK "opcional"
+        string transaction_id FK "opcional"
+        map actor "uid y email"
+        map changes "before y after"
+        map metadata
         timestamp timestamp
     }
 ```
