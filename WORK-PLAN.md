@@ -395,8 +395,8 @@ functions/src/schemas/
     export const createClientSchema = baseCreateClientSchema.refine(
       (data) => data.email || data.identity_document,
       {
-        message: 'Debe proporcionar al menos un identificador: email o documento de identidad',
-        path: ['email'] // Se asocia el error al campo email
+        message: 'Debe proporcionar al menos un identificador: email o documento de identidad'
+        // Sin path para indicar que es un error a nivel de formulario
       }
     );
     
@@ -1880,7 +1880,7 @@ web/
       },
       {
         message: 'Debe proporcionar al menos un identificador: email o documento de identidad',
-        path: ['email'],
+        // Sin path para indicar que es un error a nivel de formulario
       }
     ).refine(
       (data) => {
@@ -1902,9 +1902,10 @@ web/
       isSubmitting: boolean;
       serverError?: string;
       serverErrorField?: 'email' | 'identity_document';
+      formError?: string; // Error a nivel de formulario (ej. falta de identificador)
     }
     
-    export function ClientForm({ onSubmit, isSubmitting, serverError, serverErrorField }: ClientFormProps) {
+    export function ClientForm({ onSubmit, isSubmitting, serverError, serverErrorField, formError }: ClientFormProps) {
       const { register, handleSubmit, formState: { errors, isValid }, control, setValue } = useForm<ClientFormData>({
         resolver: zodResolver(clientFormSchema),
         mode: 'onChange',
@@ -1917,6 +1918,9 @@ web/
       });
       
       const documentType = useWatch({ control, name: 'identity_document_type' });
+      
+      // Obtener error a nivel de formulario de Zod (errores sin path específico)
+      const zodFormError = errors.root?.message;
       
       return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-md">
@@ -1988,6 +1992,11 @@ web/
                 <p className="text-sm text-red-500">{serverError}</p>
               )}
             </div>
+            
+            {/* Mostrar error a nivel de formulario (falta de identificador) */}
+            {zodFormError && (
+              <p className="text-sm text-red-500 bg-red-50 p-2 rounded">{zodFormError}</p>
+            )}
           </div>
           
           <Button type="submit" disabled={!isValid || isSubmitting}>

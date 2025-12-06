@@ -411,8 +411,7 @@ components:
         name: { type: string }
         email: { type: string, format: email, nullable: true, description: "Email del cliente (opcional si se proporciona documento de identidad)." }
         identity_document:
-          allOf:
-            - $ref: '#/components/schemas/IdentityDocument'
+          $ref: '#/components/schemas/IdentityDocument'
           nullable: true
           description: "Documento de identidad del cliente (opcional si se proporciona email)."
         extra_data: { type: object, additionalProperties: true }
@@ -453,8 +452,7 @@ components:
         name: { type: string }
         email: { type: string, format: email, description: "Email del cliente (opcional si se proporciona documento de identidad)." }
         identity_document:
-          allOf:
-            - $ref: '#/components/schemas/IdentityDocument'
+          $ref: '#/components/schemas/IdentityDocument'
           description: "Documento de identidad del cliente (opcional si se proporciona email)."
         extra_data: { type: object, additionalProperties: true }
     UpdateClientRequest:
