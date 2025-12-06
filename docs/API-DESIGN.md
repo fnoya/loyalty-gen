@@ -61,10 +61,13 @@ Para garantizar una DX predecible, todas las respuestas de error (`4xx` y `5xx`)
 | :--------------- | :---------------------- | :----------------------------------------------------------- |
 | `400 Bad Request`  | `INSUFFICIENT_BALANCE`  | "El saldo de la cuenta es insuficiente para realizar el débito." |
 | `400 Bad Request`  | `VALIDATION_FAILED`     | "El campo 'email' no es un correo electrónico válido."           |
+| `400 Bad Request`  | `MISSING_IDENTIFIER`    | "Debe proporcionar al menos un identificador: email o documento de identidad." |
+| `400 Bad Request`  | `INVALID_DOCUMENT_TYPE` | "El tipo de documento 'xyz' no es válido. Use 'cedula_identidad' o 'pasaporte'." |
 | `401 Unauthorized` | `INVALID_TOKEN`         | "El token de autenticación es inválido o ha expirado."       |
 | `403 Forbidden`    | `PERMISSION_DENIED`     | "No tiene permiso para acceder a este recurso."              |
 | `404 Not Found`    | `RESOURCE_NOT_FOUND`    | "El cliente con el ID 'xyz' no fue encontrado."              |
 | `409 Conflict`     | `EMAIL_ALREADY_EXISTS`  | "El correo electrónico proporcionado ya está en uso."        |
+| `409 Conflict`     | `IDENTITY_DOCUMENT_ALREADY_EXISTS` | "El documento de identidad proporcionado ya está registrado." |
 | `500 Server Error` | `INTERNAL_SERVER_ERROR` | "Ocurrió un error inesperado en el servidor."               |
 
 ## 5. Paginación

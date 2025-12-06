@@ -19,20 +19,23 @@ Este documento contiene las Historias de Usuario para la aplicación de administ
 -   **Archivo Principal:** `app/dashboard/clients/page.tsx`
 
 **Criterios de Aceptación:**
-1.  Al navegar a la sección de clientes (`/dashboard/clients`), se debe mostrar una tabla con las columnas "Nombre" y "Email".
-2.  Mientras los datos cargan, se debe visualizar un esqueleto de la tabla usando el componente `Skeleton` de shadcn/ui.
-3.  Si no existen clientes, la tabla no se muestra. En su lugar, aparece un componente de "Estado Vacío" (crear `components/empty-state.tsx`) con:
+1.  Al navegar a la sección de clientes (`/dashboard/clients`), se debe mostrar una tabla con las columnas "Nombre", "Email" y "Documento de Identidad".
+2.  La columna "Email" debe mostrar el email si existe, o "-" si no fue proporcionado.
+3.  La columna "Documento de Identidad" debe mostrar el tipo y número del documento si existe (ej. "Pasaporte: AB123456"), o "-" si no fue proporcionado.
+4.  Mientras los datos cargan, se debe visualizar un esqueleto de la tabla usando el componente `Skeleton` de shadcn/ui.
+5.  Si no existen clientes, la tabla no se muestra. En su lugar, aparece un componente de "Estado Vacío" (crear `components/empty-state.tsx`) con:
     -   Un ícono representativo (usar `lucide-react`)
     -   El mensaje "Aún no se han creado clientes"
     -   Un `Button` primario de shadcn/ui para "Crear Nuevo Cliente" que navegue a `/dashboard/clients/new`
-4.  Cada fila de la tabla debe tener un `DropdownMenu` de shadcn/ui con las acciones: "Ver" (navega a `/dashboard/clients/[id]`), "Editar" (navega a `/dashboard/clients/[id]/edit`), "Eliminar" (abre `AlertDialog`).
-5.  La tabla debe usar el componente `Table` de shadcn/ui.
+6.  Cada fila de la tabla debe tener un `DropdownMenu` de shadcn/ui con las acciones: "Ver" (navega a `/dashboard/clients/[id]`), "Editar" (navega a `/dashboard/clients/[id]/edit`), "Eliminar" (abre `AlertDialog`).
+7.  La tabla debe usar el componente `Table` de shadcn/ui.
 
 **Criterios de Verificación (para el agente):**
 -   [ ] La página renderiza sin errores en `/dashboard/clients`
 -   [ ] El skeleton se muestra durante la carga de datos
 -   [ ] El estado vacío se muestra cuando `data.length === 0`
--   [ ] Los clientes se muestran en la tabla con nombre y email
+-   [ ] Los clientes se muestran en la tabla con nombre, email y documento de identidad
+-   [ ] Las columnas muestran "-" cuando el campo no está presente
 -   [ ] El menú de acciones funciona correctamente
 
 #### HU2: Creación de un Nuevo Cliente
@@ -49,21 +52,26 @@ Este documento contiene las Historias de Usuario para la aplicación de administ
 
 **Criterios de Aceptación:**
 1.  Desde la página de listado de clientes (`/dashboard/clients`), debe existir un `Button` primario "Crear Nuevo Cliente" que navegue a `/dashboard/clients/new`.
-2.  El formulario debe usar los componentes `Input`, `Label` y `Button` de shadcn/ui.
-3.  El formulario debe solicitar, como mínimo, "Nombre" (campo `name`) y "Email" (campo `email`).
-4.  La validación debe usar **Zod** con el mismo schema usado en el backend (o uno compatible).
-5.  El `Button` "Guardar" permanecerá deshabilitado hasta que los campos obligatorios sean válidos.
+2.  El formulario debe usar los componentes `Input`, `Label`, `Select` y `Button` de shadcn/ui.
+3.  El formulario debe solicitar, como mínimo, "Nombre" (campo `name`) y al menos uno de los siguientes identificadores:
+    -   "Email" (campo `email`)
+    -   "Documento de Identidad" que incluye:
+        -   Tipo de documento (campo `identity_document.type`): `Select` con opciones "Cédula de Identidad" o "Pasaporte"
+        -   Número de documento (campo `identity_document.number`): `Input` alfanumérico
+4.  La validación debe usar **Zod** con el mismo schema usado en el backend (o uno compatible). El schema debe validar que al menos uno de los identificadores (email o documento de identidad) esté presente.
+5.  El `Button` "Guardar" permanecerá deshabilitado hasta que los campos obligatorios sean válidos y al menos un identificador esté completo.
 6.  Durante el envío, el botón debe mostrar un `Spinner` y estar deshabilitado.
 7.  Al guardar exitosamente, el usuario es redirigido a `/dashboard/clients` y recibe una notificación de éxito usando el componente `Toast` de shadcn/ui.
-8.  Si la API devuelve un error `409 Conflict` (email duplicado), se debe mostrar un mensaje de error claro junto al campo de email.
+8.  Si la API devuelve un error `409 Conflict` (email o documento de identidad duplicado), se debe mostrar un mensaje de error claro junto al campo correspondiente.
 
 **Criterios de Verificación (para el agente):**
 -   [ ] El formulario renderiza correctamente en `/dashboard/clients/new`
--   [ ] La validación con Zod funciona (campos obligatorios, formato de email)
+-   [ ] La validación con Zod funciona (nombre obligatorio, al menos un identificador)
+-   [ ] El selector de tipo de documento muestra las opciones correctas
 -   [ ] El botón está deshabilitado cuando el formulario es inválido
 -   [ ] El spinner se muestra durante el envío
 -   [ ] La redirección y toast funcionan tras éxito
--   [ ] El error 409 se maneja mostrando mensaje en el campo email
+-   [ ] El error 409 se maneja mostrando mensaje en el campo email o documento
 
 #### HU3: Eliminación de un Cliente
 *   **Como** administrador,
@@ -209,7 +217,7 @@ Este documento contiene las Historias de Usuario para la aplicación de administ
 #### HU7: Búsqueda Rápida de Clientes
 *   **Como** administrador,
 *   **Quiero** un campo de búsqueda en la parte superior de la lista de clientes,
-*   **Para** poder encontrar un cliente específico por su nombre o email de forma inmediata.
+*   **Para** poder encontrar un cliente específico por su nombre, email o documento de identidad de forma inmediata.
 
 **Referencias Técnicas:**
 -   **Estrategia MVP:** Búsqueda cliente-side sobre los datos cargados, o uso de queries `startsWith` de Firestore (ver `ARCHITECTURE.md` sección 3.1)
@@ -220,7 +228,7 @@ Este documento contiene las Historias de Usuario para la aplicación de administ
 1.  Existe un campo `Input` con placeholder "Buscar cliente..." encima de la tabla de clientes.
 2.  El campo debe tener un ícono de búsqueda (Search de lucide-react) a la izquierda.
 3.  Al escribir en el campo, usar **debounce de 300ms** antes de ejecutar la búsqueda (usar hook `useDebouncedValue` o similar).
-4.  **Implementación MVP:** Filtrar cliente-side los resultados ya cargados por nombre o email (case-insensitive).
+4.  **Implementación MVP:** Filtrar cliente-side los resultados ya cargados por nombre, email o número de documento de identidad (case-insensitive).
 5.  Si no hay resultados, mostrar un estado vacío específico:
     -   Mensaje: "No se encontraron clientes para '[término de búsqueda]'"
     -   Botón: "Limpiar búsqueda" que resetee el campo
@@ -232,7 +240,7 @@ Este documento contiene las Historias de Usuario para la aplicación de administ
 **Criterios de Verificación (para el agente):**
 -   [ ] El campo de búsqueda se muestra encima de la tabla
 -   [ ] El debounce de 300ms funciona correctamente
--   [ ] La búsqueda filtra por nombre y email (case-insensitive)
+-   [ ] La búsqueda filtra por nombre, email y número de documento (case-insensitive)
 -   [ ] El estado vacío de búsqueda se muestra cuando no hay resultados
 -   [ ] El botón "Limpiar búsqueda" funciona
 

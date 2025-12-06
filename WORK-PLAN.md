@@ -121,6 +121,12 @@ functions/
       }
     }
     
+    export class MissingIdentifierError extends AppError {
+      constructor() {
+        super('MISSING_IDENTIFIER', 'Debe proporcionar al menos un identificador: email o documento de identidad.', 400);
+      }
+    }
+    
     export class InsufficientBalanceError extends AppError {
       constructor() {
         super('INSUFFICIENT_BALANCE', 'El saldo de la cuenta es insuficiente para realizar el débito.', 400);
@@ -366,11 +372,33 @@ functions/src/schemas/
     ```typescript
     import { z } from 'zod';
     
-    export const createClientSchema = z.object({
+    // Tipos de documento de identidad válidos para el MVP
+    export const identityDocumentTypeSchema = z.enum(['cedula_identidad', 'pasaporte']);
+    
+    // Schema del documento de identidad
+    export const identityDocumentSchema = z.object({
+      type: identityDocumentTypeSchema,
+      number: z.string()
+        .min(1, 'El número de documento es requerido')
+        .regex(/^[a-zA-Z0-9]+$/, 'El número de documento debe ser alfanumérico')
+    });
+    
+    // Schema base para crear cliente (antes de la validación de identificadores)
+    const baseCreateClientSchema = z.object({
       name: z.string().min(1, 'El nombre es requerido'),
-      email: z.string().email('Debe ser un email válido'),
+      email: z.string().email('Debe ser un email válido').optional(),
+      identity_document: identityDocumentSchema.optional(),
       extra_data: z.record(z.unknown()).optional()
     });
+    
+    // Schema de creación con validación: al menos uno de email o identity_document
+    export const createClientSchema = baseCreateClientSchema.refine(
+      (data) => data.email || data.identity_document,
+      {
+        message: 'Debe proporcionar al menos un identificador: email o documento de identidad'
+        // Sin path para indicar que es un error a nivel de formulario
+      }
+    );
     
     export const updateClientSchema = z.object({
       name: z.string().min(1).optional(),
@@ -380,7 +408,8 @@ functions/src/schemas/
     export const clientSchema = z.object({
       id: z.string(),
       name: z.string(),
-      email: z.string().email(),
+      email: z.string().email().nullable().optional(),
+      identity_document: identityDocumentSchema.nullable().optional(),
       extra_data: z.record(z.unknown()).optional(),
       affinityGroupIds: z.array(z.string()),
       account_balances: z.record(z.number()),
@@ -388,6 +417,8 @@ functions/src/schemas/
       updated_at: z.date()
     });
     
+    export type IdentityDocumentType = z.infer<typeof identityDocumentTypeSchema>;
+    export type IdentityDocument = z.infer<typeof identityDocumentSchema>;
     export type CreateClientRequest = z.infer<typeof createClientSchema>;
     export type UpdateClientRequest = z.infer<typeof updateClientSchema>;
     export type Client = z.infer<typeof clientSchema>;
@@ -465,6 +496,8 @@ functions/src/schemas/
 
 **Criterios de Aceptación:**
 -   [ ] Todos los schemas validan correctamente según `openapi.yaml`
+-   [ ] El schema de cliente valida que al menos uno de email o identity_document esté presente
+-   [ ] El schema de identity_document valida el tipo (cedula_identidad o pasaporte) y el número alfanumérico
 -   [ ] Los tipos de TypeScript se infieren de los schemas (no hay interfaces manuales duplicadas)
 -   [ ] El código compila sin errores de tipo
 
@@ -498,7 +531,7 @@ functions/src/index.ts  # Registrar las rutas
 1.  Crea `src/services/client.service.ts` con la lógica de negocio:
     ```typescript
     import * as admin from 'firebase-admin';
-    import { CreateClientRequest, UpdateClientRequest, Client, PaginationParams, PaginatedResponse } from '../schemas';
+    import { CreateClientRequest, UpdateClientRequest, Client, PaginationParams, PaginatedResponse, IdentityDocument } from '../schemas';
     import { NotFoundError, ConflictError } from '../core/errors';
     
     const db = admin.firestore();
@@ -506,16 +539,33 @@ functions/src/index.ts  # Registrar las rutas
     
     export class ClientService {
       async create(data: CreateClientRequest): Promise<Client> {
-        // Verificar email único
-        const existing = await clientsCollection.where('email', '==', data.email).limit(1).get();
-        if (!existing.empty) {
-          throw new ConflictError('El correo electrónico proporcionado ya está en uso.');
+        // Verificar email único (si se proporciona)
+        if (data.email) {
+          const existingByEmail = await clientsCollection.where('email', '==', data.email).limit(1).get();
+          if (!existingByEmail.empty) {
+            throw new ConflictError('El correo electrónico proporcionado ya está en uso.');
+          }
+        }
+        
+        // Verificar documento de identidad único (si se proporciona)
+        if (data.identity_document) {
+          const existingByDoc = await clientsCollection
+            .where('identity_document.type', '==', data.identity_document.type)
+            .where('identity_document.number', '==', data.identity_document.number)
+            .limit(1)
+            .get();
+          if (!existingByDoc.empty) {
+            throw new ConflictError('El documento de identidad proporcionado ya está registrado.');
+          }
         }
         
         const now = admin.firestore.Timestamp.now();
         const docRef = clientsCollection.doc();
         const clientData = {
-          ...data,
+          name: data.name,
+          email: data.email || null,
+          identity_document: data.identity_document || null,
+          extra_data: data.extra_data || {},
           affinityGroupIds: [],
           account_balances: {},
           created_at: now,
@@ -526,7 +576,10 @@ functions/src/index.ts  # Registrar las rutas
         
         return {
           id: docRef.id,
-          ...data,
+          name: data.name,
+          email: data.email || null,
+          identity_document: data.identity_document || null,
+          extra_data: data.extra_data,
           affinityGroupIds: [],
           account_balances: {},
           created_at: now.toDate(),
@@ -602,7 +655,8 @@ functions/src/index.ts  # Registrar las rutas
         return {
           id: doc.id,
           name: data.name,
-          email: data.email,
+          email: data.email || null,
+          identity_document: data.identity_document || null,
           extra_data: data.extra_data,
           affinityGroupIds: data.affinityGroupIds || [],
           account_balances: data.account_balances || {},
@@ -695,7 +749,9 @@ functions/src/index.ts  # Registrar las rutas
 
 **Criterios de Aceptación:**
 -   [ ] `POST /clients` crea un cliente y retorna `201 Created`
+-   [ ] `POST /clients` retorna `400 Bad Request` si no se proporciona email ni documento de identidad
 -   [ ] `POST /clients` retorna `409 Conflict` si el email ya existe
+-   [ ] `POST /clients` retorna `409 Conflict` si el documento de identidad ya existe
 -   [ ] `GET /clients` retorna lista paginada con `next_cursor`
 -   [ ] `GET /clients/:id` retorna el cliente o `404 Not Found`
 -   [ ] `PUT /clients/:id` actualiza el cliente o `404 Not Found`
@@ -1649,7 +1705,7 @@ web/
     }
     ```
 
-3.  Crea `components/clients/clients-table.tsx` - Tabla con skeleton y acciones (ver HU1 para detalles completos)
+3.  Crea `components/clients/clients-table.tsx` - Tabla con skeleton y acciones (ver HU1 para detalles completos). La tabla debe mostrar columnas para Nombre, Email y Documento de Identidad. El documento de identidad debe mostrarse en formato "Tipo: Número" (ej. "Pasaporte: AB123456") o "-" si no está presente.
 
 4.  Crea `app/dashboard/clients/page.tsx`:
     ```typescript
@@ -1689,10 +1745,14 @@ web/
       }
       
       // Filtrado cliente-side para MVP (ver HU7)
-      const filteredClients = clients.filter(client => 
-        client.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-        client.email.toLowerCase().includes(debouncedSearch.toLowerCase())
-      );
+      // Busca por nombre, email y número de documento de identidad
+      const filteredClients = clients.filter(client => {
+        const search = debouncedSearch.toLowerCase();
+        const matchesName = client.name.toLowerCase().includes(search);
+        const matchesEmail = client.email?.toLowerCase().includes(search) || false;
+        const matchesDocument = client.identity_document?.number?.toLowerCase().includes(search) || false;
+        return matchesName || matchesEmail || matchesDocument;
+      });
       
       const hasNoClients = !loading && clients.length === 0;
       const hasNoResults = !loading && clients.length > 0 && filteredClients.length === 0;
@@ -1785,18 +1845,55 @@ web/
     ```typescript
     'use client';
     
-    import { useForm } from 'react-hook-form';
+    import { useForm, useWatch } from 'react-hook-form';
     import { zodResolver } from '@hookform/resolvers/zod';
     import { z } from 'zod';
     import { Loader2 } from 'lucide-react';
     import { Button } from '@/components/ui/button';
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
+    import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+    
+    // Tipos de documento de identidad válidos
+    const identityDocumentTypes = [
+      { value: 'cedula_identidad', label: 'Cédula de Identidad' },
+      { value: 'pasaporte', label: 'Pasaporte' },
+    ] as const;
     
     const clientFormSchema = z.object({
       name: z.string().min(1, 'El nombre es requerido'),
-      email: z.string().email('Debe ser un email válido'),
-    });
+      email: z.string().email('Debe ser un email válido').optional().or(z.literal('')),
+      identity_document_type: z.enum(['cedula_identidad', 'pasaporte']).optional().or(z.literal('')),
+      identity_document_number: z.string()
+        .regex(/^[a-zA-Z0-9]*$/, 'El número de documento debe ser alfanumérico')
+        .optional()
+        .or(z.literal('')),
+    }).refine(
+      (data) => {
+        // Al menos uno de email o documento de identidad debe estar presente
+        const hasEmail = data.email && data.email.length > 0;
+        const hasDocument = data.identity_document_type && 
+                           data.identity_document_type !== '' && 
+                           data.identity_document_number && 
+                           data.identity_document_number.length > 0;
+        return hasEmail || hasDocument;
+      },
+      {
+        message: 'Debe proporcionar al menos un identificador: email o documento de identidad',
+        // Sin path para indicar que es un error a nivel de formulario
+      }
+    ).refine(
+      (data) => {
+        // Si se proporciona el tipo de documento, el número es obligatorio y viceversa
+        const hasType = data.identity_document_type && data.identity_document_type !== '';
+        const hasNumber = data.identity_document_number && data.identity_document_number.length > 0;
+        return (hasType && hasNumber) || (!hasType && !hasNumber);
+      },
+      {
+        message: 'Debe proporcionar tanto el tipo como el número del documento',
+        path: ['identity_document_number'],
+      }
+    );
     
     type ClientFormData = z.infer<typeof clientFormSchema>;
     
@@ -1804,18 +1901,31 @@ web/
       onSubmit: (data: ClientFormData) => Promise<void>;
       isSubmitting: boolean;
       serverError?: string;
+      serverErrorField?: 'email' | 'identity_document';
+      formError?: string; // Error a nivel de formulario (ej. falta de identificador)
     }
     
-    export function ClientForm({ onSubmit, isSubmitting, serverError }: ClientFormProps) {
-      const { register, handleSubmit, formState: { errors, isValid } } = useForm<ClientFormData>({
+    export function ClientForm({ onSubmit, isSubmitting, serverError, serverErrorField, formError }: ClientFormProps) {
+      const { register, handleSubmit, formState: { errors, isValid }, control, setValue } = useForm<ClientFormData>({
         resolver: zodResolver(clientFormSchema),
-        mode: 'onChange'
+        mode: 'onChange',
+        defaultValues: {
+          name: '',
+          email: '',
+          identity_document_type: '',
+          identity_document_number: '',
+        }
       });
+      
+      const documentType = useWatch({ control, name: 'identity_document_type' });
+      
+      // Obtener error a nivel de formulario de Zod (errores sin path específico)
+      const zodFormError = errors.root?.message;
       
       return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-md">
           <div className="space-y-2">
-            <Label htmlFor="name">Nombre</Label>
+            <Label htmlFor="name">Nombre *</Label>
             <Input
               id="name"
               {...register('name')}
@@ -1832,13 +1942,60 @@ web/
               id="email"
               type="email"
               {...register('email')}
-              aria-invalid={!!errors.email || !!serverError}
+              aria-invalid={!!errors.email || (serverErrorField === 'email' && !!serverError)}
             />
             {errors.email && (
               <p className="text-sm text-red-500">{errors.email.message}</p>
             )}
-            {serverError && (
+            {serverErrorField === 'email' && serverError && (
               <p className="text-sm text-red-500">{serverError}</p>
+            )}
+          </div>
+          
+          <div className="border-t pt-4 space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Proporcione email o documento de identidad (al menos uno es requerido)
+            </p>
+            
+            <div className="space-y-2">
+              <Label htmlFor="identity_document_type">Tipo de Documento</Label>
+              <Select
+                value={documentType || ''}
+                onValueChange={(value) => setValue('identity_document_type', value as 'cedula_identidad' | 'pasaporte' | '', { shouldValidate: true })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccione tipo de documento" />
+                </SelectTrigger>
+                <SelectContent>
+                  {identityDocumentTypes.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="identity_document_number">Número de Documento</Label>
+              <Input
+                id="identity_document_number"
+                {...register('identity_document_number')}
+                aria-invalid={!!errors.identity_document_number || (serverErrorField === 'identity_document' && !!serverError)}
+                disabled={!documentType}
+                placeholder="Ej: AB123456"
+              />
+              {errors.identity_document_number && (
+                <p className="text-sm text-red-500">{errors.identity_document_number.message}</p>
+              )}
+              {serverErrorField === 'identity_document' && serverError && (
+                <p className="text-sm text-red-500">{serverError}</p>
+              )}
+            </div>
+            
+            {/* Mostrar error a nivel de formulario (falta de identificador) */}
+            {zodFormError && (
+              <p className="text-sm text-red-500 bg-red-50 p-2 rounded">{zodFormError}</p>
             )}
           </div>
           
@@ -1864,20 +2021,45 @@ web/
     import { useToast } from '@/components/ui/use-toast';
     import { fetchApi } from '@/lib/api';
     
+    interface ClientFormData {
+      name: string;
+      email?: string;
+      identity_document_type?: string;
+      identity_document_number?: string;
+    }
+    
     export default function NewClientPage() {
       const router = useRouter();
       const { toast } = useToast();
       const [isSubmitting, setIsSubmitting] = useState(false);
       const [serverError, setServerError] = useState<string>();
+      const [serverErrorField, setServerErrorField] = useState<'email' | 'identity_document'>();
       
-      async function handleSubmit(data: { name: string; email: string }) {
+      async function handleSubmit(data: ClientFormData) {
         setIsSubmitting(true);
         setServerError(undefined);
+        setServerErrorField(undefined);
+        
+        // Transformar los datos del formulario al formato de la API
+        const payload: Record<string, unknown> = {
+          name: data.name,
+        };
+        
+        if (data.email && data.email.length > 0) {
+          payload.email = data.email;
+        }
+        
+        if (data.identity_document_type && data.identity_document_number) {
+          payload.identity_document = {
+            type: data.identity_document_type,
+            number: data.identity_document_number,
+          };
+        }
         
         try {
           await fetchApi('/clients', {
             method: 'POST',
-            body: JSON.stringify(data),
+            body: JSON.stringify(payload),
           });
           
           toast({
@@ -1887,8 +2069,12 @@ web/
           
           router.push('/dashboard/clients');
         } catch (error: any) {
-          if (error.message.includes('ya está en uso')) {
+          if (error.message.includes('correo electrónico') || error.message.includes('email')) {
             setServerError('El correo electrónico proporcionado ya está en uso.');
+            setServerErrorField('email');
+          } else if (error.message.includes('documento de identidad') || error.message.includes('identity_document')) {
+            setServerError('El documento de identidad proporcionado ya está registrado.');
+            setServerErrorField('identity_document');
           } else {
             toast({
               title: 'Error',
@@ -1917,6 +2103,7 @@ web/
                 onSubmit={handleSubmit}
                 isSubmitting={isSubmitting}
                 serverError={serverError}
+                serverErrorField={serverErrorField}
               />
             </CardContent>
           </Card>
@@ -1926,10 +2113,13 @@ web/
     ```
 
 **Criterios de Aceptación:**
--   [ ] El formulario valida campos obligatorios (nombre, email)
+-   [ ] El formulario valida campos obligatorios (nombre, al menos un identificador)
+-   [ ] El selector de tipo de documento muestra las opciones "Cédula de Identidad" y "Pasaporte"
+-   [ ] El campo de número de documento se habilita solo si se selecciona un tipo
 -   [ ] El botón Guardar está deshabilitado cuando el formulario es inválido
 -   [ ] El spinner se muestra durante el envío
 -   [ ] Error 409 (email duplicado) se muestra junto al campo email
+-   [ ] Error 409 (documento duplicado) se muestra junto al campo de número de documento
 -   [ ] Tras éxito, redirige a listado y muestra toast
 
 ---
@@ -2289,7 +2479,7 @@ functions/src/__tests__/
       const mockFirestore = admin.firestore();
       
       describe('create', () => {
-        it('should create a new client successfully', async () => {
+        it('should create a new client with email successfully', async () => {
           // Mock: email no existe
           (mockFirestore.collection('clients').where as jest.Mock)
             .mockReturnValue({
@@ -2314,6 +2504,39 @@ functions/src/__tests__/
           expect(mockDocRef.set).toHaveBeenCalled();
         });
         
+        it('should create a new client with identity document successfully', async () => {
+          // Mock: documento no existe
+          (mockFirestore.collection('clients').where as jest.Mock)
+            .mockReturnValue({
+              where: jest.fn().mockReturnValue({
+                limit: jest.fn().mockReturnValue({
+                  get: jest.fn().mockResolvedValue({ empty: true })
+                })
+              })
+            });
+          
+          // Mock: crear documento
+          const mockDocRef = { id: 'new-client-id', set: jest.fn() };
+          (mockFirestore.collection('clients').doc as jest.Mock)
+            .mockReturnValue(mockDocRef);
+          
+          const result = await clientService.create({
+            name: 'Test Client',
+            identity_document: {
+              type: 'cedula_identidad',
+              number: 'ABC123456'
+            }
+          });
+          
+          expect(result.id).toBe('new-client-id');
+          expect(result.name).toBe('Test Client');
+          expect(result.identity_document).toEqual({
+            type: 'cedula_identidad',
+            number: 'ABC123456'
+          });
+          expect(mockDocRef.set).toHaveBeenCalled();
+        });
+        
         it('should throw ConflictError when email already exists', async () => {
           // Mock: email existe
           (mockFirestore.collection('clients').where as jest.Mock)
@@ -2327,6 +2550,28 @@ functions/src/__tests__/
             clientService.create({ name: 'Test', email: 'existing@example.com' })
           ).rejects.toThrow('ya está en uso');
         });
+        
+        it('should throw ConflictError when identity document already exists', async () => {
+          // Mock: documento existe
+          (mockFirestore.collection('clients').where as jest.Mock)
+            .mockReturnValue({
+              where: jest.fn().mockReturnValue({
+                limit: jest.fn().mockReturnValue({
+                  get: jest.fn().mockResolvedValue({ empty: false })
+                })
+              })
+            });
+          
+          await expect(
+            clientService.create({ 
+              name: 'Test', 
+              identity_document: {
+                type: 'pasaporte',
+                number: 'EXISTING123'
+              }
+            })
+          ).rejects.toThrow('ya está registrado');
+        });
       });
       
       describe('getById', () => {
@@ -2334,6 +2579,7 @@ functions/src/__tests__/
           const mockData = {
             name: 'Test',
             email: 'test@example.com',
+            identity_document: null,
             affinityGroupIds: [],
             account_balances: {},
             created_at: { toDate: () => new Date() },
@@ -2475,14 +2721,16 @@ Antes de considerar el MVP como completo, verifica:
 -   [ ] El middleware de autenticación funciona correctamente
 -   [ ] El formato de errores es consistente con `API-DESIGN.md`
 -   [ ] Las operaciones de credit/debit usan transacciones atómicas
+-   [ ] La validación de identificadores (email o documento de identidad) funciona correctamente
+-   [ ] La validación de unicidad de email y documento de identidad funciona
 -   [ ] La cobertura de pruebas es superior al 80%
 -   [ ] El código compila sin errores de TypeScript
 
 **Frontend:**
--   [ ] El listado de clientes funciona (HU1)
--   [ ] La creación de clientes funciona (HU2)
+-   [ ] El listado de clientes funciona y muestra email y documento de identidad (HU1)
+-   [ ] La creación de clientes funciona con email y/o documento de identidad (HU2)
 -   [ ] La eliminación de clientes funciona con confirmación (HU3)
--   [ ] La búsqueda de clientes funciona (HU7)
+-   [ ] La búsqueda de clientes funciona por nombre, email y documento (HU7)
 -   [ ] Todos los estados (carga, vacío, error) están implementados
 -   [ ] La UI sigue las guías de `UI-UX-GUIDELINES.md`
 

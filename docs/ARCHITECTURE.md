@@ -71,12 +71,21 @@ Abandonamos el modelo relacional en favor de una estructura de colecciones y sub
 -   **`clients` (Colección Raíz)**
     -   Documento: `clientId`
         -   `name: string`
-        -   `email: string` (se debe garantizar unicidad a nivel de servicio)
+        -   `email: string | null` (opcional, se debe garantizar unicidad a nivel de servicio si existe)
+        -   `identity_document: map | null` (opcional, estructura de documento de identidad)
+            -   `type: string` (tipo de documento: "cedula_identidad", "pasaporte")
+            -   `number: string` (número alfanumérico del documento)
         -   `extra_data: map`
         -   `created_at: timestamp`
         -   `updated_at: timestamp`
         -   `affinityGroupIds: array<string>` (Array con los IDs de los grupos a los que pertenece)
         -   **`account_balances: map` (Campo Desnormalizado para Lecturas Rápidas)**
+
+> **Nota sobre Identificadores de Cliente:**
+> - Al menos uno de los identificadores (`email` o `identity_document`) debe estar presente.
+> - Si `email` está presente, debe ser único en toda la colección.
+> - Si `identity_document` está presente, la combinación de `type` + `number` debe ser única.
+> - Se recomienda crear índices compuestos para búsquedas eficientes por `identity_document.type` y `identity_document.number`.
 
 -   **`affinityGroups` (Colección Raíz)**
     -   Documento: `groupId`
