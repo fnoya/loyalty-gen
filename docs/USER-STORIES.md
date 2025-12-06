@@ -220,7 +220,7 @@ Este documento contiene las Historias de Usuario para la aplicación de administ
 *   **Para** poder encontrar un cliente específico por su nombre, email o documento de identidad de forma inmediata.
 
 **Referencias Técnicas:**
--   **Estrategia MVP:** Búsqueda cliente-side sobre los datos cargados, o uso de queries `startsWith` de Firestore (ver `ARCHITECTURE.md` sección 3.1)
+-   **Estrategia MVP:** Búsqueda usando queries `startsWith` de Firestore (ver `ARCHITECTURE.md` sección 3.1 y sobre todo `FIRESTORE-SEARCH-SOLUTION.md`)
 -   **Componente UI:** `Input` de shadcn/ui con ícono de búsqueda (usar `lucide-react`)
 -   **Archivo a Crear:** `components/clients/client-search.tsx`
 
