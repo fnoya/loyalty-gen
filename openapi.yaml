@@ -389,12 +389,32 @@ paths:
 components:
   schemas:
     # Entities
+    IdentityDocumentType:
+      type: string
+      enum: [cedula_identidad, pasaporte]
+      description: "Tipo de documento de identidad. Para el MVP: cedula_identidad (Cédula de Identidad) o pasaporte (Pasaporte)."
+    IdentityDocument:
+      type: object
+      description: "Documento de identidad del cliente."
+      required: [type, number]
+      properties:
+        type:
+          $ref: '#/components/schemas/IdentityDocumentType'
+        number:
+          type: string
+          description: "Número del documento de identidad (alfanumérico)."
+          pattern: "^[a-zA-Z0-9]+$"
     Client:
       type: object
       properties:
         id: { type: string, description: "ID único del cliente en Firestore." }
         name: { type: string }
-        email: { type: string, format: email }
+        email: { type: string, format: email, nullable: true, description: "Email del cliente (opcional si se proporciona documento de identidad)." }
+        identity_document:
+          allOf:
+            - $ref: '#/components/schemas/IdentityDocument'
+          nullable: true
+          description: "Documento de identidad del cliente (opcional si se proporciona email)."
         extra_data: { type: object, additionalProperties: true }
         affinityGroupIds: { type: array, items: { type: string } }
         account_balances: { type: object, additionalProperties: { type: number }, description: "Mapa desnormalizado de saldos." }
@@ -427,10 +447,15 @@ components:
     # Request Bodies
     CreateClientRequest:
       type: object
-      required: [name, email]
+      description: "Petición para crear un nuevo cliente. Al menos uno de 'email' o 'identity_document' debe estar presente."
+      required: [name]
       properties:
         name: { type: string }
-        email: { type: string, format: email }
+        email: { type: string, format: email, description: "Email del cliente (opcional si se proporciona documento de identidad)." }
+        identity_document:
+          allOf:
+            - $ref: '#/components/schemas/IdentityDocument'
+          description: "Documento de identidad del cliente (opcional si se proporciona email)."
         extra_data: { type: object, additionalProperties: true }
     UpdateClientRequest:
       type: object

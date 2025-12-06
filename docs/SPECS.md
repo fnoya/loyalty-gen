@@ -15,9 +15,18 @@ El diseño y comportamiento de los endpoints deben seguir las convenciones estab
 ### Módulo de Clientes (`/clients`)
 
 -   **`POST /clients`**
-    -   **Descripción:** Crea un nuevo cliente.
+    -   **Descripción:** Crea un nuevo cliente. Requiere al menos uno de los identificadores: email o documento de identidad.
+    -   **Request Body:**
+        -   `name: string` (obligatorio)
+        -   `email: string` (opcional, debe ser único si se proporciona)
+        -   `identity_document: object` (opcional, debe ser único si se proporciona)
+            -   `type: string` (obligatorio si identity_document está presente, valores: "cedula_identidad", "pasaporte")
+            -   `number: string` (obligatorio si identity_document está presente, alfanumérico)
+        -   `extra_data: object` (opcional)
+    -   **Validación:** Al menos uno de `email` o `identity_document` debe estar presente.
     -   **Respuesta Exitosa (201 Created):** Devuelve el objeto del cliente creado.
-    -   **Respuesta de Error (409 Conflict):** Si el email ya existe.
+    -   **Respuesta de Error (400 Bad Request):** Si no se proporciona ningún identificador (ni email ni documento de identidad).
+    -   **Respuesta de Error (409 Conflict):** Si el email o el documento de identidad ya existe.
 
 -   **`GET /clients`**
     -   **Descripción:** Lista los clientes usando paginación basada en cursor para un rendimiento óptimo.
@@ -30,7 +39,10 @@ El diseño y comportamiento de los endpoints deben seguir las convenciones estab
     -   **Respuesta de Error (404 Not Found):** Si el cliente no existe.
 
 -   **`PUT /clients/{client_id}`**
-    -   **Descripción:** Actualiza los datos de un cliente.
+    -   **Descripción:** Actualiza los datos de un cliente. No se permite modificar el email ni el documento de identidad una vez creados.
+    -   **Request Body:**
+        -   `name: string` (opcional)
+        -   `extra_data: object` (opcional)
     -   **Respuesta Exitosa (200 OK):** Devuelve el objeto del cliente actualizado.
 
 -   **`DELETE /clients/{client_id}`**

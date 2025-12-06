@@ -71,3 +71,34 @@ Este documento sirve como un registro de las decisiones clave de arquitectura y 
         -   **Fase 2 (Post-MVP):** La replicación de datos a **Google BigQuery** es la estrategia definida para cuando surja la necesidad de realizar análisis de negocio complejos.
 -   **Consecuencias:** Esta decisión de faseado permite un lanzamiento más rápido y económico, al tiempo que se tiene un plan de evolución claro para la arquitectura.
 -   *(Referencia Completa: `ARCHITECTURE.md`)*
+
+---
+
+## 7. Identificación de Clientes: Email y Documento de Identidad
+
+-   **Fecha:** 2025-12-06
+-   **Decisión:** Se implementa un sistema de identificación dual para clientes que permite usar email **o** documento de identidad como identificadores únicos.
+-   **Contexto:** Algunos clientes pueden no tener una dirección de correo electrónico, pero sí un documento de identidad oficial. Para ampliar la cobertura del sistema y permitir el registro de todos los clientes, es necesario soportar múltiples métodos de identificación.
+-   **Justificación (Rationale):**
+    1.  **Flexibilidad:** Permitir que los clientes se identifiquen con email, documento de identidad, o ambos, aumenta la accesibilidad del sistema.
+    2.  **Unicidad:** Tanto el email como la combinación de tipo y número de documento de identidad deben ser únicos en el sistema para evitar duplicados.
+    3.  **Validación Extensible:** El diseño contempla un sistema de validación de documentos por tipo que puede ser implementado y extendido posteriormente. Para el MVP, solo se valida el formato básico.
+-   **Tipos de Documento (MVP):**
+    -   `cedula_identidad`: Cédula de Identidad
+    -   `pasaporte`: Pasaporte
+-   **Tipos de Documento (Futura Extensión):**
+    -   `dni`: Documento Nacional de Identidad
+    -   `licencia_conducir`: Licencia de Conducir
+    -   `otro`: Otros documentos
+-   **Estructura del Documento de Identidad:**
+    ```typescript
+    identity_document: {
+      type: "cedula_identidad" | "pasaporte",
+      number: string  // alfanumérico
+    }
+    ```
+-   **Consecuencias:**
+    -   Se debe garantizar unicidad tanto para el email (si existe) como para la combinación `identity_document.type + identity_document.number` (si existe).
+    -   La API debe validar que al menos uno de los identificadores (email o identity_document) esté presente en la creación de un cliente.
+    -   Los algoritmos de validación específicos por tipo de documento se implementarán en fases posteriores.
+-   *(Referencia: `openapi.yaml`, `ARCHITECTURE.md`)*
