@@ -312,3 +312,110 @@ Este documento contiene las Historias de Usuario para la aplicación de administ
 -   [ ] Los grupos ya asignados no aparecen en la lista
 -   [ ] La asignación funciona y actualiza la UI
 -   [ ] La desasignación pide confirmación y funciona
+
+---
+
+### **Épica: Auditoría y Trazabilidad**
+
+#### HU10: Visualización de Auditoría de un Cliente
+*   **Como** administrador,
+*   **Quiero** ver el historial de auditoría de un cliente desde su página de detalle,
+*   **Para** poder rastrear todas las operaciones realizadas sobre el cliente, sus cuentas y transacciones.
+
+**Referencias Técnicas:**
+-   **Endpoint API:** `GET /clients/{client_id}/audit-logs` (ver `openapi.yaml`)
+-   **Ruta Frontend:** `/dashboard/clients/[id]` (sección de auditoría)
+-   **Archivos a Crear:**
+    -   `components/audit/audit-logs-list.tsx` - Componente para listar registros de auditoría
+    -   `components/audit/audit-log-item.tsx` - Componente para mostrar un registro de auditoría individual
+    -   `components/audit/audit-log-dialog.tsx` - Diálogo para ver detalles completos de un registro
+
+**Criterios de Aceptación:**
+1.  En la página de detalle del cliente (`/dashboard/clients/[id]`), debe existir una sección o pestaña "Historial de Auditoría".
+2.  La sección debe mostrar una lista cronológica (más reciente primero) de todos los registros de auditoría relacionados con el cliente.
+3.  Cada registro debe mostrar:
+    -   Tipo de acción (ej. "Cliente Creado", "Puntos Acreditados", "Cliente Añadido a Grupo")
+    -   Fecha y hora de la operación
+    -   Email del usuario que realizó la acción (actor)
+    -   Descripción breve del recurso afectado
+4.  La lista debe usar paginación con scroll infinito o botón "Cargar más".
+5.  Se debe poder filtrar por tipo de acción usando un `Select` de shadcn/ui.
+6.  Al hacer clic en un registro, se debe abrir un `Dialog` con los detalles completos:
+    -   Estado anterior (si aplica)
+    -   Estado posterior (si aplica)
+    -   Metadatos adicionales (IP, user agent, descripción)
+7.  Mientras cargan los datos, mostrar `Skeleton`.
+
+**Criterios de Verificación (para el agente):**
+-   [ ] La sección de auditoría se muestra en la página de detalle del cliente
+-   [ ] Los registros se ordenan cronológicamente (más reciente primero)
+-   [ ] El filtro por tipo de acción funciona correctamente
+-   [ ] El diálogo de detalles muestra la información completa
+-   [ ] La paginación funciona correctamente
+-   [ ] Los skeletons se muestran durante la carga
+
+#### HU11: Visualización de Auditoría de Transacciones
+*   **Como** administrador,
+*   **Quiero** acceder a la información de auditoría de cada transacción de crédito o débito,
+*   **Para** poder verificar quién realizó la operación y los detalles exactos del movimiento.
+
+**Referencias Técnicas:**
+-   **Endpoints API:**
+    -   `GET /clients/{client_id}/accounts/{account_id}/audit-logs`
+    -   `GET /clients/{client_id}/accounts/{account_id}/transactions/{transaction_id}/audit-logs`
+-   **Ruta Frontend:** `/dashboard/clients/[id]` (sección de cuentas)
+-   **Archivos a Modificar:**
+    -   `components/clients/transactions-list.tsx` - Añadir enlace a auditoría
+
+**Criterios de Aceptación:**
+1.  En la lista de transacciones de una cuenta, cada transacción debe tener un botón o ícono "Ver Auditoría" (usar ícono `FileSearch` de lucide-react).
+2.  Al hacer clic en "Ver Auditoría", se debe abrir un `Dialog` mostrando el registro de auditoría asociado con:
+    -   Tipo de operación (crédito/débito)
+    -   Monto de la transacción
+    -   Balance anterior y posterior
+    -   Usuario que realizó la operación
+    -   Fecha y hora exacta
+    -   Metadatos (IP, user agent si está disponible)
+3.  Si no existe registro de auditoría (transacciones históricas anteriores a la implementación), mostrar un mensaje informativo.
+4.  En la página de detalle de la cuenta, debe existir una pestaña o sección "Auditoría de Cuenta" que muestre todos los registros de auditoría de la cuenta.
+
+**Criterios de Verificación (para el agente):**
+-   [ ] El botón "Ver Auditoría" aparece en cada transacción
+-   [ ] El diálogo muestra la información de auditoría completa
+-   [ ] Se muestra mensaje apropiado si no hay registro de auditoría
+-   [ ] La sección "Auditoría de Cuenta" funciona correctamente
+
+#### HU12: Visualización Global de Auditoría
+*   **Como** administrador,
+*   **Quiero** acceder a un panel de auditoría global,
+*   **Para** poder revisar todas las operaciones realizadas en el sistema y detectar actividades sospechosas.
+
+**Referencias Técnicas:**
+-   **Endpoint API:** `GET /audit-logs` (ver `openapi.yaml`)
+-   **Ruta Frontend:** `/dashboard/audit`
+-   **Archivos a Crear:**
+    -   `app/dashboard/audit/page.tsx` - Página del panel de auditoría
+    -   `components/audit/audit-filters.tsx` - Componente de filtros avanzados
+
+**Criterios de Aceptación:**
+1.  Debe existir una entrada "Auditoría" en el sidebar que navegue a `/dashboard/audit`.
+2.  La página debe mostrar una tabla con todos los registros de auditoría del sistema.
+3.  La tabla debe mostrar las columnas: "Fecha", "Acción", "Recurso", "Actor", "Cliente Relacionado".
+4.  La página debe incluir filtros avanzados:
+    -   Rango de fechas (usar `DateRangePicker` de shadcn/ui)
+    -   Tipo de acción (Select con todas las acciones posibles)
+    -   Búsqueda por ID de cliente
+    -   Búsqueda por ID de cuenta
+5.  La tabla debe soportar paginación basada en cursor.
+6.  Al hacer clic en una fila, se debe abrir un `Dialog` con los detalles completos del registro.
+7.  Los filtros se aplican con debounce de 500ms después de cualquier cambio.
+8.  Debe haber un botón "Limpiar filtros" para resetear todos los controles.
+
+**Criterios de Verificación (para el agente):**
+-   [ ] La página de auditoría global es accesible desde el sidebar
+-   [ ] La tabla muestra todos los registros con las columnas correctas
+-   [ ] Los filtros funcionan correctamente (fechas, tipo, cliente, cuenta)
+-   [ ] El debounce funciona en los filtros
+-   [ ] El botón "Limpiar filtros" resetea todos los controles
+-   [ ] La paginación funciona correctamente
+-   [ ] El diálogo de detalles se abre al hacer clic en una fila

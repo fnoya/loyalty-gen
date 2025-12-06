@@ -104,3 +104,71 @@ El uso de los verbos HTTP debe seguir el estándar RESTful.
 | `PUT`     | Reemplazar/Actualizar un recurso existente de forma completa. |
 | `PATCH`   | Actualizar parcialmente un recurso existente (aunque se prefiere `PUT` para simplicidad en este proyecto). |
 | `DELETE`  | Eliminar un recurso.                    |
+
+## 7. Auditoría y Trazabilidad
+
+Todas las operaciones que modifican datos deben generar registros de auditoría para garantizar la trazabilidad completa del sistema.
+
+### 7.1. Operaciones Auditadas
+
+| Operación | Acción de Auditoría | Prioridad |
+| :-------- | :------------------ | :-------- |
+| Crear cliente | `CLIENT_CREATED` | Alta |
+| Actualizar cliente | `CLIENT_UPDATED` | Alta |
+| Eliminar cliente | `CLIENT_DELETED` | Alta |
+| Crear cuenta de lealtad | `ACCOUNT_CREATED` | Alta |
+| Acreditar puntos | `POINTS_CREDITED` | **Crítica** |
+| Debitar puntos | `POINTS_DEBITED` | **Crítica** |
+| Crear grupo | `GROUP_CREATED` | Media |
+| Añadir cliente a grupo | `CLIENT_ADDED_TO_GROUP` | Media |
+| Remover cliente de grupo | `CLIENT_REMOVED_FROM_GROUP` | Media |
+
+### 7.2. Estructura del Registro de Auditoría
+
+Cada registro de auditoría debe incluir:
+
+```json
+{
+  "id": "audit-log-id",
+  "action": "POINTS_CREDITED",
+  "resource_type": "transaction",
+  "resource_id": "transaction-id",
+  "client_id": "client-id",
+  "account_id": "account-id",
+  "transaction_id": "transaction-id",
+  "actor": {
+    "uid": "firebase-auth-uid",
+    "email": "user@example.com"
+  },
+  "changes": {
+    "before": { "points": 100 },
+    "after": { "points": 150 }
+  },
+  "metadata": {
+    "ip_address": "192.168.1.1",
+    "user_agent": "Mozilla/5.0...",
+    "description": "Bonus por compra"
+  },
+  "timestamp": "2024-01-15T10:30:00Z"
+}
+```
+
+### 7.3. Reglas Críticas de Auditoría
+
+1.  **Atomicidad en Operaciones Financieras:** Las operaciones de crédito y débito **DEBEN** crear el registro de auditoría dentro de la misma transacción atómica de Firestore que actualiza el balance. Esto garantiza que si la operación falla, no se cree un registro de auditoría huérfano, y viceversa.
+
+2.  **No Modificabilidad:** Los registros de auditoría son inmutables. Una vez creados, no pueden ser modificados ni eliminados.
+
+3.  **Retención:** Los registros deben conservarse por un mínimo de 5 años para cumplir con requisitos regulatorios.
+
+4.  **Información del Actor:** Todos los registros deben incluir la información del usuario que realizó la acción (Firebase Auth UID y email).
+
+### 7.4. Endpoints de Auditoría
+
+Los registros de auditoría solo pueden consultarse (no crearse, modificarse ni eliminarse) a través de la API:
+
+-   `GET /audit-logs` - Listar todos los registros con filtros
+-   `GET /audit-logs/{id}` - Obtener un registro específico
+-   `GET /clients/{client_id}/audit-logs` - Auditoría de un cliente
+-   `GET /clients/{client_id}/accounts/{account_id}/audit-logs` - Auditoría de una cuenta
+-   `GET .../transactions/{transaction_id}/audit-logs` - Auditoría de una transacción

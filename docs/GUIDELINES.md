@@ -73,3 +73,76 @@ Para mitigar los riesgos de seguridad provenientes de paquetes `npm`:
 -   **Auditoría de Vulnerabilidades:** Es obligatorio integrar una herramienta de escaneo de vulnerabilidades en el pipeline de CI/CD.
 -   **Herramientas:** Utilizar `npm audit --audit-level=high` o una herramienta externa como **Snyk**.
 -   **Política:** El build (la construcción del software) debe fallar si se detectan vulnerabilidades de severidad `high` o `critical` que no hayan sido resueltas o explícitamente ignoradas con justificación.
+
+## 11. Sistema de Auditoría
+
+El sistema de auditoría es crítico para garantizar la trazabilidad de todas las operaciones que afectan datos sensibles del negocio.
+
+### 11.1. Principios de Auditoría
+
+-   **Completitud:** Todas las operaciones de escritura (crear, actualizar, eliminar) deben generar un registro de auditoría.
+-   **Inmutabilidad:** Los registros de auditoría no pueden ser modificados ni eliminados una vez creados.
+-   **Atomicidad:** Para operaciones financieras (crédito/débito), el registro de auditoría debe crearse dentro de la misma transacción de Firestore.
+-   **Trazabilidad:** Cada registro debe identificar claramente quién realizó la acción, cuándo y qué cambios se realizaron.
+
+### 11.2. Datos a Incluir en Auditoría
+
+**Obligatorios:**
+-   `action`: Tipo de acción (CLIENT_CREATED, POINTS_CREDITED, etc.)
+-   `resource_type`: Tipo de recurso afectado
+-   `resource_id`: ID del recurso afectado
+-   `actor.uid`: ID del usuario que realizó la acción
+-   `timestamp`: Momento exacto de la operación
+
+**Recomendados (cuando estén disponibles):**
+-   `actor.email`: Email del actor
+-   `changes.before`: Estado anterior del recurso
+-   `changes.after`: Estado posterior del recurso
+-   `metadata.ip_address`: IP del cliente
+-   `metadata.user_agent`: User agent del cliente
+-   `metadata.description`: Descripción de la operación
+
+### 11.3. Implementación
+
+> **Nota sobre resourceId vs clientId:**
+> - `resourceId` siempre contiene el ID del recurso principal afectado por la operación
+> - `clientId`, `accountId`, `groupId`, `transactionId` son campos de referencia que facilitan las consultas y filtros
+> - Para operaciones sobre clientes, `resourceId` y `clientId` tendrán el mismo valor
+> - Para operaciones sobre transacciones, `resourceId` será el ID de la transacción, pero `clientId` y `accountId` permitirán buscar todos los registros de un cliente/cuenta
+
+```typescript
+// Para operaciones no financieras (después de la operación principal)
+await auditService.createAuditLog({
+  action: 'CLIENT_CREATED',
+  resourceType: 'client',
+  resourceId: clientId,  // ID del recurso creado
+  clientId: clientId,    // Referencia para búsquedas por cliente
+  actor: { uid: req.user.uid, email: req.user.email },
+  changes: { after: clientData },
+  metadata: { ip_address: req.ip, user_agent: req.get('User-Agent') }
+});
+
+// Para operaciones financieras (DENTRO de la transacción)
+await db.runTransaction(async (transaction) => {
+  // ... actualizar balance ...
+  
+  // CRÍTICO: Crear auditoría en la misma transacción
+  auditService.createAuditLogInTransaction(transaction, {
+    action: 'POINTS_CREDITED',
+    resourceType: 'transaction',
+    resourceId: transactionId,
+    clientId,
+    accountId,
+    transactionId,
+    actor: { uid: req.user.uid, email: req.user.email },
+    changes: { before: { points: oldBalance }, after: { points: newBalance } },
+    metadata: { description: data.description }
+  });
+});
+```
+
+### 11.4. Política de Retención
+
+-   Los registros de auditoría deben conservarse por un mínimo de **5 años**.
+-   Después del período de retención activa, los registros pueden archivarse a BigQuery para análisis histórico.
+-   La eliminación de registros archivados debe seguir las políticas de cumplimiento regulatorio aplicables.

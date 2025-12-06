@@ -17,6 +17,8 @@ tags:
     description: Gestión de grupos de afinidad y membresías.
   - name: Loyalty Accounts
     description: Gestión de cuentas de lealtad, puntos y transacciones.
+  - name: Audit Logs
+    description: Consulta de registros de auditoría para trazabilidad de operaciones.
 
 security:
   - BearerAuth: []
@@ -383,6 +385,205 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  # --------------------
+  # Audit Trail Endpoints
+  # --------------------
+  /audit-logs:
+    get:
+      tags: [Audit Logs]
+      summary: Listar Registros de Auditoría
+      description: |
+        Obtiene una lista paginada de registros de auditoría. 
+        Se pueden aplicar filtros por cliente, cuenta, tipo de acción y rango de fechas.
+      parameters:
+        - name: limit
+          in: query
+          description: Número máximo de registros a devolver.
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+        - name: next_cursor
+          in: query
+          description: Cursor para obtener la siguiente página de resultados.
+          schema:
+            type: string
+        - name: client_id
+          in: query
+          description: Filtrar por ID del cliente.
+          schema:
+            type: string
+        - name: account_id
+          in: query
+          description: Filtrar por ID de la cuenta de lealtad.
+          schema:
+            type: string
+        - name: action
+          in: query
+          description: Filtrar por tipo de acción.
+          schema:
+            $ref: '#/components/schemas/AuditAction'
+        - name: from_date
+          in: query
+          description: Fecha de inicio del rango (ISO 8601).
+          schema:
+            type: string
+            format: date-time
+        - name: to_date
+          in: query
+          description: Fecha de fin del rango (ISO 8601).
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Una lista paginada de registros de auditoría.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditLog'
+                  paging:
+                    $ref: '#/components/schemas/Paging'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /audit-logs/{audit_log_id}:
+    get:
+      tags: [Audit Logs]
+      summary: Obtener un Registro de Auditoría
+      description: Obtiene los detalles completos de un registro de auditoría específico.
+      parameters:
+        - $ref: '#/components/parameters/AuditLogId'
+      responses:
+        '200':
+          description: Detalle del registro de auditoría.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLog'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /clients/{client_id}/audit-logs:
+    get:
+      tags: [Audit Logs]
+      summary: Listar Auditoría de un Cliente
+      description: |
+        Obtiene todos los registros de auditoría relacionados con un cliente específico,
+        incluyendo la creación/modificación del cliente, sus cuentas y transacciones.
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+        - name: limit
+          in: query
+          description: Número máximo de registros a devolver.
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+        - name: next_cursor
+          in: query
+          description: Cursor para obtener la siguiente página de resultados.
+          schema:
+            type: string
+        - name: action
+          in: query
+          description: Filtrar por tipo de acción.
+          schema:
+            $ref: '#/components/schemas/AuditAction'
+      responses:
+        '200':
+          description: Una lista paginada de registros de auditoría del cliente.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditLog'
+                  paging:
+                    $ref: '#/components/schemas/Paging'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /clients/{client_id}/accounts/{account_id}/audit-logs:
+    get:
+      tags: [Audit Logs]
+      summary: Listar Auditoría de una Cuenta de Lealtad
+      description: |
+        Obtiene todos los registros de auditoría relacionados con una cuenta de lealtad específica,
+        incluyendo la creación de la cuenta y todas las transacciones de crédito/débito.
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+        - $ref: '#/components/parameters/AccountId'
+        - name: limit
+          in: query
+          description: Número máximo de registros a devolver.
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+        - name: next_cursor
+          in: query
+          description: Cursor para obtener la siguiente página de resultados.
+          schema:
+            type: string
+        - name: action
+          in: query
+          description: Filtrar por tipo de acción.
+          schema:
+            $ref: '#/components/schemas/AuditAction'
+      responses:
+        '200':
+          description: Una lista paginada de registros de auditoría de la cuenta.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditLog'
+                  paging:
+                    $ref: '#/components/schemas/Paging'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /clients/{client_id}/accounts/{account_id}/transactions/{transaction_id}/audit-logs:
+    get:
+      tags: [Audit Logs]
+      summary: Obtener Auditoría de una Transacción
+      description: |
+        Obtiene el registro de auditoría asociado a una transacción específica de crédito o débito.
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+        - $ref: '#/components/parameters/AccountId'
+        - $ref: '#/components/parameters/TransactionId'
+      responses:
+        '200':
+          description: El registro de auditoría de la transacción.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLog'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
 # --------------------
 # Reusable Components
 # --------------------
@@ -442,6 +643,74 @@ components:
         amount: { type: number, description: "Siempre positivo." }
         description: { type: string }
         timestamp: { type: string, format: date-time }
+    
+    # Audit Trail Entities
+    AuditAction:
+      type: string
+      enum:
+        - CLIENT_CREATED
+        - CLIENT_UPDATED
+        - CLIENT_DELETED
+        - ACCOUNT_CREATED
+        - POINTS_CREDITED
+        - POINTS_DEBITED
+        - GROUP_CREATED
+        - CLIENT_ADDED_TO_GROUP
+        - CLIENT_REMOVED_FROM_GROUP
+      description: "Tipo de acción auditada."
+    AuditResourceType:
+      type: string
+      enum: [client, account, transaction, group]
+      description: "Tipo de recurso afectado por la acción."
+    AuditActor:
+      type: object
+      description: "Información del usuario que realizó la acción."
+      properties:
+        uid: { type: string, description: "ID del usuario autenticado (Firebase Auth UID)." }
+        email: { type: string, format: email, nullable: true, description: "Email del actor (para referencia histórica)." }
+    AuditChanges:
+      type: object
+      description: "Detalle de los cambios realizados en una operación de actualización."
+      properties:
+        before:
+          type: object
+          additionalProperties: true
+          nullable: true
+          description: "Estado anterior del recurso (campos relevantes)."
+        after:
+          type: object
+          additionalProperties: true
+          nullable: true
+          description: "Estado posterior del recurso (campos relevantes)."
+    AuditMetadata:
+      type: object
+      description: "Información adicional de contexto de la operación."
+      properties:
+        ip_address: { type: string, nullable: true, description: "Dirección IP del cliente." }
+        user_agent: { type: string, nullable: true, description: "User agent del cliente." }
+        description: { type: string, nullable: true, description: "Descripción adicional de la operación." }
+    AuditLog:
+      type: object
+      description: "Registro de auditoría de una operación en el sistema."
+      properties:
+        id: { type: string, description: "ID único del registro de auditoría." }
+        action:
+          $ref: '#/components/schemas/AuditAction'
+        resource_type:
+          $ref: '#/components/schemas/AuditResourceType'
+        resource_id: { type: string, description: "ID del recurso principal afectado." }
+        client_id: { type: string, nullable: true, description: "ID del cliente relacionado." }
+        account_id: { type: string, nullable: true, description: "ID de la cuenta de lealtad relacionada." }
+        group_id: { type: string, nullable: true, description: "ID del grupo de afinidad relacionado." }
+        transaction_id: { type: string, nullable: true, description: "ID de la transacción relacionada (solo para crédito/débito)." }
+        actor:
+          $ref: '#/components/schemas/AuditActor'
+        changes:
+          $ref: '#/components/schemas/AuditChanges'
+          nullable: true
+        metadata:
+          $ref: '#/components/schemas/AuditMetadata'
+        timestamp: { type: string, format: date-time, description: "Momento exacto de la operación." }
     
     # Request Bodies
     CreateClientRequest:
@@ -530,6 +799,18 @@ components:
       in: path
       required: true
       description: ID de la cuenta de lealtad.
+      schema: { type: string }
+    TransactionId:
+      name: transaction_id
+      in: path
+      required: true
+      description: ID de la transacción.
+      schema: { type: string }
+    AuditLogId:
+      name: audit_log_id
+      in: path
+      required: true
+      description: ID del registro de auditoría.
       schema: { type: string }
 
   responses:
