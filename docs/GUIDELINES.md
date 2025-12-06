@@ -125,11 +125,18 @@ Para más detalles sobre la estrategia de búsqueda y las limitaciones de Firest
 
 Para prevenir la fuga de información sensible, se establecen las siguientes reglas de logging:
 
--   **NO registrar** Información Personal Identificable (PII) de los clientes, como `email`, `firstName`, `secondName`, `firstSurname`, `secondSurname`, `phoneNumbers`, `identity_document.number`, o contenido de `extra_data`.
+-   **NO registrar** Información Personal Identificable (PII) de los clientes, como:
+    -   `email`
+    -   `name` (estructura completa de nombres y apellidos)
+    -   `identity_document` (número y tipo)
+    -   `phones` (números telefónicos completos)
+    -   `addresses` (direcciones físicas completas)
+    -   Contenido de `extra_data` (puede contener información sensible)
 -   **NO registrar** información sensible de autenticación, como tokens, encabezados `Authorization` o claves de API.
 -   En producción, los logs de errores no deben incluir el `stack trace` completo, a menos que se envíen a un sistema de logging seguro con acceso restringido (ej. Google Cloud's operations suite).
 -   **SÍ registrar** eventos de seguridad relevantes, como intentos de acceso fallidos, operaciones de eliminación o cambios de permisos.
--   **SÍ registrar** identificadores de recursos (IDs) para trazabilidad, pero nunca datos personales directos.
+-   **SÍ registrar** identificadores de recursos (`client_id`, `account_id`, `transaction_id`) para trazabilidad sin exponer PII.
+-   **Excepción:** Los registros de auditoría en la colección `auditLogs` de Firestore SÍ pueden incluir PII en los campos `changes.before` y `changes.after`, pero estos registros deben tener permisos de acceso extremadamente restrictivos.
 
 ## 10. Gestión de Dependencias de Terceros
 

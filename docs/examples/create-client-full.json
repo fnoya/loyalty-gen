@@ -1,0 +1,55 @@
+{
+  "name": {
+    "firstName": "Juan",
+    "secondName": "Carlos",
+    "firstLastName": "Pérez",
+    "secondLastName": "González"
+  },
+  "email": "juan.perez@example.com",
+  "identity_document": {
+    "type": "cedula_identidad",
+    "number": "12345678"
+  },
+  "phones": [
+    {
+      "type": "mobile",
+      "number": "+598 99 123 456",
+      "isPrimary": true
+    },
+    {
+      "type": "work",
+      "number": "+598 2 123 4567",
+      "extension": "1234",
+      "isPrimary": false
+    }
+  ],
+  "addresses": [
+    {
+      "type": "home",
+      "street": "Av. 18 de Julio",
+      "number": "1234",
+      "apartment": "301",
+      "locality": "Montevideo",
+      "state": "Montevideo",
+      "postalCode": "11200",
+      "country": "UY",
+      "isPrimary": true
+    },
+    {
+      "type": "work",
+      "street": "Bulevar Artigas",
+      "buildingBlock": "Torre Ejecutiva",
+      "number": "5678",
+      "locality": "Montevideo",
+      "state": "Montevideo",
+      "postalCode": "11300",
+      "country": "UY",
+      "isPrimary": false
+    }
+  ],
+  "extra_data": {
+    "preferredLanguage": "es",
+    "birthDate": "1990-01-15",
+    "marketingOptIn": true
+  }
+}

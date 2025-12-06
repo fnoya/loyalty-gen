@@ -77,30 +77,36 @@ Abandonamos el modelo relacional en favor de una estructura de colecciones y sub
 
 -   **`clients` (Colección Raíz)**
     -   Documento: `clientId`
-        -   **Campos de Nombre (requeridos para búsqueda efectiva):**
-            -   `firstName: string` (Primer Nombre, requerido)
+        -   `name: map` (estructura de nombre del cliente)
+            -   `firstName: string` (Primer Nombre, obligatorio)
             -   `secondName: string | null` (Segundo Nombre, opcional)
-            -   `firstSurname: string` (Primer Apellido, requerido)
-            -   `secondSurname: string | null` (Segundo Apellido, opcional)
-        -   **Campos de Nombre Normalizados (para búsqueda case-insensitive):**
-            -   `firstName_lower: string` (toLowerCase() de firstName)
-            -   `secondName_lower: string | null` (toLowerCase() de secondName, si existe)
-            -   `firstSurname_lower: string` (toLowerCase() de firstSurname)
-            -   `secondSurname_lower: string | null` (toLowerCase() de secondSurname, si existe)
-        -   **Información de Contacto:**
-            -   `email: string | null` (opcional, se debe garantizar unicidad a nivel de servicio si existe)
-            -   `phoneNumbers: array<string>` (números de teléfono, opcional)
-        -   **Documento de Identidad:**
-            -   `identity_document: map | null` (opcional, estructura de documento de identidad)
-                -   `type: string` (tipo de documento: "cedula_identidad", "pasaporte")
-                -   `number: string` (número alfanumérico del documento)
-                -   `number_lower: string` (toLowerCase() de number, para búsqueda case-insensitive)
-        -   **Otros Campos:**
-            -   `extra_data: map`
-            -   `created_at: timestamp`
-            -   `updated_at: timestamp`
-            -   `affinityGroupIds: array<string>` (Array con los IDs de los grupos a los que pertenece)
-            -   **`account_balances: map` (Campo Desnormalizado para Lecturas Rápidas)**
+            -   `firstLastName: string` (Primer Apellido, obligatorio)
+            -   `secondLastName: string | null` (Segundo Apellido, opcional)
+        -   `email: string | null` (opcional, se debe garantizar unicidad a nivel de servicio si existe)
+        -   `identity_document: map | null` (opcional, estructura de documento de identidad)
+            -   `type: string` (tipo de documento: "cedula_identidad", "pasaporte")
+            -   `number: string` (número alfanumérico del documento)
+        -   `phones: array<map>` (array de números telefónicos, puede estar vacío)
+            -   `type: string` (tipo de teléfono: "mobile", "home", "work", "other")
+            -   `number: string` (número telefónico, preferiblemente en formato E.164)
+            -   `extension: string | null` (extensión telefónica, opcional)
+            -   `isPrimary: boolean` (indica si es el teléfono principal, solo uno puede ser true)
+        -   `addresses: array<map>` (array de direcciones físicas, puede estar vacío)
+            -   `type: string` (tipo de dirección: "home", "work", "other")
+            -   `street: string` (calle)
+            -   `buildingBlock: string | null` (edificio, manzana, etc., opcional)
+            -   `number: string` (número de dirección)
+            -   `apartment: string | null` (apartamento, opcional)
+            -   `locality: string` (localidad o ciudad)
+            -   `state: string` (departamento, provincia o estado)
+            -   `postalCode: string` (código postal)
+            -   `country: string` (código de país ISO 3166-1 alpha-2, ej: "UY", "AR")
+            -   `isPrimary: boolean` (indica si es la dirección principal, solo una puede ser true)
+        -   `extra_data: map` (datos adicionales en formato clave-valor)
+        -   `created_at: timestamp`
+        -   `updated_at: timestamp`
+        -   `affinityGroupIds: array<string>` (Array con los IDs de los grupos a los que pertenece)
+        -   **`account_balances: map` (Campo Desnormalizado para Lecturas Rápidas)**
 
 > **Nota sobre Identificadores de Cliente:**
 > - Al menos uno de los identificadores (`email` o `identity_document`) debe estar presente.
@@ -113,6 +119,14 @@ Abandonamos el modelo relacional en favor de una estructura de colecciones y sub
 > - Los campos `_lower` son versiones en minúsculas almacenadas para permitir búsquedas case-insensitive, ya que Firestore es sensible a mayúsculas/minúsculas.
 > - `firstName` y `firstSurname` son requeridos; `secondName` y `secondSurname` son opcionales.
 > - Ver `docs/FIRESTORE-SEARCH-SOLUTION.md` para detalles completos sobre la estrategia de búsqueda.
+
+> **Nota sobre Datos de Contacto y Dirección:**
+> - Los campos `phones` y `addresses` son arrays que pueden estar vacíos.
+> - Solo un elemento en cada array puede tener `isPrimary: true`.
+> - Los números telefónicos deben validarse en formato E.164 cuando sea posible (+código_país número).
+> - Los códigos de país en direcciones deben seguir el estándar ISO 3166-1 alpha-2.
+> - Se recomienda crear índices compuestos para búsquedas por `name.firstLastName` y `name.secondLastName`.
+> - **Seguridad:** Los campos `phones` y `addresses` contienen PII y NO deben registrarse en logs de aplicación.
 
 -   **`affinityGroups` (Colección Raíz)**
     -   Documento: `groupId`

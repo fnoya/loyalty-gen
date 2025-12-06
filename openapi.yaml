@@ -683,87 +683,144 @@ components:
           type: string
           description: "Número del documento de identidad (alfanumérico)."
           pattern: "^[a-zA-Z0-9]+$"
-        number_lower:
-          type: string
-          description: "Versión en minúsculas del número para búsquedas case-insensitive (campo interno, generado automáticamente)."
-          readOnly: true
-    Client:
+    
+    ClientName:
       type: object
+      description: "Nombre estructurado del cliente."
+      required: [firstName, firstLastName]
       properties:
-        id: 
-          type: string
-          description: "ID único del cliente en Firestore."
         firstName:
           type: string
           description: "Primer nombre del cliente."
+          minLength: 1
+          maxLength: 50
+          pattern: "^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s'-]+$"
         secondName:
           type: string
-          nullable: true
           description: "Segundo nombre del cliente (opcional)."
-        firstSurname:
+          maxLength: 50
+          pattern: "^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s'-]+$"
+          nullable: true
+        firstLastName:
           type: string
           description: "Primer apellido del cliente."
-        secondSurname:
+          minLength: 1
+          maxLength: 50
+          pattern: "^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s'-]+$"
+        secondLastName:
           type: string
-          nullable: true
           description: "Segundo apellido del cliente (opcional)."
-        firstName_lower:
-          type: string
-          description: "Versión en minúsculas del primer nombre para búsquedas case-insensitive (campo interno, generado automáticamente)."
-          readOnly: true
-        secondName_lower:
-          type: string
+          maxLength: 50
+          pattern: "^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s'-]+$"
           nullable: true
-          description: "Versión en minúsculas del segundo nombre para búsquedas case-insensitive (campo interno, generado automáticamente)."
-          readOnly: true
-        firstSurname_lower:
+    
+    PhoneType:
+      type: string
+      enum: [mobile, home, work, other]
+      description: "Tipo de número telefónico."
+    
+    Phone:
+      type: object
+      description: "Número telefónico del cliente."
+      required: [type, number, isPrimary]
+      properties:
+        type:
+          $ref: '#/components/schemas/PhoneType'
+        number:
           type: string
-          description: "Versión en minúsculas del primer apellido para búsquedas case-insensitive (campo interno, generado automáticamente)."
-          readOnly: true
-        secondSurname_lower:
+          description: "Número telefónico, preferiblemente en formato E.164 (+código_país número)."
+          minLength: 7
+          maxLength: 20
+          example: "+598 99 123 456"
+        extension:
           type: string
+          description: "Extensión telefónica (opcional)."
+          maxLength: 10
+          pattern: "^[0-9]+$"
           nullable: true
-          description: "Versión en minúsculas del segundo apellido para búsquedas case-insensitive (campo interno, generado automáticamente)."
-          readOnly: true
-        email:
+        isPrimary:
+          type: boolean
+          description: "Indica si es el teléfono principal. Solo uno puede ser true."
+    
+    AddressType:
+      type: string
+      enum: [home, work, other]
+      description: "Tipo de dirección."
+    
+    Address:
+      type: object
+      description: "Dirección física del cliente."
+      required: [type, street, number, locality, state, postalCode, country, isPrimary]
+      properties:
+        type:
+          $ref: '#/components/schemas/AddressType'
+        street:
           type: string
-          format: email
+          description: "Nombre de la calle."
+          maxLength: 100
+        buildingBlock:
+          type: string
+          description: "Edificio, manzana, bloque, etc. (opcional)."
+          maxLength: 50
           nullable: true
-          description: "Email del cliente (opcional si se proporciona documento de identidad)."
-        phoneNumbers:
-          type: array
-          items:
-            type: string
-            pattern: "^[0-9+\\-\\s()]+$"
-          description: "Números de teléfono del cliente (opcional)."
+        number:
+          type: string
+          description: "Número de dirección."
+          maxLength: 20
+        apartment:
+          type: string
+          description: "Apartamento, departamento, unidad (opcional)."
+          maxLength: 20
+          nullable: true
+        locality:
+          type: string
+          description: "Localidad o ciudad."
+          maxLength: 100
+        state:
+          type: string
+          description: "Departamento, provincia o estado."
+          maxLength: 100
+        postalCode:
+          type: string
+          description: "Código postal."
+          maxLength: 20
+        country:
+          type: string
+          description: "Código de país ISO 3166-1 alpha-2 (ej: UY, AR, BR, US)."
+          minLength: 2
+          maxLength: 2
+          pattern: "^[A-Z]{2}$"
+          example: "UY"
+        isPrimary:
+          type: boolean
+          description: "Indica si es la dirección principal. Solo una puede ser true."
+    Client:
+      type: object
+      properties:
+        id: { type: string, description: "ID único del cliente en Firestore." }
+        name:
+          $ref: '#/components/schemas/ClientName'
+        email: { type: string, format: email, nullable: true, description: "Email del cliente (opcional si se proporciona documento de identidad)." }
         identity_document:
           allOf:
             - $ref: '#/components/schemas/IdentityDocument'
           nullable: true
           description: "Documento de identidad del cliente (opcional si se proporciona email)."
-        extra_data:
-          type: object
-          additionalProperties: true
-          description: "Datos adicionales del cliente en formato libre."
-        affinityGroupIds:
+        phones:
           type: array
           items:
-            type: string
-          description: "IDs de los grupos de afinidad a los que pertenece el cliente."
-        account_balances:
-          type: object
-          additionalProperties:
-            type: number
-          description: "Mapa desnormalizado de saldos por cuenta (accountId -> balance)."
-        created_at:
-          type: string
-          format: date-time
-          description: "Fecha y hora de creación del cliente."
-        updated_at:
-          type: string
-          format: date-time
-          description: "Fecha y hora de última actualización del cliente."
-      required: [id, firstName, firstSurname, created_at, updated_at]
+            $ref: '#/components/schemas/Phone'
+          description: "Lista de números telefónicos del cliente (puede estar vacía)."
+        addresses:
+          type: array
+          items:
+            $ref: '#/components/schemas/Address'
+          description: "Lista de direcciones del cliente (puede estar vacía)."
+        extra_data: { type: object, additionalProperties: true, description: "Datos adicionales en formato clave-valor." }
+        affinityGroupIds: { type: array, items: { type: string }, description: "IDs de grupos de afinidad a los que pertenece." }
+        account_balances: { type: object, additionalProperties: { type: number }, description: "Mapa desnormalizado de saldos por cuenta." }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
     Group:
       type: object
       properties:
@@ -862,65 +919,40 @@ components:
       description: "Petición para crear un nuevo cliente. Al menos uno de 'email' o 'identity_document' debe estar presente."
       required: [firstName, firstSurname]
       properties:
-        firstName:
-          type: string
-          description: "Primer nombre del cliente."
-          minLength: 1
-        secondName:
-          type: string
-          description: "Segundo nombre del cliente (opcional)."
-        firstSurname:
-          type: string
-          description: "Primer apellido del cliente."
-          minLength: 1
-        secondSurname:
-          type: string
-          description: "Segundo apellido del cliente (opcional)."
-        email:
-          type: string
-          format: email
-          description: "Email del cliente (opcional si se proporciona documento de identidad)."
-        phoneNumbers:
-          type: array
-          items:
-            type: string
-            pattern: "^[0-9+\\-\\s()]+$"
-          description: "Números de teléfono del cliente (opcional)."
+        name:
+          $ref: '#/components/schemas/ClientName'
+        email: { type: string, format: email, description: "Email del cliente (opcional si se proporciona documento de identidad)." }
         identity_document:
           allOf:
             - $ref: '#/components/schemas/IdentityDocument'
           description: "Documento de identidad del cliente (opcional si se proporciona email)."
-        extra_data:
-          type: object
-          additionalProperties: true
-          description: "Datos adicionales del cliente en formato libre."
+        phones:
+          type: array
+          items:
+            $ref: '#/components/schemas/Phone'
+          description: "Lista de números telefónicos del cliente (opcional)."
+        addresses:
+          type: array
+          items:
+            $ref: '#/components/schemas/Address'
+          description: "Lista de direcciones del cliente (opcional)."
+        extra_data: { type: object, additionalProperties: true, description: "Datos adicionales en formato clave-valor (opcional)." }
     UpdateClientRequest:
       type: object
       properties:
-        firstName:
-          type: string
-          description: "Primer nombre del cliente."
-        secondName:
-          type: string
-          nullable: true
-          description: "Segundo nombre del cliente (opcional)."
-        firstSurname:
-          type: string
-          description: "Primer apellido del cliente."
-        secondSurname:
-          type: string
-          nullable: true
-          description: "Segundo apellido del cliente (opcional)."
-        phoneNumbers:
+        name:
+          $ref: '#/components/schemas/ClientName'
+        phones:
           type: array
           items:
-            type: string
-            pattern: "^[0-9+\\-\\s()]+$"
-          description: "Números de teléfono del cliente."
-        extra_data:
-          type: object
-          additionalProperties: true
-          description: "Datos adicionales del cliente en formato libre."
+            $ref: '#/components/schemas/Phone'
+          description: "Lista de números telefónicos del cliente (reemplaza la lista existente)."
+        addresses:
+          type: array
+          items:
+            $ref: '#/components/schemas/Address'
+          description: "Lista de direcciones del cliente (reemplaza la lista existente)."
+        extra_data: { type: object, additionalProperties: true, description: "Datos adicionales en formato clave-valor." }
     CreateGroupRequest:
       type: object
       required: [name]
