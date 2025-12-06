@@ -42,6 +42,16 @@ Este directorio contiene toda la documentación técnica y funcional del proyect
 | [SPECS.md](./SPECS.md) | Requisitos funcionales y no funcionales | QA, Desarrolladores |
 | [GUIDELINES.md](./GUIDELINES.md) | Estilo de código, tipado y políticas | Todos los Desarrolladores |
 
+### 📦 Documentos de Especificaciones de Features
+
+| Documento | Descripción | Audiencia |
+|-----------|-------------|-----------|
+| [CLIENT-FIELDS-SPEC.md](./CLIENT-FIELDS-SPEC.md) | Especificación detallada de campos ampliados de cliente | Desarrolladores Backend |
+| [CLIENT-FIELDS-SUMMARY.md](./CLIENT-FIELDS-SUMMARY.md) | Resumen ejecutivo de ampliación de campos de cliente | Product Owner, Tech Lead |
+| [CLIENT-MODEL-DIAGRAM.md](./CLIENT-MODEL-DIAGRAM.md) | Diagramas visuales del modelo de cliente | Desarrolladores, QA |
+| [CLIENT-FIELDS-CHECKLIST.md](./CLIENT-FIELDS-CHECKLIST.md) | Checklist de implementación de campos de cliente | Desarrolladores Backend |
+| [examples/](./examples/) | Ejemplos de payloads JSON para la API | Desarrolladores, QA |
+
 ### 🎨 Documentos de Frontend
 
 | Documento | Descripción | Audiencia |
@@ -111,9 +121,11 @@ erDiagram
 
     CLIENTS {
         string id PK
-        string name
+        map name "structured: firstName, secondName, firstLastName, secondLastName"
         string email UK "opcional"
         map identity_document "opcional"
+        array phones "type, number, extension, isPrimary"
+        array addresses "type, street, number, locality, state, country, isPrimary"
         map extra_data
         array affinityGroupIds FK
         map account_balances "desnormalizado"
@@ -469,6 +481,8 @@ graph LR
 - [ ] [API-DESIGN.md](./API-DESIGN.md) - Convenciones de API
 - [ ] [SPECS.md](./SPECS.md) - Requisitos funcionales
 - [ ] [openapi.yaml](../openapi.yaml) - Contrato de API
+- [ ] [CLIENT-FIELDS-SPEC.md](./CLIENT-FIELDS-SPEC.md) - Campos de cliente ampliados
+- [ ] [CLIENT-FIELDS-CHECKLIST.md](./CLIENT-FIELDS-CHECKLIST.md) - Guía de implementación
 
 ### Para Desarrolladores Frontend
 - [ ] [UI-UX-GUIDELINES.md](./UI-UX-GUIDELINES.md) - Diseño de interfaz
