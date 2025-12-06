@@ -1,0 +1,16 @@
+{
+  "name": {
+    "secondName": "José"
+  },
+  "phones": [
+    {
+      "type": "mobile",
+      "number": "+598 99 999 999",
+      "isPrimary": true
+    }
+  ],
+  "extra_data": {
+    "preferredLanguage": "en",
+    "loyaltyTier": "gold"
+  }
+}

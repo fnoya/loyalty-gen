@@ -383,33 +383,141 @@ functions/src/schemas/
         .regex(/^[a-zA-Z0-9]+$/, 'El número de documento debe ser alfanumérico')
     });
     
+    // Schema del nombre estructurado
+    const namePattern = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]+$/;
+    export const clientNameSchema = z.object({
+      firstName: z.string()
+        .min(1, 'El primer nombre es requerido')
+        .max(50, 'El primer nombre no puede exceder 50 caracteres')
+        .regex(namePattern, 'Solo se permiten letras, espacios, guiones y apóstrofes'),
+      secondName: z.string()
+        .max(50, 'El segundo nombre no puede exceder 50 caracteres')
+        .regex(namePattern, 'Solo se permiten letras, espacios, guiones y apóstrofes')
+        .optional(),
+      firstLastName: z.string()
+        .min(1, 'El primer apellido es requerido')
+        .max(50, 'El primer apellido no puede exceder 50 caracteres')
+        .regex(namePattern, 'Solo se permiten letras, espacios, guiones y apóstrofes'),
+      secondLastName: z.string()
+        .max(50, 'El segundo apellido no puede exceder 50 caracteres')
+        .regex(namePattern, 'Solo se permiten letras, espacios, guiones y apóstrofes')
+        .optional()
+    });
+    
+    // Tipos de teléfono
+    export const phoneTypeSchema = z.enum(['mobile', 'home', 'work', 'other']);
+    
+    // Schema de teléfono
+    export const phoneSchema = z.object({
+      type: phoneTypeSchema,
+      number: z.string()
+        .min(7, 'El número telefónico debe tener al menos 7 caracteres')
+        .max(20, 'El número telefónico no puede exceder 20 caracteres'),
+      extension: z.string()
+        .max(10, 'La extensión no puede exceder 10 caracteres')
+        .regex(/^[0-9]+$/, 'La extensión debe contener solo dígitos')
+        .optional(),
+      isPrimary: z.boolean()
+    });
+    
+    // Tipos de dirección
+    export const addressTypeSchema = z.enum(['home', 'work', 'other']);
+    
+    // Schema de dirección
+    export const addressSchema = z.object({
+      type: addressTypeSchema,
+      street: z.string().max(100, 'La calle no puede exceder 100 caracteres'),
+      buildingBlock: z.string().max(50, 'El edificio/manzana no puede exceder 50 caracteres').optional(),
+      number: z.string().max(20, 'El número no puede exceder 20 caracteres'),
+      apartment: z.string().max(20, 'El apartamento no puede exceder 20 caracteres').optional(),
+      locality: z.string().max(100, 'La localidad no puede exceder 100 caracteres'),
+      state: z.string().max(100, 'El estado/provincia no puede exceder 100 caracteres'),
+      postalCode: z.string().max(20, 'El código postal no puede exceder 20 caracteres'),
+      country: z.string()
+        .length(2, 'El código de país debe ser ISO 3166-1 alpha-2 (2 caracteres)')
+        .regex(/^[A-Z]{2}$/, 'El código de país debe contener solo letras mayúsculas'),
+      isPrimary: z.boolean()
+    });
+    
+    // Validación para arrays de teléfonos y direcciones con regla de isPrimary único
+    const validateSinglePrimary = <T extends { isPrimary: boolean }>(
+      items: T[], 
+      fieldName: string
+    ) => {
+      const primaryCount = items.filter(item => item.isPrimary).length;
+      if (primaryCount > 1) {
+        throw new z.ZodError([{
+          code: 'custom',
+          path: [fieldName],
+          message: `Solo un ${fieldName} puede ser marcado como principal`
+        }]);
+      }
+      return true;
+    };
+    
     // Schema base para crear cliente (antes de la validación de identificadores)
     const baseCreateClientSchema = z.object({
-      name: z.string().min(1, 'El nombre es requerido'),
+      name: clientNameSchema,
       email: z.string().email('Debe ser un email válido').optional(),
       identity_document: identityDocumentSchema.optional(),
+      phones: z.array(phoneSchema).optional().default([]),
+      addresses: z.array(addressSchema).optional().default([]),
       extra_data: z.record(z.unknown()).optional()
     });
     
     // Schema de creación con validación: al menos uno de email o identity_document
-    export const createClientSchema = baseCreateClientSchema.refine(
-      (data) => data.email || data.identity_document,
-      {
-        message: 'Debe proporcionar al menos un identificador: email o documento de identidad'
-        // Sin path para indicar que es un error a nivel de formulario
+    export const createClientSchema = baseCreateClientSchema
+      .refine(
+        (data) => data.email || data.identity_document,
+        {
+          message: 'Debe proporcionar al menos un identificador: email o documento de identidad'
+        }
+      )
+      .refine(
+        (data) => {
+          if (data.phones && data.phones.length > 0) {
+            return validateSinglePrimary(data.phones, 'teléfono');
+          }
+          return true;
+        }
+      )
+      .refine(
+        (data) => {
+          if (data.addresses && data.addresses.length > 0) {
+            return validateSinglePrimary(data.addresses, 'dirección');
+          }
+          return true;
+        }
+      );
+    
+    export const updateClientSchema = z.object({
+      name: clientNameSchema.optional(),
+      phones: z.array(phoneSchema).optional(),
+      addresses: z.array(addressSchema).optional(),
+      extra_data: z.record(z.unknown()).optional()
+    }).refine(
+      (data) => {
+        if (data.phones && data.phones.length > 0) {
+          return validateSinglePrimary(data.phones, 'teléfono');
+        }
+        return true;
+      }
+    ).refine(
+      (data) => {
+        if (data.addresses && data.addresses.length > 0) {
+          return validateSinglePrimary(data.addresses, 'dirección');
+        }
+        return true;
       }
     );
     
-    export const updateClientSchema = z.object({
-      name: z.string().min(1).optional(),
-      extra_data: z.record(z.unknown()).optional()
-    });
-    
     export const clientSchema = z.object({
       id: z.string(),
-      name: z.string(),
+      name: clientNameSchema,
       email: z.string().email().nullable().optional(),
       identity_document: identityDocumentSchema.nullable().optional(),
+      phones: z.array(phoneSchema),
+      addresses: z.array(addressSchema),
       extra_data: z.record(z.unknown()).optional(),
       affinityGroupIds: z.array(z.string()),
       account_balances: z.record(z.number()),
@@ -419,6 +527,11 @@ functions/src/schemas/
     
     export type IdentityDocumentType = z.infer<typeof identityDocumentTypeSchema>;
     export type IdentityDocument = z.infer<typeof identityDocumentSchema>;
+    export type ClientName = z.infer<typeof clientNameSchema>;
+    export type PhoneType = z.infer<typeof phoneTypeSchema>;
+    export type Phone = z.infer<typeof phoneSchema>;
+    export type AddressType = z.infer<typeof addressTypeSchema>;
+    export type Address = z.infer<typeof addressSchema>;
     export type CreateClientRequest = z.infer<typeof createClientSchema>;
     export type UpdateClientRequest = z.infer<typeof updateClientSchema>;
     export type Client = z.infer<typeof clientSchema>;
@@ -3477,3 +3590,83 @@ Antes de considerar el MVP como completo, verifica:
 -   [ ] La autenticación con Firebase Auth funciona
 -   [ ] El deploy a Firebase Hosting funciona
 -   [ ] El deploy de Cloud Functions funciona
+
+---
+
+## Apéndice A: Estrategia de Migración de Datos para Campos de Cliente
+
+### Contexto
+
+La especificación de campos de cliente ha evolucionado para incluir:
+1. Nombre estructurado (firstName, secondName, firstLastName, secondLastName) en lugar de un string simple
+2. Arrays de teléfonos con tipos y flags de principal
+3. Arrays de direcciones con información completa
+
+### Impacto en Implementación Inicial (MVP)
+
+Para el MVP inicial (sin datos existentes), la migración NO es necesaria. Los schemas Zod actualizados en la Tarea 2.1 ya incluyen la estructura completa de campos.
+
+### Estrategia de Migración Futura (Post-MVP)
+
+Si en el futuro existen clientes con el formato antiguo (`name` como string), se pueden aplicar dos estrategias:
+
+#### Opción 1: Migración Lazy (Recomendada para MVP)
+
+Al leer un cliente antiguo:
+1. Detectar si `name` es string en lugar de objeto
+2. Parsear usando lógica simple: "Nombre Apellido" → `{firstName: "Nombre", firstLastName: "Apellido"}`
+3. Inicializar `phones: []` y `addresses: []` si no existen
+4. Al actualizar el cliente, convertir automáticamente al nuevo formato
+
+**Ventajas:** No requiere script de migración, transición gradual, menor riesgo
+
+#### Opción 2: Script de Migración Batch
+
+Crear un script independiente que:
+1. Lea todos los documentos de la colección `clients`
+2. Para cada documento con formato antiguo:
+   - Parsear `name` string a objeto estructurado
+   - Agregar arrays vacíos `phones: []` y `addresses: []`
+   - Actualizar el documento en Firestore
+3. Ejecutar el script fuera de horario pico con confirmación manual
+
+**Ventajas:** Migración completa de una vez, consistencia inmediata
+
+### Código de Ejemplo para Migración Lazy
+
+```typescript
+// En client.service.ts
+function normalizeClientData(rawData: FirebaseFirestore.DocumentData): Client {
+  // Detectar formato antiguo de name
+  if (typeof rawData.name === 'string') {
+    const nameParts = rawData.name.trim().split(/\s+/);
+    rawData.name = {
+      firstName: nameParts[0] || '',
+      firstLastName: nameParts[1] || '',
+      secondName: undefined,
+      secondLastName: undefined
+    };
+  }
+  
+  // Inicializar arrays si no existen
+  rawData.phones = rawData.phones || [];
+  rawData.addresses = rawData.addresses || [];
+  
+  return clientSchema.parse({
+    ...rawData,
+    created_at: rawData.created_at.toDate(),
+    updated_at: rawData.updated_at.toDate()
+  });
+}
+```
+
+### Notas de Seguridad para Migración
+
+- Los scripts de migración NO deben registrar PII en logs
+- Validar datos después de la migración usando los schemas Zod actualizados
+- Mantener backup de Firestore antes de ejecutar migraciones batch
+- Ejecutar primero en ambiente de desarrollo/staging
+
+### Referencia
+
+Ver documento completo: `docs/CLIENT-FIELDS-SPEC.md` sección 8 (Migraciones de Datos)
