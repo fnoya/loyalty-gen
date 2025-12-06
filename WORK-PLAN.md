@@ -1343,6 +1343,525 @@ functions/src/
 
 ---
 
+## Épica 2.5: Implementación del Sistema de Auditoría
+
+**Objetivo:** Implementar un sistema completo de auditoría que registre todas las operaciones realizadas en el sistema para garantizar la trazabilidad y el cumplimiento regulatorio.
+
+**Orden de Ejecución:** Tarea 2.5.1 → Tarea 2.5.2 → Tarea 2.5.3 → Tarea 2.5.4
+
+---
+
+### Tarea 2.5.1: Schema de Auditoría y Servicio Base
+
+**Dependencias:** Tarea 2.1 completada
+
+**Documentos de Referencia:**
+-   `docs/ARCHITECTURE.md` - Sección 4.1 (Modelo de Datos de Auditoría)
+-   `openapi.yaml` - Schemas de Auditoría (`AuditLog`, `AuditAction`, etc.)
+
+**Archivos a Crear:**
+```
+functions/src/
+├── schemas/
+│   └── audit.schema.ts
+├── services/
+│   └── audit.service.ts
+```
+
+**Instrucciones Detalladas:**
+
+1.  Crea `src/schemas/audit.schema.ts` con los schemas de Zod:
+    ```typescript
+    import { z } from 'zod';
+
+    export const auditActionSchema = z.enum([
+      'CLIENT_CREATED',
+      'CLIENT_UPDATED',
+      'CLIENT_DELETED',
+      'ACCOUNT_CREATED',
+      'POINTS_CREDITED',
+      'POINTS_DEBITED',
+      'GROUP_CREATED',
+      'CLIENT_ADDED_TO_GROUP',
+      'CLIENT_REMOVED_FROM_GROUP'
+    ]);
+
+    export const auditResourceTypeSchema = z.enum([
+      'client',
+      'account',
+      'transaction',
+      'group'
+    ]);
+
+    export const auditActorSchema = z.object({
+      uid: z.string(),
+      email: z.string().email().nullable()
+    });
+
+    export const auditChangesSchema = z.object({
+      before: z.record(z.unknown()).nullable().optional(),
+      after: z.record(z.unknown()).nullable().optional()
+    });
+
+    export const auditMetadataSchema = z.object({
+      ip_address: z.string().nullable().optional(),
+      user_agent: z.string().nullable().optional(),
+      description: z.string().nullable().optional()
+    });
+
+    export const auditLogSchema = z.object({
+      id: z.string(),
+      action: auditActionSchema,
+      resource_type: auditResourceTypeSchema,
+      resource_id: z.string(),
+      client_id: z.string().nullable(),
+      account_id: z.string().nullable(),
+      transaction_id: z.string().nullable(),
+      actor: auditActorSchema,
+      changes: auditChangesSchema.nullable().optional(),
+      metadata: auditMetadataSchema,
+      timestamp: z.date()
+    });
+
+    export const auditFilterParamsSchema = z.object({
+      limit: z.coerce.number().int().min(1).max(100).default(50),
+      next_cursor: z.string().optional(),
+      client_id: z.string().optional(),
+      account_id: z.string().optional(),
+      action: auditActionSchema.optional(),
+      from_date: z.coerce.date().optional(),
+      to_date: z.coerce.date().optional()
+    });
+
+    export type AuditAction = z.infer<typeof auditActionSchema>;
+    export type AuditResourceType = z.infer<typeof auditResourceTypeSchema>;
+    export type AuditActor = z.infer<typeof auditActorSchema>;
+    export type AuditChanges = z.infer<typeof auditChangesSchema>;
+    export type AuditMetadata = z.infer<typeof auditMetadataSchema>;
+    export type AuditLog = z.infer<typeof auditLogSchema>;
+    export type AuditFilterParams = z.infer<typeof auditFilterParamsSchema>;
+    ```
+
+2.  Crea `src/services/audit.service.ts`:
+    ```typescript
+    import * as admin from 'firebase-admin';
+    import { AuditAction, AuditResourceType, AuditActor, AuditChanges, AuditMetadata, AuditLog, AuditFilterParams, PaginatedResponse } from '../schemas';
+    import { NotFoundError } from '../core/errors';
+
+    const db = admin.firestore();
+    const auditLogsCollection = db.collection('auditLogs');
+
+    interface CreateAuditLogParams {
+      action: AuditAction;
+      resourceType: AuditResourceType;
+      resourceId: string;
+      clientId?: string | null;
+      accountId?: string | null;
+      transactionId?: string | null;
+      actor: AuditActor;
+      changes?: AuditChanges | null;
+      metadata?: Partial<AuditMetadata>;
+    }
+
+    export class AuditService {
+      /**
+       * Crea un registro de auditoría de forma asíncrona (no bloquea la operación principal).
+       * Para operaciones financieras, usar createAuditLogInTransaction.
+       */
+      async createAuditLog(params: CreateAuditLogParams): Promise<void> {
+        const now = admin.firestore.Timestamp.now();
+        const docRef = auditLogsCollection.doc();
+
+        await docRef.set({
+          action: params.action,
+          resource_type: params.resourceType,
+          resource_id: params.resourceId,
+          client_id: params.clientId || null,
+          account_id: params.accountId || null,
+          transaction_id: params.transactionId || null,
+          actor: params.actor,
+          changes: params.changes || null,
+          metadata: {
+            ip_address: params.metadata?.ip_address || null,
+            user_agent: params.metadata?.user_agent || null,
+            description: params.metadata?.description || null
+          },
+          timestamp: now
+        });
+      }
+
+      /**
+       * Crea un registro de auditoría dentro de una transacción existente.
+       * CRÍTICO: Usar para operaciones de crédito/débito.
+       */
+      createAuditLogInTransaction(
+        transaction: admin.firestore.Transaction,
+        params: CreateAuditLogParams
+      ): string {
+        const now = admin.firestore.Timestamp.now();
+        const docRef = auditLogsCollection.doc();
+
+        transaction.set(docRef, {
+          action: params.action,
+          resource_type: params.resourceType,
+          resource_id: params.resourceId,
+          client_id: params.clientId || null,
+          account_id: params.accountId || null,
+          transaction_id: params.transactionId || null,
+          actor: params.actor,
+          changes: params.changes || null,
+          metadata: {
+            ip_address: params.metadata?.ip_address || null,
+            user_agent: params.metadata?.user_agent || null,
+            description: params.metadata?.description || null
+          },
+          timestamp: now
+        });
+
+        return docRef.id;
+      }
+
+      async list(params: AuditFilterParams): Promise<PaginatedResponse<AuditLog>> {
+        let query: admin.firestore.Query = auditLogsCollection.orderBy('timestamp', 'desc');
+
+        // Aplicar filtros
+        if (params.client_id) {
+          query = query.where('client_id', '==', params.client_id);
+        }
+        if (params.account_id) {
+          query = query.where('account_id', '==', params.account_id);
+        }
+        if (params.action) {
+          query = query.where('action', '==', params.action);
+        }
+        if (params.from_date) {
+          query = query.where('timestamp', '>=', admin.firestore.Timestamp.fromDate(params.from_date));
+        }
+        if (params.to_date) {
+          query = query.where('timestamp', '<=', admin.firestore.Timestamp.fromDate(params.to_date));
+        }
+
+        query = query.limit(params.limit + 1);
+
+        if (params.next_cursor) {
+          const cursorDoc = await auditLogsCollection.doc(params.next_cursor).get();
+          if (cursorDoc.exists) {
+            query = query.startAfter(cursorDoc);
+          }
+        }
+
+        const snapshot = await query.get();
+        const docs = snapshot.docs;
+        const hasMore = docs.length > params.limit;
+        const resultDocs = hasMore ? docs.slice(0, -1) : docs;
+
+        const data = resultDocs.map(doc => this.docToAuditLog(doc));
+
+        return {
+          data,
+          paging: {
+            next_cursor: hasMore ? resultDocs[resultDocs.length - 1].id : null
+          }
+        };
+      }
+
+      async getById(id: string): Promise<AuditLog> {
+        const doc = await auditLogsCollection.doc(id).get();
+        if (!doc.exists) {
+          throw new NotFoundError('Registro de auditoría', id);
+        }
+        return this.docToAuditLog(doc);
+      }
+
+      async getByClientId(clientId: string, params: AuditFilterParams): Promise<PaginatedResponse<AuditLog>> {
+        return this.list({ ...params, client_id: clientId });
+      }
+
+      async getByAccountId(clientId: string, accountId: string, params: AuditFilterParams): Promise<PaginatedResponse<AuditLog>> {
+        // Verificar que el cliente y la cuenta existen
+        const clientDoc = await db.collection('clients').doc(clientId).get();
+        if (!clientDoc.exists) {
+          throw new NotFoundError('Cliente', clientId);
+        }
+        const accountDoc = await db.collection('clients').doc(clientId).collection('loyaltyAccounts').doc(accountId).get();
+        if (!accountDoc.exists) {
+          throw new NotFoundError('Cuenta', accountId);
+        }
+
+        return this.list({ ...params, account_id: accountId });
+      }
+
+      async getByTransactionId(clientId: string, accountId: string, transactionId: string): Promise<AuditLog> {
+        // Verificar que el cliente, cuenta y transacción existen
+        const clientDoc = await db.collection('clients').doc(clientId).get();
+        if (!clientDoc.exists) {
+          throw new NotFoundError('Cliente', clientId);
+        }
+        const accountDoc = await db.collection('clients').doc(clientId).collection('loyaltyAccounts').doc(accountId).get();
+        if (!accountDoc.exists) {
+          throw new NotFoundError('Cuenta', accountId);
+        }
+        const transactionDoc = await db.collection('clients').doc(clientId)
+          .collection('loyaltyAccounts').doc(accountId)
+          .collection('transactions').doc(transactionId).get();
+        if (!transactionDoc.exists) {
+          throw new NotFoundError('Transacción', transactionId);
+        }
+
+        // Buscar el registro de auditoría por transaction_id
+        const snapshot = await auditLogsCollection
+          .where('transaction_id', '==', transactionId)
+          .limit(1)
+          .get();
+
+        if (snapshot.empty) {
+          throw new NotFoundError('Registro de auditoría para transacción', transactionId);
+        }
+
+        return this.docToAuditLog(snapshot.docs[0]);
+      }
+
+      private docToAuditLog(doc: admin.firestore.DocumentSnapshot): AuditLog {
+        const data = doc.data()!;
+        return {
+          id: doc.id,
+          action: data.action,
+          resource_type: data.resource_type,
+          resource_id: data.resource_id,
+          client_id: data.client_id,
+          account_id: data.account_id,
+          transaction_id: data.transaction_id,
+          actor: data.actor,
+          changes: data.changes,
+          metadata: data.metadata,
+          timestamp: data.timestamp.toDate()
+        };
+      }
+    }
+
+    export const auditService = new AuditService();
+    ```
+
+**Criterios de Aceptación:**
+-   [ ] Los schemas de Zod validan correctamente los datos de auditoría
+-   [ ] El servicio puede crear registros de auditoría de forma asíncrona
+-   [ ] El servicio puede crear registros dentro de una transacción
+-   [ ] El servicio puede listar y filtrar registros de auditoría
+-   [ ] El código compila sin errores de tipo
+
+---
+
+### Tarea 2.5.2: Integración de Auditoría en Servicios Existentes
+
+**Dependencias:** Tareas 2.2, 2.3, 2.4 y 2.5.1 completadas
+
+**Documentos de Referencia:**
+-   `docs/SPECS.md` - Requisitos de auditoría por endpoint
+-   `docs/GUIDELINES.md` - Sección 6 (Manejo de Desnormalización)
+
+**Archivos a Modificar:**
+```
+functions/src/services/
+├── client.service.ts   # MODIFICAR
+├── group.service.ts    # MODIFICAR
+└── account.service.ts  # MODIFICAR
+```
+
+**Instrucciones Detalladas:**
+
+1.  Modifica `client.service.ts` para crear registros de auditoría:
+    -   En `create()`: Crear registro `CLIENT_CREATED` después de la creación exitosa
+    -   En `update()`: Crear registro `CLIENT_UPDATED` con los cambios (before/after)
+    -   En `delete()`: Crear registro `CLIENT_DELETED` con los datos del cliente eliminado
+
+2.  Modifica `group.service.ts` para crear registros de auditoría:
+    -   En `create()`: Crear registro `GROUP_CREATED`
+    -   En `addClientToGroup()`: Crear registro `CLIENT_ADDED_TO_GROUP`
+    -   En `removeClientFromGroup()`: Crear registro `CLIENT_REMOVED_FROM_GROUP`
+
+3.  **CRÍTICO:** Modifica `account.service.ts` para crear registros de auditoría dentro de las transacciones atómicas:
+    -   En `create()`: Crear registro `ACCOUNT_CREATED` dentro de la transacción
+    -   En `credit()`: Crear registro `POINTS_CREDITED` dentro de la misma transacción que actualiza el balance
+    -   En `debit()`: Crear registro `POINTS_DEBITED` dentro de la misma transacción que actualiza el balance
+
+    Ejemplo de integración en el método `adjustBalance`:
+    ```typescript
+    // Dentro del db.runTransaction
+    // ... código existente de actualización de balance ...
+
+    // Crear registro de auditoría DENTRO de la misma transacción
+    auditService.createAuditLogInTransaction(transaction, {
+      action: type === 'credit' ? 'POINTS_CREDITED' : 'POINTS_DEBITED',
+      resourceType: 'transaction',
+      resourceId: transactionDoc.id,
+      clientId,
+      accountId,
+      transactionId: transactionDoc.id,
+      actor: {
+        uid: req.user.uid,
+        email: req.user.email || null
+      },
+      changes: {
+        before: { points: currentPoints },
+        after: { points: newPoints }
+      },
+      metadata: {
+        description: data.description,
+        ip_address: req.ip,
+        user_agent: req.get('User-Agent')
+      }
+    });
+    ```
+
+**Criterios de Aceptación:**
+-   [ ] Todas las operaciones de creación de cliente crean registro `CLIENT_CREATED`
+-   [ ] Todas las operaciones de actualización de cliente crean registro `CLIENT_UPDATED`
+-   [ ] Todas las operaciones de eliminación de cliente crean registro `CLIENT_DELETED`
+-   [ ] Todas las operaciones de grupos crean los registros correspondientes
+-   [ ] **CRÍTICO:** Las operaciones de crédito/débito crean registros dentro de la misma transacción atómica
+-   [ ] Los registros de auditoría incluyen información del actor (uid, email)
+-   [ ] Los registros de auditoría incluyen metadatos cuando están disponibles
+
+---
+
+### Tarea 2.5.3: Endpoints de Consulta de Auditoría
+
+**Dependencias:** Tarea 2.5.1 completada
+
+**Documentos de Referencia:**
+-   `openapi.yaml` - Endpoints de `/audit-logs`
+
+**Archivos a Crear:**
+```
+functions/src/api/routes/
+└── audit.routes.ts
+```
+
+**Instrucciones Detalladas:**
+
+1.  Crea `src/api/routes/audit.routes.ts`:
+    ```typescript
+    import { Router } from 'express';
+    import { auditService } from '../../services/audit.service';
+    import { auditFilterParamsSchema } from '../../schemas';
+    import { authMiddleware } from '../middleware';
+
+    const router = Router();
+
+    router.use(authMiddleware);
+
+    // GET /audit-logs - Listar registros de auditoría
+    router.get('/', async (req, res, next) => {
+      try {
+        const params = auditFilterParamsSchema.parse(req.query);
+        const result = await auditService.list(params);
+        res.json(result);
+      } catch (error) {
+        next(error);
+      }
+    });
+
+    // GET /audit-logs/:audit_log_id - Obtener registro específico
+    router.get('/:audit_log_id', async (req, res, next) => {
+      try {
+        const auditLog = await auditService.getById(req.params.audit_log_id);
+        res.json(auditLog);
+      } catch (error) {
+        next(error);
+      }
+    });
+
+    export default router;
+    ```
+
+2.  Añade rutas de auditoría a `client.routes.ts`:
+    ```typescript
+    // GET /clients/:client_id/audit-logs
+    router.get('/:client_id/audit-logs', async (req, res, next) => {
+      try {
+        const params = auditFilterParamsSchema.parse(req.query);
+        const result = await auditService.getByClientId(req.params.client_id, params);
+        res.json(result);
+      } catch (error) {
+        next(error);
+      }
+    });
+    ```
+
+3.  Añade rutas de auditoría a `account.routes.ts`:
+    ```typescript
+    // GET /clients/:client_id/accounts/:account_id/audit-logs
+    router.get('/:account_id/audit-logs', async (req, res, next) => {
+      try {
+        const params = auditFilterParamsSchema.parse(req.query);
+        const result = await auditService.getByAccountId(
+          req.params.client_id,
+          req.params.account_id,
+          params
+        );
+        res.json(result);
+      } catch (error) {
+        next(error);
+      }
+    });
+
+    // GET /clients/:client_id/accounts/:account_id/transactions/:transaction_id/audit-logs
+    router.get('/:account_id/transactions/:transaction_id/audit-logs', async (req, res, next) => {
+      try {
+        const auditLog = await auditService.getByTransactionId(
+          req.params.client_id,
+          req.params.account_id,
+          req.params.transaction_id
+        );
+        res.json(auditLog);
+      } catch (error) {
+        next(error);
+      }
+    });
+    ```
+
+4.  Registra las rutas en `src/index.ts`:
+    ```typescript
+    import auditRoutes from './api/routes/audit.routes';
+    app.use('/api/v1/audit-logs', auditRoutes);
+    ```
+
+**Criterios de Aceptación:**
+-   [ ] `GET /audit-logs` retorna lista paginada de todos los registros
+-   [ ] `GET /audit-logs` soporta filtros por client_id, account_id, action, fechas
+-   [ ] `GET /audit-logs/:id` retorna un registro específico o 404
+-   [ ] `GET /clients/:client_id/audit-logs` retorna auditoría de un cliente
+-   [ ] `GET /clients/:client_id/accounts/:account_id/audit-logs` retorna auditoría de una cuenta
+-   [ ] `GET .../transactions/:transaction_id/audit-logs` retorna auditoría de una transacción
+-   [ ] Todos los endpoints requieren autenticación
+
+---
+
+### Tarea 2.5.4: Pruebas del Sistema de Auditoría
+
+**Dependencias:** Tareas 2.5.1, 2.5.2 y 2.5.3 completadas
+
+**Documentos de Referencia:**
+-   `docs/GUIDELINES.md` - Sección 5 (Testing)
+
+**Archivos a Crear:**
+```
+functions/src/__tests__/
+├── services/
+│   └── audit.service.test.ts
+└── api/
+    └── audit.routes.test.ts
+```
+
+**Criterios de Aceptación:**
+-   [ ] Pruebas unitarias para `audit.service.ts`
+-   [ ] Pruebas de integración para los endpoints de auditoría
+-   [ ] Pruebas que verifican la creación de auditoría en operaciones de crédito/débito
+-   [ ] Pruebas que verifican que la auditoría se crea dentro de la transacción atómica
+-   [ ] Cobertura de código superior al 80%
+
+---
+
 ## Épica 3: Configuración y Desarrollo del Frontend (MVP)
 
 **Objetivo:** Construir la interfaz de usuario principal para la gestión de clientes, permitiendo a un administrador realizar las operaciones más críticas.
@@ -2239,6 +2758,194 @@ web/components/clients/
 
 ---
 
+### Tarea 3.6: Componentes de Auditoría Base
+
+**Dependencias:** Tarea 3.3 completada
+
+**Documentos de Referencia:**
+-   `docs/USER-STORIES.md` - **HU10, HU11, HU12**
+-   `openapi.yaml` - Schemas de Auditoría
+
+**Archivos a Crear:**
+```
+web/components/audit/
+├── audit-logs-list.tsx
+├── audit-log-item.tsx
+├── audit-log-dialog.tsx
+├── audit-action-badge.tsx
+└── audit-filters.tsx
+```
+
+**Instrucciones Detalladas:**
+
+1.  Crea `components/audit/audit-action-badge.tsx` para mostrar el tipo de acción:
+    ```typescript
+    import { Badge } from '@/components/ui/badge';
+
+    const actionLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
+      CLIENT_CREATED: { label: 'Cliente Creado', variant: 'default' },
+      CLIENT_UPDATED: { label: 'Cliente Actualizado', variant: 'secondary' },
+      CLIENT_DELETED: { label: 'Cliente Eliminado', variant: 'destructive' },
+      ACCOUNT_CREATED: { label: 'Cuenta Creada', variant: 'default' },
+      POINTS_CREDITED: { label: 'Puntos Acreditados', variant: 'default' },
+      POINTS_DEBITED: { label: 'Puntos Debitados', variant: 'outline' },
+      GROUP_CREATED: { label: 'Grupo Creado', variant: 'default' },
+      CLIENT_ADDED_TO_GROUP: { label: 'Añadido a Grupo', variant: 'secondary' },
+      CLIENT_REMOVED_FROM_GROUP: { label: 'Removido de Grupo', variant: 'outline' },
+    };
+
+    export function AuditActionBadge({ action }: { action: string }) {
+      const { label, variant } = actionLabels[action] || { label: action, variant: 'default' };
+      return <Badge variant={variant}>{label}</Badge>;
+    }
+    ```
+
+2.  Crea `components/audit/audit-log-item.tsx`:
+    ```typescript
+    import { formatDistanceToNow } from 'date-fns';
+    import { es } from 'date-fns/locale';
+    import { AuditActionBadge } from './audit-action-badge';
+
+    interface AuditLogItemProps {
+      auditLog: {
+        id: string;
+        action: string;
+        resource_type: string;
+        resource_id: string;
+        actor: { uid: string; email: string | null };
+        timestamp: string;
+      };
+      onClick: () => void;
+    }
+
+    export function AuditLogItem({ auditLog, onClick }: AuditLogItemProps) {
+      return (
+        <div
+          className="flex items-center justify-between p-4 border-b hover:bg-slate-50 cursor-pointer"
+          onClick={onClick}
+        >
+          <div className="flex items-center gap-4">
+            <AuditActionBadge action={auditLog.action} />
+            <div>
+              <p className="text-sm font-medium text-slate-900">
+                {auditLog.resource_type} ({auditLog.resource_id.slice(0, 8)}...)
+              </p>
+              <p className="text-xs text-slate-500">
+                por {auditLog.actor.email || auditLog.actor.uid}
+              </p>
+            </div>
+          </div>
+          <span className="text-xs text-slate-400">
+            {formatDistanceToNow(new Date(auditLog.timestamp), { addSuffix: true, locale: es })}
+          </span>
+        </div>
+      );
+    }
+    ```
+
+3.  Crea `components/audit/audit-log-dialog.tsx` para mostrar los detalles completos.
+
+4.  Crea `components/audit/audit-filters.tsx` con filtros por tipo de acción y rango de fechas.
+
+5.  Crea `components/audit/audit-logs-list.tsx` que combine los componentes anteriores.
+
+**Criterios de Aceptación:**
+-   [ ] Los badges muestran el tipo de acción con el color correcto
+-   [ ] Los items muestran la información resumida del registro
+-   [ ] El diálogo muestra los detalles completos incluyendo cambios before/after
+-   [ ] Los filtros funcionan correctamente
+-   [ ] El código compila sin errores de tipo
+
+---
+
+### Tarea 3.7: Sección de Auditoría en Detalle de Cliente
+
+**Dependencias:** Tareas 3.3 y 3.6 completadas
+
+**Documentos de Referencia:**
+-   `docs/USER-STORIES.md` - **HU10**
+
+**Archivos a Modificar:**
+```
+web/app/dashboard/clients/[id]/page.tsx
+```
+
+**Instrucciones Detalladas:**
+
+1.  Añade una sección "Historial de Auditoría" a la página de detalle del cliente.
+2.  La sección debe usar los componentes de auditoría creados en la tarea 3.6.
+3.  Implementa paginación con "Cargar más" o scroll infinito.
+4.  Añade filtro por tipo de acción.
+
+**Criterios de Aceptación:**
+-   [ ] La sección de auditoría se muestra en la página de detalle
+-   [ ] Los registros se cargan del endpoint `/clients/{client_id}/audit-logs`
+-   [ ] El filtro por tipo de acción funciona
+-   [ ] La paginación funciona correctamente
+-   [ ] El diálogo de detalles se abre al hacer clic en un registro
+
+---
+
+### Tarea 3.8: Auditoría de Transacciones
+
+**Dependencias:** Tareas 3.6 completadas
+
+**Documentos de Referencia:**
+-   `docs/USER-STORIES.md` - **HU11**
+
+**Archivos a Modificar:**
+```
+web/components/clients/transactions-list.tsx
+```
+
+**Instrucciones Detalladas:**
+
+1.  Añade un botón/ícono "Ver Auditoría" a cada transacción en la lista.
+2.  Al hacer clic, consulta el endpoint `/clients/{client_id}/accounts/{account_id}/transactions/{transaction_id}/audit-logs`.
+3.  Muestra el resultado en un `Dialog` usando los componentes de auditoría.
+
+**Criterios de Aceptación:**
+-   [ ] El botón "Ver Auditoría" aparece en cada transacción
+-   [ ] El diálogo muestra la información de auditoría de la transacción
+-   [ ] Se maneja correctamente el caso de transacciones sin registro de auditoría
+
+---
+
+### Tarea 3.9: Panel Global de Auditoría
+
+**Dependencias:** Tareas 3.2 y 3.6 completadas
+
+**Documentos de Referencia:**
+-   `docs/USER-STORIES.md` - **HU12**
+
+**Archivos a Crear:**
+```
+web/app/dashboard/audit/page.tsx
+```
+
+**Archivos a Modificar:**
+```
+web/components/layout/sidebar.tsx  # Añadir entrada "Auditoría"
+```
+
+**Instrucciones Detalladas:**
+
+1.  Añade una entrada "Auditoría" en el sidebar (usar ícono `FileSearch` de lucide-react).
+2.  Crea la página `/dashboard/audit` con:
+    -   Tabla de registros de auditoría
+    -   Filtros avanzados (fechas, tipo de acción, cliente, cuenta)
+    -   Paginación
+    -   Diálogo de detalles al hacer clic en una fila
+
+**Criterios de Aceptación:**
+-   [ ] La entrada "Auditoría" aparece en el sidebar
+-   [ ] La página muestra la tabla de registros
+-   [ ] Los filtros funcionan correctamente con debounce
+-   [ ] La paginación funciona
+-   [ ] El diálogo de detalles se abre correctamente
+
+---
+
 ## Épica 4: Calidad y Pruebas
 
 **Objetivo:** Asegurar que la implementación es robusta, correcta y cumple con los estándares de calidad definidos.
@@ -2672,6 +3379,7 @@ functions/src/__tests__/
 
 4.  **Escribe pruebas similares para:**
     -   `group.service.test.ts` - Crear grupo, asignar/desasignar cliente
+    -   `audit.service.test.ts` - Crear y listar registros de auditoría
     -   `error.middleware.test.ts` - Formateo de ZodError, AppError, errores genéricos
     -   Pruebas de integración con supertest para las rutas
 
@@ -2681,6 +3389,7 @@ functions/src/__tests__/
 -   [ ] Se prueban tanto casos de éxito como de error
 -   [ ] Las pruebas de middleware validan el formato de respuesta de error
 -   [ ] Las pruebas de servicios validan la lógica de negocio crítica (transacciones atómicas)
+-   [ ] Las pruebas de auditoría validan que los registros se crean correctamente
 
 ---
 
@@ -2698,16 +3407,26 @@ functions/src/__tests__/
 ├── Tarea 2.3: Endpoints Groups (depende de 2.2)
 └── Tarea 2.4: Endpoints Accounts (depende de 2.3) [CRÍTICA: transacciones atómicas]
 
+Épica 2.5: Sistema de Auditoría [NUEVA]
+├── Tarea 2.5.1: Schema y Servicio de Auditoría (depende de 2.1)
+├── Tarea 2.5.2: Integración en Servicios (depende de 2.2, 2.3, 2.4, 2.5.1) [CRÍTICA: transacciones atómicas en credit/debit]
+├── Tarea 2.5.3: Endpoints de Auditoría (depende de 2.5.1)
+└── Tarea 2.5.4: Pruebas de Auditoría (depende de 2.5.1, 2.5.2, 2.5.3)
+
 Épica 3: Frontend (puede ejecutarse en paralelo con Épica 1 y 2)
 ├── Tarea 3.1: Andamiaje Next.js (inicio)
 ├── Tarea 3.2: Layout y Sidebar (depende de 3.1)
 ├── Tarea 3.3: Listado de Clientes (depende de 3.2) [HU1, HU7]
 ├── Tarea 3.4: Crear Cliente (depende de 3.3) [HU2]
-└── Tarea 3.5: Eliminar Cliente (depende de 3.3) [HU3]
+├── Tarea 3.5: Eliminar Cliente (depende de 3.3) [HU3]
+├── Tarea 3.6: Componentes de Auditoría Base (depende de 3.3) [HU10, HU11, HU12]
+├── Tarea 3.7: Auditoría en Detalle de Cliente (depende de 3.6) [HU10]
+├── Tarea 3.8: Auditoría de Transacciones (depende de 3.6) [HU11]
+└── Tarea 3.9: Panel Global de Auditoría (depende de 3.2, 3.6) [HU12]
 
 Épica 4: Calidad y Pruebas
 ├── Tarea 4.1: Config Testing (depende de Épica 1)
-└── Tarea 4.2: Suite de Pruebas (depende de 4.1, Épica 2)
+└── Tarea 4.2: Suite de Pruebas (depende de 4.1, Épica 2, Épica 2.5)
 ```
 
 ---
@@ -2726,11 +3445,23 @@ Antes de considerar el MVP como completo, verifica:
 -   [ ] La cobertura de pruebas es superior al 80%
 -   [ ] El código compila sin errores de TypeScript
 
+**Auditoría:**
+-   [ ] Todas las operaciones de creación generan registro de auditoría
+-   [ ] Todas las operaciones de actualización generan registro de auditoría con cambios before/after
+-   [ ] Todas las operaciones de eliminación generan registro de auditoría
+-   [ ] Las operaciones de credit/debit generan registro dentro de la misma transacción atómica
+-   [ ] Los endpoints de consulta de auditoría funcionan con filtros
+-   [ ] Los registros incluyen información del actor (uid, email)
+-   [ ] Los registros incluyen metadatos cuando están disponibles (IP, user agent)
+
 **Frontend:**
 -   [ ] El listado de clientes funciona y muestra email y documento de identidad (HU1)
 -   [ ] La creación de clientes funciona con email y/o documento de identidad (HU2)
 -   [ ] La eliminación de clientes funciona con confirmación (HU3)
 -   [ ] La búsqueda de clientes funciona por nombre, email y documento (HU7)
+-   [ ] La sección de auditoría se muestra en el detalle de cliente (HU10)
+-   [ ] La auditoría de transacciones es accesible desde cada transacción (HU11)
+-   [ ] El panel global de auditoría funciona con filtros (HU12)
 -   [ ] Todos los estados (carga, vacío, error) están implementados
 -   [ ] La UI sigue las guías de `UI-UX-GUIDELINES.md`
 

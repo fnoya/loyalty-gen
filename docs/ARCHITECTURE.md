@@ -112,6 +112,53 @@ Abandonamos el modelo relacional en favor de una estructura de colecciones y sub
 > **Nota Crítica sobre Desnormalización:**
 > La sincronización del campo `account_balances` en `client` mediante transacciones atómicas de Firestore es **mandatoria** para garantizar la consistencia de los datos y es aún más crítica a esta escala.
 
+## 4.1. Modelo de Datos de Auditoría
+
+Dado que el sistema maneja información sensible sobre créditos, débitos y balances de puntos, todas las operaciones deben quedar auditadas para garantizar trazabilidad completa.
+
+-   **`auditLogs` (Colección Raíz)**
+    -   Documento: `auditLogId` (auto-generado)
+        -   `action: string` - Tipo de acción realizada. Valores posibles:
+            -   `"CLIENT_CREATED"` - Cliente creado
+            -   `"CLIENT_UPDATED"` - Cliente actualizado
+            -   `"CLIENT_DELETED"` - Cliente eliminado (proceso iniciado)
+            -   `"ACCOUNT_CREATED"` - Cuenta de lealtad creada
+            -   `"POINTS_CREDITED"` - Puntos acreditados
+            -   `"POINTS_DEBITED"` - Puntos debitados
+            -   `"GROUP_CREATED"` - Grupo de afinidad creado
+            -   `"CLIENT_ADDED_TO_GROUP"` - Cliente añadido a grupo
+            -   `"CLIENT_REMOVED_FROM_GROUP"` - Cliente removido de grupo
+        -   `resource_type: string` - Tipo de recurso afectado (`"client"`, `"account"`, `"transaction"`, `"group"`)
+        -   `resource_id: string` - ID del recurso principal afectado
+        -   `client_id: string | null` - ID del cliente relacionado (para facilitar consultas por cliente)
+        -   `account_id: string | null` - ID de la cuenta relacionada (para facilitar consultas por cuenta)
+        -   `transaction_id: string | null` - ID de la transacción relacionada (solo para operaciones de crédito/débito)
+        -   `actor: map` - Información del usuario que realizó la acción
+            -   `uid: string` - ID del usuario autenticado (Firebase Auth UID)
+            -   `email: string | null` - Email del actor (para referencia histórica)
+        -   `changes: map | null` - Detalle de los cambios realizados (opcional, para actualizaciones)
+            -   `before: map | null` - Estado anterior del recurso (campos relevantes)
+            -   `after: map | null` - Estado posterior del recurso (campos relevantes)
+        -   `metadata: map` - Información adicional de contexto
+            -   `ip_address: string | null` - Dirección IP del cliente (si está disponible)
+            -   `user_agent: string | null` - User agent del cliente (si está disponible)
+            -   `description: string | null` - Descripción adicional de la operación
+        -   `timestamp: timestamp` - Momento exacto de la operación
+
+> **Nota sobre Índices de Auditoría:**
+> Se deben crear índices compuestos para las siguientes consultas frecuentes:
+> - Por `client_id` + `timestamp` (DESC) - Para ver auditoría de un cliente
+> - Por `account_id` + `timestamp` (DESC) - Para ver auditoría de una cuenta
+> - Por `transaction_id` - Para ver auditoría de una transacción específica
+> - Por `actor.uid` + `timestamp` (DESC) - Para ver acciones de un usuario específico
+> - Por `action` + `timestamp` (DESC) - Para filtrar por tipo de acción
+
+> **Política de Retención:**
+> Los registros de auditoría deben conservarse por un período mínimo de 5 años para cumplir con requisitos regulatorios. Se debe implementar una política de archivado a BigQuery para registros antiguos.
+
+> **Nota sobre Rendimiento:**
+> Los registros de auditoría se escriben de forma asíncrona después de completar la operación principal para no afectar el rendimiento de las operaciones críticas. Sin embargo, para operaciones financieras (crédito/débito), el registro de auditoría se crea dentro de la misma transacción atómica para garantizar consistencia.
+
 ## 5. Arquitectura de la API (Monolito Modular vs. Microservicios)
 
 -   **Decisión Inicial:** Se mantiene el enfoque de **"monolito modular serverless"** para el MVP.

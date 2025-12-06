@@ -27,6 +27,7 @@ El diseño y comportamiento de los endpoints deben seguir las convenciones estab
     -   **Respuesta Exitosa (201 Created):** Devuelve el objeto del cliente creado.
     -   **Respuesta de Error (400 Bad Request):** Si no se proporciona ningún identificador (ni email ni documento de identidad).
     -   **Respuesta de Error (409 Conflict):** Si el email o el documento de identidad ya existe.
+    -   **🔍 Auditoría:** Debe crear un registro de auditoría con `action: CLIENT_CREATED`, incluyendo los datos del cliente creado en `changes.after`.
 
 -   **`GET /clients`**
     -   **Descripción:** Lista los clientes usando paginación basada en cursor para un rendimiento óptimo.
@@ -44,17 +45,20 @@ El diseño y comportamiento de los endpoints deben seguir las convenciones estab
         -   `name: string` (opcional)
         -   `extra_data: object` (opcional)
     -   **Respuesta Exitosa (200 OK):** Devuelve el objeto del cliente actualizado.
+    -   **🔍 Auditoría:** Debe crear un registro de auditoría con `action: CLIENT_UPDATED`, incluyendo el estado anterior en `changes.before` y el estado posterior en `changes.after`.
 
 -   **`DELETE /clients/{client_id}`**
     -   **Descripción:** Inicia el proceso de eliminación asíncrona de un cliente y todos sus datos asociados.
     -   **Respuesta Exitosa (202 Accepted):** `{"message": "El proceso de eliminación del cliente ha comenzado."}`.
     -   **Respuesta de Error (404 Not Found):** Si el cliente no existe.
+    -   **🔍 Auditoría:** Debe crear un registro de auditoría con `action: CLIENT_DELETED`, incluyendo los datos del cliente eliminado en `changes.before`.
 
 ### Módulo de Grupos (`/groups`)
 
 -   **`POST /groups`**
     -   **Descripción:** Crea un nuevo grupo de afinidad.
     -   **Respuesta Exitosa (201 Created):** Devuelve el objeto del grupo creado.
+    -   **🔍 Auditoría:** Debe crear un registro de auditoría con `action: GROUP_CREATED`, incluyendo los datos del grupo creado en `changes.after`.
 
 -   **`GET /groups`**
     -   **Descripción:** Lista todos los grupos.
@@ -63,16 +67,19 @@ El diseño y comportamiento de los endpoints deben seguir las convenciones estab
 -   **`POST /groups/{group_id}/clients/{client_id}`**
     -   **Descripción:** Asigna un cliente a un grupo.
     -   **Respuesta Exitosa (200 OK):** `{"message": "Client added to group"}`.
+    -   **🔍 Auditoría:** Debe crear un registro de auditoría con `action: CLIENT_ADDED_TO_GROUP`, vinculando tanto el `client_id` como el `group_id` en el registro.
 
 -   **`DELETE /groups/{group_id}/clients/{client_id}`**
     -   **Descripción:** Desasigna un cliente de un grupo.
     -   **Respuesta Exitosa (200 OK):** `{"message": "Client removed from group"}`.
+    -   **🔍 Auditoría:** Debe crear un registro de auditoría con `action: CLIENT_REMOVED_FROM_GROUP`, vinculando tanto el `client_id` como el `group_id` en el registro.
 
 ### Módulo de Cuentas de Lealtad (`/accounts`)
 
 -   **`POST /clients/{client_id}/accounts`**
     -   **Descripción:** Crea una nueva cuenta de lealtad para un cliente.
     -   **Respuesta Exitosa (201 Created):** Devuelve el objeto de la cuenta creada.
+    -   **🔍 Auditoría:** Debe crear un registro de auditoría con `action: ACCOUNT_CREATED`, vinculando el `client_id` y el `account_id` en el registro.
 
 -   **`GET /clients/{client_id}/accounts`**
     -   **Descripción:** Lista todas las cuentas de un cliente.
@@ -82,17 +89,48 @@ El diseño y comportamiento de los endpoints deben seguir las convenciones estab
     -   **Descripción:** Acredita puntos a una cuenta.
     -   **Request Body:** `{"amount": 100, "description": "Bono de bienvenida"}`.
     -   **Respuesta Exitosa (200 OK):** Devuelve el objeto de la cuenta actualizado.
+    -   **🔍 Auditoría:** **CRÍTICO** - Debe crear un registro de auditoría con `action: POINTS_CREDITED` dentro de la misma transacción atómica de Firestore. El registro debe incluir `client_id`, `account_id`, `transaction_id`, el monto acreditado y el balance resultante.
 
 -   **`POST /clients/{client_id}/accounts/{account_id}/debit`**
     -   **Descripción:** Debita puntos de una cuenta.
     -   **Request Body:** `{"amount": 50, "description": "Canje de producto"}`.
     -   **Respuesta Exitosa (200 OK):** Devuelve el objeto de la cuenta actualizado.
     -   **Respuesta de Error (400 Bad Request):** Si el balance es insuficiente.
+    -   **🔍 Auditoría:** **CRÍTICO** - Debe crear un registro de auditoría con `action: POINTS_DEBITED` dentro de la misma transacción atómica de Firestore. El registro debe incluir `client_id`, `account_id`, `transaction_id`, el monto debitado y el balance resultante.
 
 -   **`GET /clients/{client_id}/accounts/{account_id}/transactions`**
     -   **Descripción:** Lista el historial de transacciones de una cuenta con paginación basada en cursor.
     -   **Query Params:** `limit: int = 100`, `next_cursor: Optional[str] = None`.
     -   **Respuesta Exitosa (200 OK):** Devuelve un objeto paginado con las transacciones.
+
+### Módulo de Auditoría (`/audit-logs`)
+
+-   **`GET /audit-logs`**
+    -   **Descripción:** Lista registros de auditoría con filtros opcionales.
+    -   **Query Params:** `limit: int = 50`, `next_cursor: Optional[str] = None`, `client_id: Optional[str]`, `account_id: Optional[str]`, `action: Optional[AuditAction]`, `from_date: Optional[datetime]`, `to_date: Optional[datetime]`.
+    -   **Respuesta Exitosa (200 OK):** Devuelve un objeto paginado con los registros de auditoría.
+
+-   **`GET /audit-logs/{audit_log_id}`**
+    -   **Descripción:** Obtiene un registro de auditoría por su ID.
+    -   **Respuesta Exitosa (200 OK):** Devuelve el objeto del registro de auditoría con todos los detalles.
+    -   **Respuesta de Error (404 Not Found):** Si el registro no existe.
+
+-   **`GET /clients/{client_id}/audit-logs`**
+    -   **Descripción:** Lista todos los registros de auditoría relacionados con un cliente específico.
+    -   **Query Params:** `limit: int = 50`, `next_cursor: Optional[str] = None`, `action: Optional[AuditAction]`.
+    -   **Respuesta Exitosa (200 OK):** Devuelve un objeto paginado con los registros de auditoría del cliente.
+    -   **Respuesta de Error (404 Not Found):** Si el cliente no existe.
+
+-   **`GET /clients/{client_id}/accounts/{account_id}/audit-logs`**
+    -   **Descripción:** Lista todos los registros de auditoría relacionados con una cuenta de lealtad.
+    -   **Query Params:** `limit: int = 50`, `next_cursor: Optional[str] = None`, `action: Optional[AuditAction]`.
+    -   **Respuesta Exitosa (200 OK):** Devuelve un objeto paginado con los registros de auditoría de la cuenta.
+    -   **Respuesta de Error (404 Not Found):** Si el cliente o la cuenta no existe.
+
+-   **`GET /clients/{client_id}/accounts/{account_id}/transactions/{transaction_id}/audit-logs`**
+    -   **Descripción:** Obtiene el registro de auditoría asociado a una transacción específica.
+    -   **Respuesta Exitosa (200 OK):** Devuelve el registro de auditoría de la transacción.
+    -   **Respuesta de Error (404 Not Found):** Si la transacción o el registro de auditoría no existe.
 
 ---
 
