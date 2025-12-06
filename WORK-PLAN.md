@@ -621,8 +621,9 @@ functions/src/schemas/
 **Dependencias:** Tarea 2.1 completada
 
 **Documentos de Referencia:**
--   `openapi.yaml` - Sección `paths: /clients*`
+-   `openapi.yaml` - Sección `paths: /clients*` (incluye `/clients/search`)
 -   `docs/ARCHITECTURE.md` - Sección 4 (Modelo de Datos) y Sección 3.1 (Estrategia de Búsqueda MVP)
+-   `docs/FIRESTORE-SEARCH-SOLUTION.md` - Solución completa de búsqueda en Firestore
 -   `docs/SPECS.md` - Módulo de Clientes
 
 **Archivos a Crear:**
@@ -640,6 +641,8 @@ functions/src/index.ts  # Registrar las rutas
 ```
 
 **Instrucciones Detalladas:**
+
+> **Nota Importante:** Esta tarea incluye la implementación del endpoint de búsqueda `/clients/search` que permite buscar clientes por nombre, documento de identidad y número de teléfono usando consultas de Firestore. Ver `docs/FIRESTORE-SEARCH-SOLUTION.md` para detalles completos de la estrategia de búsqueda.
 
 1.  Crea `src/services/client.service.ts` con la lógica de negocio:
     ```typescript
@@ -763,6 +766,137 @@ functions/src/index.ts  # Registrar las rutas
         await docRef.delete();
       }
       
+      /**
+       * Busca clientes usando consultas de Firestore según el tipo de query.
+       * 
+       * Tipos de búsqueda soportados:
+       * - Nombre: "Francisco" o "Francisco Noya" (búsqueda en campos de nombre)
+       * - Número: "2889956" (búsqueda en documento de identidad y teléfonos)
+       * 
+       * Limitaciones MVP:
+       * - Las búsquedas de teléfono solo soportan startsWith (no endsWith)
+       * - No hay soporte para búsquedas fuzzy o tolerancia a errores
+       * 
+       * Ver docs/FIRESTORE-SEARCH-SOLUTION.md para detalles completos.
+       */
+      async search(query: string, params: PaginationParams): Promise<PaginatedResponse<Client>> {
+        const normalizedQuery = query.trim().toLowerCase();
+        
+        if (!normalizedQuery) {
+          return { data: [], paging: { next_cursor: null } };
+        }
+        
+        // Determinar tipo de búsqueda
+        const hasDigits = /\d/.test(normalizedQuery);
+        const words = normalizedQuery.split(/\s+/).filter(w => w.length > 0);
+        
+        let clientIds = new Set<string>();
+        
+        if (!hasDigits && words.length > 1) {
+          // BÚSQUEDA POR NOMBRE COMPLETO: "Francisco Noya"
+          // Buscar firstName Y firstSurname (intersección de resultados)
+          const firstName = words[0];
+          const surname = words[1];
+          
+          // Query 1: Buscar por firstName_lower
+          const firstNameResults = await clientsCollection
+            .where('firstName_lower', '>=', firstName)
+            .where('firstName_lower', '<', firstName + '\uf8ff')
+            .get();
+          
+          const firstNameIds = new Set(firstNameResults.docs.map(doc => doc.id));
+          
+          // Query 2: Buscar por firstSurname_lower
+          const surnameResults = await clientsCollection
+            .where('firstSurname_lower', '>=', surname)
+            .where('firstSurname_lower', '<', surname + '\uf8ff')
+            .get();
+          
+          // Intersección: clientes que coinciden con AMBOS criterios
+          surnameResults.docs.forEach(doc => {
+            if (firstNameIds.has(doc.id)) {
+              clientIds.add(doc.id);
+            }
+          });
+          
+        } else if (!hasDigits) {
+          // BÚSQUEDA POR NOMBRE SIMPLE: "Francisco"
+          // Buscar en firstName, secondName, firstSurname, secondSurname
+          
+          const queries = [
+            clientsCollection
+              .where('firstName_lower', '>=', normalizedQuery)
+              .where('firstName_lower', '<', normalizedQuery + '\uf8ff'),
+            clientsCollection
+              .where('secondName_lower', '>=', normalizedQuery)
+              .where('secondName_lower', '<', normalizedQuery + '\uf8ff'),
+            clientsCollection
+              .where('firstSurname_lower', '>=', normalizedQuery)
+              .where('firstSurname_lower', '<', normalizedQuery + '\uf8ff'),
+            clientsCollection
+              .where('secondSurname_lower', '>=', normalizedQuery)
+              .where('secondSurname_lower', '<', normalizedQuery + '\uf8ff'),
+          ];
+          
+          const results = await Promise.all(queries.map(q => q.get()));
+          
+          // Unión de resultados (eliminar duplicados)
+          results.forEach(snapshot => {
+            snapshot.docs.forEach(doc => clientIds.add(doc.id));
+          });
+          
+        } else {
+          // BÚSQUEDA POR NÚMERO: "2889956"
+          // Buscar en documento de identidad y teléfonos
+          
+          // Query 1: Buscar en identity_document.number_lower
+          const docResults = await clientsCollection
+            .where('identity_document.number_lower', '>=', normalizedQuery)
+            .where('identity_document.number_lower', '<', normalizedQuery + '\uf8ff')
+            .get();
+          
+          docResults.docs.forEach(doc => clientIds.add(doc.id));
+          
+          // Query 2: Buscar en phoneNumbers (startsWith usando array-contains)
+          // Nota: Solo soporta startsWith en MVP (ver limitaciones en docs/FIRESTORE-SEARCH-SOLUTION.md)
+          const phoneResults = await clientsCollection
+            .where('phoneNumbers', 'array-contains', normalizedQuery)
+            .get();
+          
+          phoneResults.docs.forEach(doc => clientIds.add(doc.id));
+        }
+        
+        // Obtener documentos completos de los IDs encontrados
+        const clientIdsArray = Array.from(clientIds);
+        
+        if (clientIdsArray.length === 0) {
+          return { data: [], paging: { next_cursor: null } };
+        }
+        
+        // Obtener los clientes y aplicar paginación
+        // Nota: La paginación aquí es simplificada ya que ya tenemos los IDs
+        const startIndex = params.next_cursor ? parseInt(params.next_cursor) : 0;
+        const endIndex = startIndex + params.limit;
+        const paginatedIds = clientIdsArray.slice(startIndex, endIndex + 1);
+        
+        const clientDocs = await Promise.all(
+          paginatedIds.slice(0, params.limit).map(id => clientsCollection.doc(id).get())
+        );
+        
+        const data = clientDocs
+          .filter(doc => doc.exists)
+          .map(doc => this.docToClient(doc));
+        
+        const hasMore = paginatedIds.length > params.limit;
+        
+        return {
+          data,
+          paging: {
+            next_cursor: hasMore ? String(endIndex) : null
+          }
+        };
+      }
+      
       private docToClient(doc: admin.firestore.DocumentSnapshot): Client {
         const data = doc.data()!;
         return {
@@ -793,6 +927,29 @@ functions/src/index.ts  # Registrar las rutas
     
     // Todas las rutas requieren autenticación
     router.use(authMiddleware);
+    
+    // GET /clients/search - Buscar clientes
+    // IMPORTANTE: Esta ruta debe ir ANTES de /clients/:client_id para evitar conflictos
+    router.get('/search', async (req, res, next) => {
+      try {
+        const query = req.query.q as string;
+        
+        if (!query || query.trim().length === 0) {
+          return res.status(400).json({
+            error: {
+              code: 'VALIDATION_FAILED',
+              message: 'El parámetro de búsqueda "q" es requerido.'
+            }
+          });
+        }
+        
+        const params = paginationParamsSchema.parse(req.query);
+        const result = await clientService.search(query, params);
+        res.json(result);
+      } catch (error) {
+        next(error);
+      }
+    });
     
     // GET /clients - Listar clientes
     router.get('/', async (req, res, next) => {
@@ -869,6 +1026,13 @@ functions/src/index.ts  # Registrar las rutas
 -   [ ] `GET /clients/:id` retorna el cliente o `404 Not Found`
 -   [ ] `PUT /clients/:id` actualiza el cliente o `404 Not Found`
 -   [ ] `DELETE /clients/:id` retorna `202 Accepted` o `404 Not Found`
+-   [ ] `GET /clients/search?q={query}` busca clientes por nombre, documento o teléfono
+-   [ ] `GET /clients/search` retorna `400 Bad Request` si falta el parámetro `q`
+-   [ ] La búsqueda por nombre simple (ej: "Francisco") busca en todos los campos de nombre
+-   [ ] La búsqueda por nombre completo (ej: "Francisco Noya") busca firstName Y firstSurname
+-   [ ] La búsqueda por número (ej: "2889956") busca en documento de identidad y teléfonos
+-   [ ] Las búsquedas son case-insensitive (usan campos `_lower`)
+-   [ ] La búsqueda de teléfonos solo soporta startsWith (limitación documentada del MVP)
 -   [ ] Todos los endpoints requieren autenticación (retornan `401` sin token)
 -   [ ] Las respuestas de error siguen el formato `{ error: { code, message } }`
 
