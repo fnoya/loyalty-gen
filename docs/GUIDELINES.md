@@ -104,13 +104,19 @@ El sistema de auditoría es crítico para garantizar la trazabilidad de todas la
 
 ### 11.3. Implementación
 
+> **Nota sobre resourceId vs clientId:**
+> - `resourceId` siempre contiene el ID del recurso principal afectado por la operación
+> - `clientId`, `accountId`, `groupId`, `transactionId` son campos de referencia que facilitan las consultas y filtros
+> - Para operaciones sobre clientes, `resourceId` y `clientId` tendrán el mismo valor
+> - Para operaciones sobre transacciones, `resourceId` será el ID de la transacción, pero `clientId` y `accountId` permitirán buscar todos los registros de un cliente/cuenta
+
 ```typescript
 // Para operaciones no financieras (después de la operación principal)
 await auditService.createAuditLog({
   action: 'CLIENT_CREATED',
   resourceType: 'client',
-  resourceId: clientId,
-  clientId: clientId,
+  resourceId: clientId,  // ID del recurso creado
+  clientId: clientId,    // Referencia para búsquedas por cliente
   actor: { uid: req.user.uid, email: req.user.email },
   changes: { after: clientData },
   metadata: { ip_address: req.ip, user_agent: req.get('User-Agent') }
