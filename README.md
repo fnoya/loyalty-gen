@@ -4,7 +4,6 @@
 
 ### Plataforma de Lealtad de Clientes API-First
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript)](https://www.typescriptlang.org/)
 [![Firebase](https://img.shields.io/badge/Firebase-Cloud-FFCA28?logo=firebase)](https://firebase.google.com/)
 [![Node.js](https://img.shields.io/badge/Node.js-LTS-339933?logo=node.js)](https://nodejs.org/)
@@ -29,7 +28,6 @@
 - [Primeros Pasos](#-primeros-pasos)
 - [Estructura del Proyecto](#-estructura-del-proyecto)
 - [Contribución](#-contribución)
-- [Licencia](#-licencia)
 
 ---
 
@@ -432,12 +430,6 @@ loyalty-gen/
 3. Sigue las convenciones de [Conventional Commits](https://www.conventionalcommits.org/)
 4. Asegúrate de que el código pase linting y tests
 5. Crea un Pull Request
-
----
-
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT. Consulta el archivo [LICENSE](LICENSE) para más detalles.
 
 ---
 
