@@ -385,36 +385,36 @@ graph TB
 ### Flujo de Datos en el Frontend
 
 ```mermaid
-graph LR;
-    subgraph Browser["🖥️ Browser"];
-        subgraph NextApp["Next.js App"];
-            PAGE[Page Component];
-            COMP[UI Components<br/>Shadcn/ui];
-            FORM[React Hook Form<br/>+ Zod];
-            STATE[Zustand Store];
-        end;
-    end;
+graph LR
+    subgraph Browser["🖥️ Browser"]
+        subgraph NextApp["Next.js App"]
+            PAGE[Page Component]
+            COMP[UI Components<br/>Shadcn/ui]
+            FORM[React Hook Form<br/>+ Zod]
+            STATE[Zustand Store]
+        end
+    end
 
-    subgraph DataFlow["🔄 Data Flow"];
-        API_CLIENT[API Client<br/>fetchApi()];
-    end;
+    subgraph DataFlow["🔄 Data Flow"]
+        API_CLIENT[API Client<br/>fetchApi]
+    end
 
-    subgraph Backend["☁️ Backend"];
-        CF[Cloud Functions];
-    end;
+    subgraph Backend["☁️ Backend"]
+        CF[Cloud Functions]
+    end
 
-    PAGE -->|render| COMP;
-    COMP -->|user input| FORM;
-    FORM -->|validate| FORM;
-    FORM -->|submit| API_CLIENT;
-    API_CLIENT -->|HTTP| CF;
-    CF -->|response| API_CLIENT;
-    API_CLIENT -->|update| STATE;
-    STATE -->|notify| PAGE;
+    PAGE -->|render| COMP
+    COMP -->|user input| FORM
+    FORM -->|validate| FORM
+    FORM -->|submit| API_CLIENT
+    API_CLIENT -->|HTTP| CF
+    CF -->|response| API_CLIENT
+    API_CLIENT -->|update| STATE
+    STATE -->|notify| PAGE
 
-    style PAGE fill:#0070f3,color:#fff;
-    style COMP fill:#000,color:#fff;
-    style STATE fill:#764abc,color:#fff;
+    style PAGE fill:#0070f3,color:#fff
+    style COMP fill:#000,color:#fff
+    style STATE fill:#764abc,color:#fff
 ```
 
 ---
