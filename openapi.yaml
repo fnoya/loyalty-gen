@@ -995,7 +995,7 @@ components:
           allOf:
             - $ref: '#/components/schemas/IdentityDocument'
           description: "Documento de identidad del cliente (opcional si se proporciona email)."
-        photoUrl: { type: string, format: uri, description: "URL de la foto de perfil del cliente (opcional). Debe ser una URL válida de Firebase Storage." }
+        photoUrl: { type: string, format: uri, nullable: true, description: "URL de la foto de perfil del cliente (opcional). Debe ser una URL válida de Firebase Storage." }
         phones:
           type: array
           items:
