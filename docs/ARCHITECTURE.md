@@ -6,6 +6,7 @@
 -   **Entorno de Ejecución:** **Node.js LTS**
 -   **Framework de API:** **Express.js** sobre **Cloud Functions for Firebase**.
 -   **Base de Datos Transaccional:** **Cloud Firestore**.
+-   **Almacenamiento de Archivos:** **Firebase Storage** (para fotos de perfil de clientes).
 -   **Autenticación:** **Firebase Authentication**.
 -   **Frontend Hosting:** **Firebase Hosting**.
 -   **Validación de Datos:** **Zod**.
@@ -27,6 +28,7 @@ graph TD;
         C{API: Cloud Function Express};
         D[DB Transaccional: Cloud Firestore];
         E[Auth: Firebase Authentication];
+        F[Storage: Firebase Storage];
         I[Extension BigQuery futuro];
     end;
 
@@ -40,6 +42,7 @@ graph TD;
     A -->|Busqueda/Query| C;
     C -->|Lee/Escribe CRUD| D;
     C -->|Verifica Token| E;
+    C -->|Sube/Descarga Archivos| F;
 
     D -- onWrite --> I;
     I -->|Carga datos| H;
@@ -86,6 +89,7 @@ Abandonamos el modelo relacional en favor de una estructura de colecciones y sub
         -   `identity_document: map | null` (opcional, estructura de documento de identidad)
             -   `type: string` (tipo de documento: "cedula_identidad", "pasaporte")
             -   `number: string` (número alfanumérico del documento)
+        -   `photoUrl: string | null` (opcional, URL de la foto de perfil en Firebase Storage)
         -   `phones: array<map>` (array de números telefónicos, puede estar vacío)
             -   `type: string` (tipo de teléfono: "mobile", "home", "work", "other")
             -   `number: string` (número telefónico, preferiblemente en formato E.164)
@@ -153,7 +157,62 @@ Abandonamos el modelo relacional en favor de una estructura de colecciones y sub
 > **Nota Crítica sobre Desnormalización:**
 > La sincronización del campo `account_balances` en `client` mediante transacciones atómicas de Firestore es **mandatoria** para garantizar la consistencia de los datos y es aún más crítica a esta escala.
 
-## 4.1. Modelo de Datos de Auditoría
+## 4.1. Almacenamiento de Fotos de Perfil (Firebase Storage)
+
+Las fotos de perfil de los clientes se almacenan en **Firebase Storage** en lugar de codificarlas en Base64 dentro de Firestore. Esta estrategia optimiza el rendimiento, reduce costos y escala mejor.
+
+### 4.1.1. Estructura de Almacenamiento
+
+-   **Ubicación:** Las fotos se almacenan en Firebase Storage bajo la ruta:
+    ```
+    /client-photos/{clientId}/{timestamp}_{filename}
+    ```
+    -   `{clientId}`: ID único del cliente en Firestore
+    -   `{timestamp}`: Timestamp Unix en milisegundos para evitar colisiones
+    -   `{filename}`: Nombre original del archivo sanitizado
+
+-   **Campo en Firestore:** El documento del cliente en Firestore contiene un campo `photoUrl: string | null` que almacena la URL pública de acceso a la foto.
+
+### 4.1.2. Validaciones y Restricciones
+
+-   **Formatos Soportados:** JPEG, PNG, WEBP
+-   **Tamaño Máximo:** 5 MB por archivo
+-   **Dimensiones Recomendadas:** 512x512 píxeles o superior (aspecto cuadrado preferido)
+-   **Validación de Tipo MIME:** El backend debe verificar el tipo MIME del archivo, no solo la extensión
+
+### 4.1.3. Proceso de Subida
+
+1.  **Upload:** El cliente sube la foto vía `POST /api/v1/clients/{client_id}/photo`
+2.  **Validación:** El backend valida formato, tamaño y tipo MIME
+3.  **Almacenamiento:** La foto se guarda en Firebase Storage con metadata (clientId, timestamp)
+4.  **URL Pública:** Se genera una URL pública con token de acceso
+5.  **Actualización Firestore:** El campo `photoUrl` del cliente se actualiza en Firestore
+6.  **Limpieza:** Si existía una foto anterior, se elimina de Storage de forma asíncrona
+
+### 4.1.4. Proceso de Eliminación
+
+-   **Endpoint:** `DELETE /api/v1/clients/{client_id}/photo`
+-   **Operación:** 
+    1. Se elimina el archivo de Firebase Storage
+    2. Se establece `photoUrl: null` en el documento del cliente
+
+### 4.1.5. Consideraciones de Seguridad
+
+-   **Reglas de Storage:** Solo usuarios autenticados pueden subir/eliminar fotos
+-   **Validación de Propietario:** El usuario debe tener permisos sobre el cliente para modificar su foto
+-   **URLs Firmadas:** Las URLs de acceso incluyen tokens de seguridad de Firebase
+-   **Prevención de Malware:** Considerar integración con Cloud Vision API o similar para detección de contenido inapropiado (Post-MVP)
+
+### 4.1.6. Optimización de Rendimiento (Post-MVP)
+
+-   **Generación de Thumbnails:** Usar Firebase Extensions (Resize Images) para crear versiones optimizadas automáticamente
+-   **CDN:** Firebase Storage sirve archivos a través de Google Cloud CDN por defecto
+-   **Compresión:** Implementar compresión de imágenes del lado del cliente antes de la subida
+
+> **Nota sobre PII (Información Personal Identificable):**
+> Las fotos de perfil contienen PII visual. Las URLs de fotos **NO deben registrarse en logs de aplicación**. Utilizar referencias opacas (ej: "photo exists") en logs en lugar de URLs completas.
+
+## 4.2. Modelo de Datos de Auditoría
 
 Dado que el sistema maneja información sensible sobre créditos, débitos y balances de puntos, todas las operaciones deben quedar auditadas para garantizar trazabilidad completa.
 

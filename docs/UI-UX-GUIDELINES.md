@@ -69,6 +69,54 @@ Cuando una lista o tabla no tiene datos, no se debe mostrar una tabla vacía. En
 Para mejorar la experiencia de usuario y proporcionar feedback instantáneo, se debe evaluar el uso de listeners de Firestore (`onSnapshot`) en áreas clave.
 -   **Caso de Uso Ideal:** La tabla de transacciones de una cuenta de lealtad. Al acreditar o debitar puntos, la nueva transacción debe aparecer en la lista en tiempo real sin necesidad de un refresco manual por parte del usuario.
 
+### d. Fotos de Perfil de Clientes
+
+Las fotos de perfil de clientes son opcionales y deben manejarse con gracia en la UI.
+
+**Componente Avatar:**
+-   **Con foto:** Si el cliente tiene una `photoUrl`, se debe mostrar la imagen circular con un borde sutil
+-   **Sin foto (Placeholder):** Si no hay foto, se debe mostrar un avatar placeholder con:
+    -   Fondo de color basado en las iniciales del cliente (ej: azul, verde, púrpura)
+    -   Iniciales del cliente en texto blanco (ej: "JP" para Juan Pérez)
+    -   Tamaño consistente con los avatares que tienen foto
+    -   Borde sutil para mantener consistencia visual
+
+**Ejemplo de Implementación (Pseudocódigo React):**
+```tsx
+function ClientAvatar({ client, size = "md" }) {
+  const initials = `${client.name.firstName[0]}${client.name.firstLastName[0]}`;
+  
+  if (client.photoUrl) {
+    return (
+      <img 
+        src={client.photoUrl} 
+        alt={`${client.name.firstName} ${client.name.firstLastName}`}
+        className="rounded-full object-cover"
+      />
+    );
+  }
+  
+  return (
+    <div className="rounded-full bg-blue-600 flex items-center justify-center">
+      <span className="text-white font-semibold">{initials}</span>
+    </div>
+  );
+}
+```
+
+**Gestión de Fotos:**
+-   **Subida:** Botón "Subir Foto" o "Cambiar Foto" que abre un selector de archivos
+-   **Validación del lado del cliente:** Validar formato (JPEG/PNG/WEBP) y tamaño (máx 5MB) antes de subir
+-   **Preview:** Mostrar preview de la imagen antes de confirmar la subida
+-   **Eliminación:** Botón "Eliminar Foto" que muestra un `AlertDialog` de confirmación
+-   **Estados de carga:** Mostrar spinner/skeleton mientras se sube o elimina la foto
+-   **Manejo de errores:** Mostrar `Toast` con mensaje claro si la subida falla
+
+**Accesibilidad:**
+-   Todos los avatares deben tener atributo `alt` descriptivo
+-   Los placeholders deben ser distinguibles para usuarios con deficiencias visuales de color
+-   Las acciones de foto deben ser accesibles por teclado
+
 ## 5. Composición de Vistas Principales
 
 La composición detallada de las vistas en el documento original se mantiene como guía principal para la implementación del frontend.
