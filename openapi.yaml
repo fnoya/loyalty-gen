@@ -142,6 +142,74 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /clients/{client_id}/photo:
+    post:
+      tags: [Clients]
+      summary: Subir o Actualizar Foto de Perfil del Cliente
+      description: |
+        Sube una nueva foto de perfil para el cliente a Firebase Storage.
+        La foto anterior (si existe) será eliminada automáticamente.
+        
+        **Validaciones:**
+        - Formatos soportados: JPEG, PNG, WEBP
+        - Tamaño máximo: 5 MB
+        - Dimensiones recomendadas: 512x512 píxeles o superior
+        
+        **Proceso:**
+        1. La foto se sube a Firebase Storage en la ruta `/client-photos/{client_id}/{timestamp}`
+        2. Se genera una URL pública firmada con token
+        3. El campo `photoUrl` del cliente se actualiza automáticamente
+        4. La foto anterior se elimina de Storage (si existía)
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [photo]
+              properties:
+                photo:
+                  type: string
+                  format: binary
+                  description: "Archivo de imagen (JPEG, PNG o WEBP, máximo 5 MB)"
+      responses:
+        '200':
+          description: Foto subida exitosamente. Devuelve el cliente actualizado con la nueva photoUrl.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+        '400':
+          description: Archivo inválido (formato no soportado, tamaño excedido, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    delete:
+      tags: [Clients]
+      summary: Eliminar Foto de Perfil del Cliente
+      description: |
+        Elimina la foto de perfil del cliente de Firebase Storage y establece `photoUrl` en null.
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+      responses:
+        '200':
+          description: Foto eliminada exitosamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   /clients/search:
     get:
       tags: [Clients]
@@ -806,6 +874,7 @@ components:
             - $ref: '#/components/schemas/IdentityDocument'
           nullable: true
           description: "Documento de identidad del cliente (opcional si se proporciona email)."
+        photoUrl: { type: string, format: uri, nullable: true, description: "URL de la foto de perfil del cliente en Firebase Storage (opcional)." }
         phones:
           type: array
           items:
@@ -926,6 +995,7 @@ components:
           allOf:
             - $ref: '#/components/schemas/IdentityDocument'
           description: "Documento de identidad del cliente (opcional si se proporciona email)."
+        photoUrl: { type: string, format: uri, nullable: true, description: "URL de la foto de perfil del cliente (opcional). Debe ser una URL válida de Firebase Storage." }
         phones:
           type: array
           items:
@@ -942,6 +1012,7 @@ components:
       properties:
         name:
           $ref: '#/components/schemas/ClientName'
+        photoUrl: { type: string, format: uri, nullable: true, description: "URL de la foto de perfil del cliente. Se puede proporcionar null para eliminar la foto existente." }
         phones:
           type: array
           items:

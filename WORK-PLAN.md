@@ -1038,6 +1038,383 @@ functions/src/index.ts  # Registrar las rutas
 
 ---
 
+### Tarea 2.2.1: Gestión de Fotos de Perfil de Clientes
+
+**Dependencias:** Tarea 2.2 completada
+
+**Documentos de Referencia:**
+-   `openapi.yaml` - Endpoints `/clients/{client_id}/photo`
+-   `docs/ARCHITECTURE.md` - Sección 4.1 (Almacenamiento de Fotos de Perfil)
+-   `docs/CLIENT-FIELDS-SPEC.md` - Sección 3.2 (Foto de Perfil)
+-   `docs/UI-UX-GUIDELINES.md` - Sección 4.d (Fotos de Perfil de Clientes)
+
+**Archivos a Crear:**
+```
+functions/src/
+├── services/
+│   └── photo.service.ts     # CREAR - Servicio para gestión de fotos en Storage
+├── api/routes/
+│   └── photo.routes.ts      # CREAR - Rutas para subir/eliminar fotos
+```
+
+**Archivos a Modificar:**
+```
+functions/src/
+├── schemas/index.ts          # MODIFICAR - Añadir photoUrl al schema de Client
+├── services/client.service.ts # MODIFICAR - Limpiar foto al eliminar cliente
+├── index.ts                  # MODIFICAR - Registrar rutas de foto
+```
+
+**Dependencias NPM a Instalar:**
+```bash
+npm install multer @types/multer busboy @types/busboy
+```
+
+**Instrucciones Detalladas:**
+
+1.  **Actualizar Schema de Cliente** en `src/schemas/index.ts`:
+    ```typescript
+    // Añadir al schema de Client
+    export const clientSchema = z.object({
+      id: z.string(),
+      name: clientNameSchema,
+      email: z.string().email().nullable(),
+      identity_document: identityDocumentSchema.nullable(),
+      photoUrl: z.string().url().nullable(), // NUEVO CAMPO
+      phones: z.array(phoneSchema),
+      addresses: z.array(addressSchema),
+      extra_data: z.record(z.unknown()),
+      affinityGroupIds: z.array(z.string()),
+      account_balances: z.record(z.number()),
+      created_at: z.date(),
+      updated_at: z.date()
+    });
+
+    // Actualizar CreateClientRequest y UpdateClientRequest
+    export const createClientSchema = baseCreateClientSchema
+      .extend({
+        photoUrl: z.string().url().optional() // Opcional en creación
+      })
+      .refine(
+        data => data.email || data.identity_document,
+        { message: 'Debe proporcionar al menos un identificador: email o documento de identidad.' }
+      );
+
+    export const updateClientSchema = z.object({
+      name: clientNameSchema.optional(),
+      photoUrl: z.string().url().nullable().optional(), // Puede ser null para eliminar
+      phones: z.array(phoneSchema).optional(),
+      addresses: z.array(addressSchema).optional(),
+      extra_data: z.record(z.unknown()).optional()
+    });
+    ```
+
+2.  **Crear Servicio de Fotos** `src/services/photo.service.ts`:
+    ```typescript
+    import * as admin from 'firebase-admin';
+    import { v4 as uuidv4 } from 'uuid';
+    
+    const storage = admin.storage();
+    const bucket = storage.bucket();
+    
+    export class PhotoService {
+      private readonly PHOTO_PATH_PREFIX = 'client-photos';
+      private readonly MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+      private readonly ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+      
+      /**
+       * Sube una foto de cliente a Firebase Storage
+       * @param clientId ID del cliente
+       * @param fileBuffer Buffer del archivo
+       * @param mimeType Tipo MIME del archivo
+       * @param originalName Nombre original del archivo
+       * @returns URL pública de la foto subida
+       */
+      async uploadPhoto(
+        clientId: string,
+        fileBuffer: Buffer,
+        mimeType: string,
+        originalName: string
+      ): Promise<string> {
+        // Validar tipo MIME
+        if (!this.ALLOWED_MIME_TYPES.includes(mimeType)) {
+          throw new Error(`Formato de archivo no soportado. Use JPEG, PNG o WEBP.`);
+        }
+        
+        // Validar tamaño
+        if (fileBuffer.length > this.MAX_FILE_SIZE) {
+          throw new Error(`El archivo excede el tamaño máximo de 5 MB.`);
+        }
+        
+        // Generar nombre único para el archivo
+        const timestamp = Date.now();
+        const sanitizedName = originalName.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const fileName = `${timestamp}_${sanitizedName}`;
+        const filePath = `${this.PHOTO_PATH_PREFIX}/${clientId}/${fileName}`;
+        
+        // Subir archivo a Storage
+        const file = bucket.file(filePath);
+        await file.save(fileBuffer, {
+          metadata: {
+            contentType: mimeType,
+            metadata: {
+              clientId: clientId,
+              uploadTimestamp: timestamp.toString()
+            }
+          }
+        });
+        
+        // Hacer el archivo públicamente accesible
+        await file.makePublic();
+        
+        // Generar URL pública
+        const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
+        
+        return publicUrl;
+      }
+      
+      /**
+       * Elimina la foto de un cliente de Firebase Storage
+       * @param photoUrl URL de la foto a eliminar
+       */
+      async deletePhoto(photoUrl: string): Promise<void> {
+        try {
+          // Extraer el path del archivo de la URL
+          const urlParts = photoUrl.split(`${bucket.name}/`);
+          if (urlParts.length < 2) {
+            throw new Error('URL de foto inválida');
+          }
+          
+          const filePath = decodeURIComponent(urlParts[1]);
+          const file = bucket.file(filePath);
+          
+          // Eliminar el archivo
+          await file.delete();
+        } catch (error) {
+          // Log pero no fallar si el archivo no existe
+          console.warn(`No se pudo eliminar la foto: ${photoUrl}`, error);
+        }
+      }
+      
+      /**
+       * Elimina todas las fotos de un cliente (usado al eliminar cliente)
+       * @param clientId ID del cliente
+       */
+      async deleteAllClientPhotos(clientId: string): Promise<void> {
+        try {
+          const [files] = await bucket.getFiles({
+            prefix: `${this.PHOTO_PATH_PREFIX}/${clientId}/`
+          });
+          
+          await Promise.all(files.map(file => file.delete()));
+        } catch (error) {
+          console.warn(`Error al eliminar fotos del cliente ${clientId}`, error);
+        }
+      }
+    }
+    ```
+
+3.  **Crear Rutas de Foto** `src/api/routes/photo.routes.ts`:
+    ```typescript
+    import { Router, Request, Response } from 'express';
+    import * as admin from 'firebase-admin';
+    import Busboy from 'busboy';
+    import { PhotoService } from '../../services/photo.service';
+    import { NotFoundError } from '../../core/errors';
+    
+    const router = Router();
+    const photoService = new PhotoService();
+    const db = admin.firestore();
+    
+    /**
+     * POST /clients/:client_id/photo
+     * Sube o actualiza la foto de perfil del cliente
+     */
+    router.post('/:client_id/photo', async (req: Request, res: Response) => {
+      const { client_id } = req.params;
+      
+      // Verificar que el cliente existe
+      const clientRef = db.collection('clients').doc(client_id);
+      const clientDoc = await clientRef.get();
+      
+      if (!clientDoc.exists) {
+        throw new NotFoundError('Cliente', client_id);
+      }
+      
+      const clientData = clientDoc.data();
+      const oldPhotoUrl = clientData?.photoUrl;
+      
+      // Procesar multipart/form-data con busboy
+      const busboy = Busboy({ headers: req.headers });
+      let fileBuffer: Buffer | null = null;
+      let mimeType: string | null = null;
+      let fileName: string | null = null;
+      
+      busboy.on('file', (_fieldname, file, info) => {
+        const { filename, mimeType: mime } = info;
+        fileName = filename;
+        mimeType = mime;
+        
+        const chunks: Buffer[] = [];
+        file.on('data', (chunk) => chunks.push(chunk));
+        file.on('end', () => {
+          fileBuffer = Buffer.concat(chunks);
+        });
+      });
+      
+      busboy.on('finish', async () => {
+        if (!fileBuffer || !mimeType || !fileName) {
+          return res.status(400).json({
+            error: {
+              code: 'MISSING_FILE',
+              message: 'Debe proporcionar un archivo de imagen.'
+            }
+          });
+        }
+        
+        try {
+          // Subir nueva foto
+          const photoUrl = await photoService.uploadPhoto(
+            client_id,
+            fileBuffer,
+            mimeType,
+            fileName
+          );
+          
+          // Actualizar Firestore
+          await clientRef.update({
+            photoUrl: photoUrl,
+            updated_at: admin.firestore.Timestamp.now()
+          });
+          
+          // Eliminar foto anterior (si existe)
+          if (oldPhotoUrl) {
+            await photoService.deletePhoto(oldPhotoUrl);
+          }
+          
+          // Obtener cliente actualizado
+          const updatedDoc = await clientRef.get();
+          const updatedData = updatedDoc.data();
+          
+          res.status(200).json({
+            id: updatedDoc.id,
+            ...updatedData,
+            created_at: updatedData?.created_at.toDate(),
+            updated_at: updatedData?.updated_at.toDate()
+          });
+        } catch (error) {
+          if (error instanceof Error) {
+            res.status(400).json({
+              error: {
+                code: 'PHOTO_UPLOAD_FAILED',
+                message: error.message
+              }
+            });
+          } else {
+            throw error;
+          }
+        }
+      });
+      
+      req.pipe(busboy);
+    });
+    
+    /**
+     * DELETE /clients/:client_id/photo
+     * Elimina la foto de perfil del cliente
+     */
+    router.delete('/:client_id/photo', async (req: Request, res: Response) => {
+      const { client_id } = req.params;
+      
+      // Verificar que el cliente existe
+      const clientRef = db.collection('clients').doc(client_id);
+      const clientDoc = await clientRef.get();
+      
+      if (!clientDoc.exists) {
+        throw new NotFoundError('Cliente', client_id);
+      }
+      
+      const clientData = clientDoc.data();
+      const photoUrl = clientData?.photoUrl;
+      
+      if (!photoUrl) {
+        return res.status(200).json({
+          message: 'El cliente no tiene foto de perfil.'
+        });
+      }
+      
+      // Eliminar foto de Storage
+      await photoService.deletePhoto(photoUrl);
+      
+      // Actualizar Firestore
+      await clientRef.update({
+        photoUrl: null,
+        updated_at: admin.firestore.Timestamp.now()
+      });
+      
+      res.status(200).json({
+        message: 'Foto de perfil eliminada exitosamente.'
+      });
+    });
+    
+    export default router;
+    ```
+
+4.  **Modificar ClientService** para limpiar fotos al eliminar cliente:
+    ```typescript
+    // En src/services/client.service.ts, modificar el método delete:
+    import { PhotoService } from './photo.service';
+    
+    export class ClientService {
+      private photoService = new PhotoService();
+      
+      async delete(id: string): Promise<void> {
+        const docRef = clientsCollection.doc(id);
+        const doc = await docRef.get();
+        
+        if (!doc.exists) {
+          throw new NotFoundError('Cliente', id);
+        }
+        
+        const clientData = doc.data();
+        
+        // Eliminar foto de perfil si existe
+        if (clientData?.photoUrl) {
+          await this.photoService.deletePhoto(clientData.photoUrl);
+        }
+        
+        // También eliminar cualquier otra foto residual
+        await this.photoService.deleteAllClientPhotos(id);
+        
+        await docRef.delete();
+      }
+    }
+    ```
+
+5.  **Registrar rutas en `src/index.ts`**:
+    ```typescript
+    import photoRoutes from './api/routes/photo.routes';
+    
+    app.use('/api/v1/clients', authMiddleware, photoRoutes);
+    ```
+
+**Criterios de Aceptación:**
+-   [ ] El schema de Client incluye el campo `photoUrl` (string | null)
+-   [ ] `POST /clients/{client_id}/photo` sube una foto y retorna el cliente actualizado con `photoUrl`
+-   [ ] `POST /clients/{client_id}/photo` valida formato de archivo (JPEG/PNG/WEBP)
+-   [ ] `POST /clients/{client_id}/photo` valida tamaño máximo (5 MB)
+-   [ ] `POST /clients/{client_id}/photo` retorna `400` si el formato o tamaño son inválidos
+-   [ ] `POST /clients/{client_id}/photo` retorna `404` si el cliente no existe
+-   [ ] Al subir una nueva foto, la foto anterior se elimina automáticamente de Storage
+-   [ ] `DELETE /clients/{client_id}/photo` elimina la foto y establece `photoUrl` en null
+-   [ ] `DELETE /clients/{client_id}/photo` retorna `200` incluso si no hay foto
+-   [ ] Al eliminar un cliente con `DELETE /clients/{client_id}`, su foto también se elimina
+-   [ ] Las fotos se almacenan en Firebase Storage bajo `/client-photos/{client_id}/`
+-   [ ] Las URLs de foto son públicamente accesibles
+-   [ ] Todos los endpoints de foto requieren autenticación
+
+---
+
 ### Tarea 2.3: Endpoints del Dominio "Groups"
 
 **Dependencias:** Tarea 2.2 completada

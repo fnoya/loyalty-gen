@@ -2,14 +2,15 @@
 
 ## 1. Resumen Ejecutivo
 
-Esta especificación define las ampliaciones al modelo de datos de Cliente para soportar información más completa y estructurada, incluyendo nombres desagregados, múltiples números telefónicos y direcciones físicas.
+Esta especificación define las ampliaciones al modelo de datos de Cliente para soportar información más completa y estructurada, incluyendo nombres desagregados, foto de perfil, múltiples números telefónicos y direcciones físicas.
 
 ## 2. Objetivos
 
 1. **Estructurar el nombre del cliente** en componentes individuales (primer nombre, segundo nombre, primer apellido, segundo apellido) para permitir un tratamiento más flexible de los datos personales.
-2. **Soportar múltiples números telefónicos** por cliente, cada uno con su tipo (móvil, casa, trabajo, otro).
-3. **Soportar múltiples direcciones físicas** por cliente, con todos los campos necesarios para direcciones completas y precisas.
-4. **Mantener compatibilidad** con el campo `extra_data` existente para datos adicionales en formato clave-valor.
+2. **Soportar foto de perfil opcional** almacenada en Firebase Storage para mejorar la experiencia visual y personalización.
+3. **Soportar múltiples números telefónicos** por cliente, cada uno con su tipo (móvil, casa, trabajo, otro).
+4. **Soportar múltiples direcciones físicas** por cliente, con todos los campos necesarios para direcciones completas y precisas.
+5. **Mantener compatibilidad** con el campo `extra_data` existente para datos adicionales en formato clave-valor.
 
 ## 3. Modelo de Datos Actualizado
 
@@ -38,7 +39,56 @@ name: {
 - Cumple con requisitos legales en muchos países latinoamericanos donde es común tener dos apellidos
 - Soporta formatos de nombre internacionales
 
-### 3.2. Números Telefónicos
+### 3.2. Foto de Perfil
+
+Nuevo campo `photoUrl` de tipo string opcional que almacena la URL de la foto de perfil del cliente.
+
+```typescript
+photoUrl?: string | null;  // URL de la foto en Firebase Storage (opcional)
+```
+
+**Validaciones:**
+- El campo es completamente opcional (puede ser `null` o ausente)
+- Si está presente, debe ser una URL válida (formato URI)
+- La URL debe apuntar a Firebase Storage (se valida en el backend)
+- Formatos de imagen soportados: JPEG, PNG, WEBP
+- Tamaño máximo del archivo: 5 MB
+- Dimensiones recomendadas: 512x512 píxeles (aspecto cuadrado preferido)
+
+**Características:**
+- **Opcional por diseño:** Si no hay foto, la UI debe mostrar un placeholder (avatar genérico con iniciales del cliente)
+- **Almacenamiento externo:** Las fotos se almacenan en Firebase Storage, no se codifican en Base64 en Firestore
+- **URL pública:** La URL incluye un token de seguridad de Firebase que permite acceso público controlado
+- **Gestión del ciclo de vida:** 
+  - Al subir una nueva foto, la anterior se elimina automáticamente de Storage
+  - Al eliminar un cliente, su foto también se elimina de Storage
+  - Al eliminar la foto explícitamente, el campo se establece en `null`
+
+**Endpoints API:**
+- `POST /api/v1/clients/{client_id}/photo` - Subir o actualizar foto (multipart/form-data)
+- `DELETE /api/v1/clients/{client_id}/photo` - Eliminar foto
+
+**Ejemplo de Respuesta:**
+```json
+{
+  "id": "client-123",
+  "name": {
+    "firstName": "Juan",
+    "firstLastName": "Pérez"
+  },
+  "photoUrl": "https://firebasestorage.googleapis.com/v0/b/project-id.appspot.com/o/client-photos%2Fclient-123%2F1234567890_profile.jpg?alt=media&token=abc123",
+  "email": "juan.perez@example.com",
+  ...
+}
+```
+
+**Razón del Cambio:**
+- Mejora la experiencia visual de la aplicación y facilita la identificación de clientes
+- Permite personalización de la interfaz con información visual del cliente
+- Soporta casos de uso donde se requiere verificación visual de identidad
+- Es opcional para no imponer requerimientos adicionales en el proceso de creación de clientes
+
+### 3.3. Números Telefónicos
 
 Nuevo campo `phones` como array de objetos:
 
@@ -78,7 +128,7 @@ phones: Array<{
 }
 ```
 
-### 3.3. Direcciones
+### 3.4. Direcciones
 
 Nuevo campo `addresses` como array de objetos:
 
@@ -141,7 +191,7 @@ addresses: Array<{
 }
 ```
 
-### 3.4. Campo extra_data (Sin cambios)
+### 3.5. Campo extra_data (Sin cambios)
 
 El campo `extra_data` se mantiene sin cambios como un objeto flexible para almacenar datos adicionales en formato clave-valor:
 
