@@ -1,6 +1,8 @@
 # Copilot Instructions for LoyaltyGen
 
 This document provides context and guidelines for GitHub Copilot when working on the LoyaltyGen codebase.
+You should follow the task plan contained in WROK-PLAN.md and adhere to the coding standards and architectural principles outlined below.  Make sure you know all the docs in the `docs/` folder as they contain important information about the project.  Also, it is CRITICAL that you adhere to the API definitions in `openapi.yaml` as that is the source of truth for the API contract, as well as the coding conventions in `docs/API-DESIGN.md`.  
+For the frontend, make sure you follow the instructions contained in `UI-UX-GUIDELINES.md`.
 
 ## Project Overview
 
