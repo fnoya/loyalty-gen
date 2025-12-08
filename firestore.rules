@@ -1,0 +1,39 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Clients collection - MVP rules (to be refined)
+    match /clients/{clientId} {
+      allow read, write: if isAuthenticated();
+      
+      // Loyalty accounts subcollection
+      match /loyaltyAccounts/{accountId} {
+        allow read, write: if isAuthenticated();
+        
+        // Transactions subcollection
+        match /transactions/{transactionId} {
+          allow read, write: if isAuthenticated();
+        }
+      }
+    }
+    
+    // Affinity groups
+    match /affinityGroups/{groupId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // Audit logs - read-only for authenticated users
+    match /auditLogs/{logId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Only server can write
+    }
+  }
+}
