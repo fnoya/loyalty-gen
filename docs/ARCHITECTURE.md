@@ -110,6 +110,16 @@ Abandonamos el modelo relacional en favor de una estructura de colecciones y sub
         -   `created_at: timestamp`
         -   `updated_at: timestamp`
         -   `affinityGroupIds: array<string>` (Array con los IDs de los grupos a los que pertenece)
+        -   **`familyCircle: map | null`** (Información del círculo de afinidad familiar)
+            -   `role: string | null` ("holder" = titular, "member" = miembro, null = sin círculo)
+            -   `holderId: string | null` (ID del cliente titular, null si role='holder')
+            -   `relationshipType: string | null` (tipo de relación: "spouse", "child", "parent", "sibling", "friend", "other")
+            -   `joinedAt: timestamp | null` (fecha de adhesión al círculo)
+        -   **`familyCircleMembers: array<map> | null`** (Lista de miembros del círculo, solo para titulares)
+            -   `memberId: string` (ID del cliente miembro)
+            -   `relationshipType: string` (tipo de relación con el titular)
+            -   `addedAt: timestamp` (fecha de adhesión)
+            -   `addedBy: string` (UID del usuario que lo añadió)
         -   **`account_balances: map` (Campo Desnormalizado para Lecturas Rápidas)**
 
 > **Nota sobre Identificadores de Cliente:**
@@ -132,6 +142,14 @@ Abandonamos el modelo relacional en favor de una estructura de colecciones y sub
 > - Se recomienda crear índices compuestos para búsquedas por `name.firstLastName` y `name.secondLastName`.
 > - **Seguridad:** Los campos `phones` y `addresses` contienen PII y NO deben registrarse en logs de aplicación.
 
+> **Nota sobre Círculos de Afinidad Familiares:**
+> - Un cliente puede ser **titular** (`role: 'holder'`) de un círculo o **miembro** (`role: 'member'`) de otro, pero NO ambos simultáneamente.
+> - **Restricción de unicidad:** Un cliente solo puede pertenecer a UN círculo de afinidad a la vez.
+> - Solo el titular puede gestionar (añadir/remover) miembros de su círculo.
+> - Los miembros pueden originar transacciones en cuentas del titular según la configuración de permisos de cada cuenta.
+> - Tipos de relación soportados: cónyuge (spouse), hijo (child), padre/madre (parent), hermano (sibling), amigo (friend), otro (other).
+> - Se requieren índices compuestos para consultas por `familyCircle.holderId` y `familyCircle.joinedAt`.
+
 -   **`affinityGroups` (Colección Raíz)**
     -   Documento: `groupId`
         -   `name: string`
@@ -145,6 +163,11 @@ Abandonamos el modelo relacional en favor de una estructura de colecciones y sub
         -   `points: number` (integer)
         -   `created_at: timestamp`
         -   `updated_at: timestamp`
+        -   **`familyCircleConfig: map | null`** (Configuración de permisos para círculo familiar)
+            -   `allowMemberCredits: boolean` (¿Los miembros del círculo pueden generar créditos?)
+            -   `allowMemberDebits: boolean` (¿Los miembros del círculo pueden generar débitos?)
+            -   `updatedAt: timestamp`
+            -   `updatedBy: string` (UID del usuario que actualizó la configuración)
 
 -   **`pointTransactions` (Subcolección de Cuenta de Lealtad)**
     -   Ruta: `clients/{clientId}/loyaltyAccounts/{accountId}/transactions/{transactionId}`
@@ -153,6 +176,10 @@ Abandonamos el modelo relacional en favor de una estructura de colecciones y sub
         -   `amount: number` (siempre positivo)
         -   `description: string`
         -   `timestamp: timestamp`
+        -   **`originatedBy: map | null`** (Información del originador si es miembro del círculo)
+            -   `clientId: string` (ID del cliente que originó la transacción)
+            -   `isCircleMember: boolean` (true si es miembro del círculo, false si es el titular)
+            -   `relationshipType: string | null` (tipo de relación con el titular)
 
 > **Nota Crítica sobre Desnormalización:**
 > La sincronización del campo `account_balances` en `client` mediante transacciones atómicas de Firestore es **mandatoria** para garantizar la consistencia de los datos y es aún más crítica a esta escala.
@@ -228,6 +255,11 @@ Dado que el sistema maneja información sensible sobre créditos, débitos y bal
             -   `"GROUP_CREATED"` - Grupo de afinidad creado
             -   `"CLIENT_ADDED_TO_GROUP"` - Cliente añadido a grupo
             -   `"CLIENT_REMOVED_FROM_GROUP"` - Cliente removido de grupo
+            -   **`"FAMILY_CIRCLE_MEMBER_ADDED"`** - Miembro añadido al círculo familiar
+            -   **`"FAMILY_CIRCLE_MEMBER_REMOVED"`** - Miembro removido del círculo familiar
+            -   **`"LOYALTY_ACCOUNT_FAMILY_CONFIG_UPDATED"`** - Configuración de círculo familiar de cuenta actualizada
+            -   **`"POINTS_CREDITED_BY_CIRCLE_MEMBER"`** - Puntos acreditados por miembro del círculo
+            -   **`"POINTS_DEBITED_BY_CIRCLE_MEMBER"`** - Puntos debitados por miembro del círculo
         -   `resource_type: string` - Tipo de recurso afectado (`"client"`, `"account"`, `"transaction"`, `"group"`)
         -   `resource_id: string` - ID del recurso principal afectado
         -   `client_id: string | null` - ID del cliente relacionado (para facilitar consultas por cliente)

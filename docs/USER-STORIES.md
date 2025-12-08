@@ -419,3 +419,131 @@ Este documento contiene las Historias de Usuario para la aplicación de administ
 -   [ ] El botón "Limpiar filtros" resetea todos los controles
 -   [ ] La paginación funciona correctamente
 -   [ ] El diálogo de detalles se abre al hacer clic en una fila
+
+---
+
+### **Épica: Gestión de Círculos de Afinidad Familiares**
+
+#### HU13: Visualización del Círculo Familiar del Cliente
+*   **Como** administrador,
+*   **Quiero** ver los miembros del círculo familiar de un cliente en su página de detalle,
+*   **Para** entender quiénes están vinculados y pueden realizar transacciones en sus cuentas.
+
+**Referencias Técnicas:**
+-   **Endpoint API:** `GET /clients/{client_id}/family-circle` (ver `openapi.yaml`)
+-   **Ruta Frontend:** `/dashboard/clients/[id]` (sección de círculo familiar)
+-   **Componentes a Crear:**
+    -   `components/clients/family-circle-card.tsx` - Card mostrando info del círculo
+    -   `components/clients/family-member-badge.tsx` - Badge para cada miembro
+
+**Criterios de Aceptación:**
+1.  En la página de detalle del cliente (`/dashboard/clients/[id]`), debe existir una sección "Círculo Familiar".
+2.  Si el cliente es **titular** de un círculo, mostrar:
+    -   Etiqueta `Badge` con "Titular del Círculo"
+    -   Lista de miembros con nombre, email y tipo de relación
+    -   Para cada miembro, un `DropdownMenu` con opciones: "Ver Cliente", "Remover del Círculo"
+    -   Botón "Añadir Miembro" que abra un diálogo
+3.  Si el cliente es **miembro** de un círculo, mostrar:
+    -   Etiqueta `Badge` con "Miembro de Círculo"
+    -   Nombre del titular con enlace a su perfil
+    -   Tipo de relación con el titular
+    -   Fecha de adhesión al círculo
+4.  Si el cliente no pertenece a ningún círculo, mostrar:
+    -   Mensaje "Este cliente no pertenece a ningún círculo familiar"
+    -   Botón "Crear Círculo" (que abre diálogo para añadir primer miembro)
+5.  Usar componentes `Card`, `Badge`, `Button` y `DropdownMenu` de shadcn/ui.
+
+**Criterios de Verificación (para el agente):**
+-   [ ] La sección se muestra en la página de detalle del cliente
+-   [ ] Se diferencia visualmente si el cliente es titular, miembro o sin círculo
+-   [ ] Los miembros se listan correctamente con toda su información
+-   [ ] Los enlaces de navegación funcionan
+-   [ ] Los badges muestran el estado correcto
+
+#### HU14: Añadir Miembro al Círculo Familiar
+*   **Como** administrador gestionando un cliente titular,
+*   **Quiero** añadir otros clientes como miembros de su círculo familiar,
+*   **Para** permitir que realicen transacciones en las cuentas del titular.
+
+**Referencias Técnicas:**
+-   **Endpoint API:** `POST /clients/{client_id}/family-circle/members` (ver `openapi.yaml`)
+-   **Componente a Crear:** `components/clients/add-family-member-dialog.tsx`
+
+**Criterios de Aceptación:**
+1.  Desde la sección de círculo familiar, el botón "Añadir Miembro" abre un `Dialog` de shadcn/ui.
+2.  El diálogo contiene un formulario con:
+    -   Campo de búsqueda/selección de cliente (usar `Combobox` de shadcn/ui)
+    -   Selector de tipo de relación: cónyuge, hijo, padre, hermano, amigo, otro (usar `Select`)
+    -   Botón "Cancelar" y botón "Añadir"
+3.  El campo de búsqueda debe filtrar clientes por nombre o documento.
+4.  Solo se pueden seleccionar clientes que NO estén en otro círculo.
+5.  No se puede añadir al mismo titular.
+6.  Durante el envío, el botón "Añadir" muestra un `Spinner` y está deshabilitado.
+7.  Si la API devuelve error `409 MEMBER_ALREADY_IN_CIRCLE`, mostrar mensaje: "Este cliente ya pertenece a otro círculo familiar".
+8.  Si la API devuelve error `400 CANNOT_ADD_SELF`, mostrar mensaje: "No puedes añadirte a ti mismo al círculo".
+9.  Al añadir exitosamente, cerrar el diálogo, mostrar `Toast` de éxito y actualizar la lista de miembros.
+
+**Criterios de Verificación (para el agente):**
+-   [ ] El diálogo se abre correctamente
+-   [ ] El Combobox permite buscar y seleccionar clientes
+-   [ ] El Select de relación tiene todas las opciones
+-   [ ] Las validaciones funcionan (cliente ya en círculo, no añadir a sí mismo)
+-   [ ] El spinner se muestra durante el envío
+-   [ ] Los mensajes de error son claros
+-   [ ] La lista se actualiza tras éxito
+
+#### HU15: Remover Miembro del Círculo Familiar
+*   **Como** administrador gestionando un cliente titular,
+*   **Quiero** remover miembros de su círculo familiar,
+*   **Para** revocar su acceso a realizar transacciones en las cuentas del titular.
+
+**Referencias Técnicas:**
+-   **Endpoint API:** `DELETE /clients/{client_id}/family-circle/members/{member_id}`
+-   **Componente UI:** `AlertDialog` de shadcn/ui (obligatorio)
+
+**Criterios de Aceptación:**
+1.  En el `DropdownMenu` de cada miembro, la opción "Remover del Círculo" tiene variante destructiva.
+2.  Al hacer clic, se abre un `AlertDialog` solicitando confirmación:
+    -   Título: "¿Remover miembro del círculo?"
+    -   Descripción: "Esta acción removerá a [Nombre del Miembro] del círculo familiar. El miembro perderá acceso a realizar transacciones en las cuentas del titular."
+    -   Botón "Cancelar" (variante `outline`)
+    -   Botón "Remover" (variante `destructive`)
+3.  Durante la petición, el botón "Remover" muestra un `Spinner`.
+4.  Tras confirmar, el miembro se elimina de la lista y se muestra `Toast` de éxito.
+
+**Criterios de Verificación (para el agente):**
+-   [ ] El AlertDialog se abre al seleccionar "Remover"
+-   [ ] El texto de advertencia es claro
+-   [ ] El botón Cancelar cierra el diálogo sin acción
+-   [ ] El spinner se muestra durante la petición
+-   [ ] El miembro se elimina de la lista tras éxito
+-   [ ] El toast de confirmación se muestra
+
+#### HU16: Configurar Permisos de Círculo en Cuenta
+*   **Como** administrador gestionando una cuenta de lealtad,
+*   **Quiero** configurar si los miembros del círculo pueden acreditar o debitar puntos,
+*   **Para** controlar qué operaciones pueden realizar los miembros del círculo familiar del titular.
+
+**Referencias Técnicas:**
+-   **Endpoint API:** `PATCH /clients/{client_id}/accounts/{account_id}/family-circle-config`
+-   **Componente a Crear:** `components/clients/account-family-config.tsx`
+
+**Criterios de Aceptación:**
+1.  En la página de detalle del cliente, dentro del `Card` de cada cuenta, debe existir una sección "Permisos de Círculo Familiar".
+2.  La sección muestra dos `Switch` de shadcn/ui:
+    -   "Permitir créditos de miembros" (vinculado a `allowMemberCredits`)
+    -   "Permitir débitos de miembros" (vinculado a `allowMemberDebits`)
+3.  Los switches reflejan el estado actual de la configuración.
+4.  Al cambiar un switch, se realiza automáticamente la petición PATCH.
+5.  Durante la actualización, el switch muestra un estado de "cargando" (deshabilitado).
+6.  Si la actualización falla, el switch vuelve a su estado anterior y se muestra un `Toast` de error.
+7.  Si la actualización es exitosa, se muestra un `Toast` de confirmación.
+8.  Los cambios deben reflejarse inmediatamente en la UI.
+
+**Criterios de Verificación (para el agente):**
+-   [ ] Los switches se muestran en cada cuenta
+-   [ ] Los switches reflejan correctamente el estado actual
+-   [ ] Al cambiar un switch se envía la petición PATCH
+-   [ ] El estado de "cargando" funciona correctamente
+-   [ ] En caso de error, el switch vuelve al estado anterior
+-   [ ] El toast de confirmación/error se muestra

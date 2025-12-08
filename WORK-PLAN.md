@@ -4211,3 +4211,393 @@ function normalizeClientData(rawData: FirebaseFirestore.DocumentData): Client {
 ### Referencia
 
 Ver documento completo: `docs/CLIENT-FIELDS-SPEC.md` sección 8 (Migraciones de Datos)
+
+---
+
+## Épica 2.6: Implementación de Círculos de Afinidad Familiares
+
+**Objetivo:** Implementar la funcionalidad completa de círculos de afinidad familiares, permitiendo que un cliente titular gestione miembros que pueden realizar transacciones en sus cuentas según permisos configurables.
+
+**Orden de Ejecución:** Tarea 2.6.1 → Tarea 2.6.2 → Tarea 2.6.3 → Tarea 2.6.4 → Tarea 2.6.5
+
+---
+
+### Tarea 2.6.1: Extender Schemas de Zod para Círculo Familiar
+
+**Dependencias:** Épica 1 completada (andamiaje del proyecto)
+
+**Documentos de Referencia:**
+-   `docs/ARCHITECTURE.md` - Sección 4 (Modelo de Datos - campos de familyCircle)
+-   `docs/SPECS.md` - Módulo de Círculos de Afinidad Familiares
+-   `openapi.yaml` - Schemas RelationshipType, FamilyCircleInfo, FamilyCircleMember, etc.
+-   `docs/GUIDELINES.md` - Sección 3 (Zod como única fuente de verdad)
+
+**Archivos a Crear/Modificar:**
+```
+functions/src/schemas/
+├── familyCircle.schema.ts      [CREAR]
+├── client.schema.ts            [MODIFICAR]
+├── account.schema.ts           [MODIFICAR]
+├── transaction.schema.ts       [MODIFICAR]
+```
+
+**Instrucciones Detalladas:**
+
+1.  **Crear `familyCircle.schema.ts`** con los siguientes schemas:
+    ```typescript
+    import { z } from 'zod';
+    import { Timestamp } from 'firebase-admin/firestore';
+
+    // Enum de tipos de relación
+    export const relationshipTypeSchema = z.enum([
+      'spouse',
+      'child',
+      'parent',
+      'sibling',
+      'friend',
+      'other'
+    ]);
+
+    export type RelationshipType = z.infer<typeof relationshipTypeSchema>;
+
+    // Schema de información del círculo
+    export const familyCircleInfoSchema = z.object({
+      role: z.enum(['holder', 'member']).nullable(),
+      holderId: z.string().nullable(),
+      relationshipType: relationshipTypeSchema.nullable(),
+      joinedAt: z.instanceof(Timestamp).nullable()
+    }).nullable();
+
+    // Schema de miembro del círculo
+    export const familyCircleMemberSchema = z.object({
+      memberId: z.string().min(1),
+      relationshipType: relationshipTypeSchema,
+      addedAt: z.instanceof(Timestamp),
+      addedBy: z.string().min(1)
+    });
+
+    // Schema para request de añadir miembro
+    export const addFamilyCircleMemberSchema = z.object({
+      memberId: z.string()
+        .min(1, "Member ID is required")
+        .regex(/^[a-zA-Z0-9_-]+$/, "Member ID contains invalid characters"),
+      relationshipType: relationshipTypeSchema
+    });
+
+    // Schema de configuración de cuenta
+    export const familyCircleAccountConfigSchema = z.object({
+      allowMemberCredits: z.boolean(),
+      allowMemberDebits: z.boolean(),
+      updatedAt: z.instanceof(Timestamp),
+      updatedBy: z.string().min(1)
+    }).nullable();
+
+    // Schema para request de actualizar configuración
+    export const updateFamilyCircleConfigSchema = z.object({
+      allowMemberCredits: z.boolean().optional(),
+      allowMemberDebits: z.boolean().optional()
+    }).refine(
+      data => data.allowMemberCredits !== undefined || data.allowMemberDebits !== undefined,
+      { message: "At least one configuration field must be provided" }
+    );
+
+    // Schema de originador de transacción
+    export const transactionOriginatorSchema = z.object({
+      clientId: z.string(),
+      isCircleMember: z.boolean(),
+      relationshipType: relationshipTypeSchema.nullable()
+    }).nullable();
+    ```
+
+2.  **Modificar `client.schema.ts`** para añadir campos de círculo familiar:
+    ```typescript
+    import { familyCircleInfoSchema, familyCircleMemberSchema } from './familyCircle.schema';
+
+    export const clientSchema = z.object({
+      // ... campos existentes ...
+      familyCircle: familyCircleInfoSchema,
+      familyCircleMembers: z.array(familyCircleMemberSchema).nullable()
+    });
+    ```
+
+3.  **Modificar `account.schema.ts`** para añadir configuración:
+    ```typescript
+    import { familyCircleAccountConfigSchema } from './familyCircle.schema';
+
+    export const loyaltyAccountSchema = z.object({
+      // ... campos existentes ...
+      familyCircleConfig: familyCircleAccountConfigSchema
+    });
+    ```
+
+4.  **Modificar `transaction.schema.ts`** para añadir originador:
+    ```typescript
+    import { transactionOriginatorSchema } from './familyCircle.schema';
+
+    export const pointTransactionSchema = z.object({
+      // ... campos existentes ...
+      originatedBy: transactionOriginatorSchema
+    });
+    ```
+
+**Criterios de Aceptación:**
+-   [ ] Todos los schemas compilan sin errores
+-   [ ] Los tipos TypeScript están correctamente inferidos con `z.infer<>`
+-   [ ] Los schemas validan correctamente casos válidos e inválidos
+-   [ ] El código pasa el linter sin errores
+
+---
+
+### Tarea 2.6.2: Crear Índices de Firestore
+
+**Dependencias:** Tarea 2.6.1 completada
+
+**Documentos de Referencia:**
+-   `docs/ARCHITECTURE.md` - Sección 4 (Modelo de Datos - nota sobre índices)
+
+**Archivos a Crear/Modificar:**
+```
+firestore.indexes.json          [CREAR o MODIFICAR]
+```
+
+**Instrucciones Detalladas:**
+
+1.  Crear o modificar `firestore.indexes.json` para añadir índices compuestos:
+    ```json
+    {
+      "indexes": [
+        {
+          "collectionGroup": "clients",
+          "queryScope": "COLLECTION",
+          "fields": [
+            {
+              "fieldPath": "familyCircle.holderId",
+              "order": "ASCENDING"
+            },
+            {
+              "fieldPath": "familyCircle.joinedAt",
+              "order": "DESCENDING"
+            }
+          ]
+        },
+        {
+          "collectionGroup": "pointTransactions",
+          "queryScope": "COLLECTION_GROUP",
+          "fields": [
+            {
+              "fieldPath": "originatedBy.clientId",
+              "order": "ASCENDING"
+            },
+            {
+              "fieldPath": "timestamp",
+              "order": "DESCENDING"
+            }
+          ]
+        },
+        {
+          "collectionGroup": "pointTransactions",
+          "queryScope": "COLLECTION_GROUP",
+          "fields": [
+            {
+              "fieldPath": "originatedBy.isCircleMember",
+              "order": "ASCENDING"
+            },
+            {
+              "fieldPath": "timestamp",
+              "order": "DESCENDING"
+            }
+          ]
+        }
+      ]
+    }
+    ```
+
+2.  Desplegar índices:
+    ```bash
+    firebase deploy --only firestore:indexes
+    ```
+
+**Criterios de Aceptación:**
+-   [ ] El archivo `firestore.indexes.json` existe y es válido
+-   [ ] Los índices se despliegan correctamente en Firestore
+-   [ ] Las consultas con estos índices funcionan sin errores
+
+---
+
+### Tarea 2.6.3: Implementar Servicio de Círculo Familiar
+
+**Dependencias:** Tarea 2.6.1 y 2.6.2 completadas
+
+**Documentos de Referencia:**
+-   `docs/SPECS.md` - Módulo de Círculos de Afinidad Familiares (reglas de negocio)
+-   `docs/GUIDELINES.md` - Sección 4 (Estructura de lógica de negocio)
+
+**Archivos a Crear/Modificar:**
+```
+functions/src/services/
+├── familyCircle.service.ts     [CREAR]
+functions/src/core/
+├── errors.ts                   [MODIFICAR]
+```
+
+**Instrucciones Detalladas:**
+
+1.  **Extender `errors.ts`** con clases de error específicas:
+    ```typescript
+    export class MemberAlreadyInCircleError extends AppError {
+      constructor() {
+        super('MEMBER_ALREADY_IN_CIRCLE',
+          'The client is already a member of another family circle and must be removed first',
+          409);
+      }
+    }
+
+    export class CannotAddSelfError extends AppError {
+      constructor() {
+        super('CANNOT_ADD_SELF',
+          'A client cannot add themselves to their own family circle',
+          400);
+      }
+    }
+
+    export class MemberNotInCircleError extends AppError {
+      constructor() {
+        super('MEMBER_NOT_IN_CIRCLE',
+          'The specified client is not a member of this family circle',
+          404);
+      }
+    }
+
+    export class CircleCreditsNotAllowedError extends AppError {
+      constructor() {
+        super('CIRCLE_CREDITS_NOT_ALLOWED',
+          'This account does not allow credit transactions from circle members',
+          403);
+      }
+    }
+
+    export class CircleDebitsNotAllowedError extends AppError {
+      constructor() {
+        super('CIRCLE_DEBITS_NOT_ALLOWED',
+          'This account does not allow debit transactions from circle members',
+          403);
+      }
+    }
+
+    export class NotCircleHolderError extends AppError {
+      constructor() {
+        super('NOT_CIRCLE_HOLDER',
+          'Only the circle holder can perform this operation',
+          403);
+      }
+    }
+    ```
+
+2.  **Crear `familyCircle.service.ts`** con métodos:
+    -   `addMemberToCircle()` - Añadir miembro al círculo (transacción atómica)
+    -   `removeMemberFromCircle()` - Remover miembro del círculo (transacción atómica)
+    -   `getFamilyCircleMembers()` - Listar miembros del círculo
+    -   `updateAccountFamilyCircleConfig()` - Actualizar configuración de cuenta
+    -   `validateMemberCanCredit()` - Validar permisos de crédito
+    -   `validateMemberCanDebit()` - Validar permisos de débito
+
+3.  **Implementar validaciones de negocio:**
+    -   No permitir añadirse a sí mismo
+    -   Verificar que miembro no esté en otro círculo
+    -   Solo titular puede gestionar su círculo
+    -   Validar permisos antes de transacciones
+
+4.  **Crear registros de auditoría** con acciones:
+    -   `FAMILY_CIRCLE_MEMBER_ADDED`
+    -   `FAMILY_CIRCLE_MEMBER_REMOVED`
+    -   `LOYALTY_ACCOUNT_FAMILY_CONFIG_UPDATED`
+
+**Criterios de Aceptación:**
+-   [ ] El servicio compila sin errores
+-   [ ] Todas las transacciones son atómicas
+-   [ ] Los errores se lanzan apropiadamente
+-   [ ] La auditoría se registra correctamente
+-   [ ] El código pasa el linter
+
+---
+
+### Tarea 2.6.4: Extender Servicio de Cuentas
+
+**Dependencias:** Tarea 2.6.3 completada
+
+**Documentos de Referencia:**
+-   `docs/SPECS.md` - Modificaciones a endpoints de crédito/débito
+
+**Archivos a Modificar:**
+```
+functions/src/services/
+├── account.service.ts          [MODIFICAR]
+```
+
+**Instrucciones Detalladas:**
+
+1.  **Modificar `creditPoints()`** para aceptar parámetro opcional `onBehalfOf`:
+    -   Si `onBehalfOf` está presente, validar con `familyCircleService.validateMemberCanCredit()`
+    -   Incluir campo `originatedBy` en la transacción
+    -   Usar acción de auditoría `POINTS_CREDITED_BY_CIRCLE_MEMBER` si aplica
+
+2.  **Modificar `debitPoints()`** para aceptar parámetro opcional `onBehalfOf`:
+    -   Si `onBehalfOf` está presente, validar con `familyCircleService.validateMemberCanDebit()`
+    -   Incluir campo `originatedBy` en la transacción
+    -   Usar acción de auditoría `POINTS_DEBITED_BY_CIRCLE_MEMBER` si aplica
+
+**Criterios de Aceptación:**
+-   [ ] Los métodos aceptan parámetro `onBehalfOf` opcional
+-   [ ] Se validan permisos correctamente
+-   [ ] El campo `originatedBy` se incluye en transacciones
+-   [ ] Las acciones de auditoría cambian según el originador
+-   [ ] El código pasa el linter
+
+---
+
+### Tarea 2.6.5: Implementar Controladores y Rutas API
+
+**Dependencias:** Tarea 2.6.3 y 2.6.4 completadas
+
+**Documentos de Referencia:**
+-   `openapi.yaml` - Endpoints de Family Circle
+-   `docs/GUIDELINES.md` - Sección 4 (Controllers "thin")
+
+**Archivos a Crear/Modificar:**
+```
+functions/src/api/controllers/
+├── familyCircle.controller.ts  [CREAR]
+├── accounts.controller.ts      [MODIFICAR]
+functions/src/api/routes/
+├── familyCircle.routes.ts      [CREAR]
+├── accounts.routes.ts          [MODIFICAR]
+functions/src/
+├── index.ts                    [MODIFICAR]
+```
+
+**Instrucciones Detalladas:**
+
+1.  **Crear `familyCircle.controller.ts`** con controladores:
+    -   `getFamilyCircleInfo()` - GET /clients/:id/family-circle
+    -   `listFamilyCircleMembers()` - GET /clients/:id/family-circle/members
+    -   `addFamilyCircleMember()` - POST /clients/:id/family-circle/members
+    -   `removeFamilyCircleMember()` - DELETE /clients/:id/family-circle/members/:memberId
+    -   `updateFamilyCircleAccountConfig()` - PATCH /clients/:id/accounts/:accountId/family-circle-config
+    -   `getFamilyCircleAccountConfig()` - GET /clients/:id/accounts/:accountId/family-circle-config
+
+2.  **Crear `familyCircle.routes.ts`** con todas las rutas.
+
+3.  **Modificar `accounts.controller.ts`**:
+    -   Extraer query parameter `on_behalf_of` en `creditPoints` y `debitPoints`
+    -   Pasar el parámetro al servicio
+
+4.  **Modificar `index.ts`** para incluir las nuevas rutas.
+
+**Criterios de Aceptación:**
+-   [ ] Todos los controladores manejan errores correctamente
+-   [ ] Los controladores son "thin" (sin lógica de negocio)
+-   [ ] Las respuestas siguen el formato de la API
+-   [ ] Las rutas están correctamente configuradas
+-   [ ] El código pasa el linter
+
+---
