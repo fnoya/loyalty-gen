@@ -364,7 +364,7 @@ Toda la documentación detallada se encuentra en el directorio [`/docs`](./docs/
 
 ### Prerrequisitos
 
-- Node.js 18+ (LTS recomendado)
+- Node.js 24+ (LTS recomendado)
 - npm 9+ o yarn 1.22+
 - Firebase CLI (`npm install -g firebase-tools`)
 - Cuenta de Google Cloud/Firebase
