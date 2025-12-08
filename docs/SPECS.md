@@ -107,6 +107,110 @@ El diseño y comportamiento de los endpoints deben seguir las convenciones estab
     -   **Respuesta Exitosa (200 OK):** `{"message": "Client removed from group"}`.
     -   **🔍 Auditoría:** Debe crear un registro de auditoría con `action: CLIENT_REMOVED_FROM_GROUP`, vinculando tanto el `client_id` como el `group_id` en el registro.
 
+### Módulo de Círculos de Afinidad Familiares (`/family-circle`)
+
+-   **`POST /clients/{client_id}/family-circle/members`**
+    -   **Descripción:** Añade un cliente como miembro del círculo de afinidad familiar del titular especificado.
+    -   **Request Body:**
+        ```json
+        {
+          "memberId": "client-id-123",
+          "relationshipType": "child"
+        }
+        ```
+        -   `memberId: string` (obligatorio) - ID del cliente a añadir como miembro
+        -   `relationshipType: string` (obligatorio) - Tipo de relación: "spouse", "child", "parent", "sibling", "friend", "other"
+    -   **Validaciones:**
+        -   El cliente titular debe existir y no ser miembro de otro círculo
+        -   El miembro debe existir y no estar en otro círculo
+        -   El miembro no puede ser el mismo que el titular
+        -   Solo el titular autenticado puede añadir miembros a su círculo
+    -   **Respuesta Exitosa (200 OK):** `{"message": "Member added to family circle successfully", "member": {...}}`.
+    -   **Respuesta de Error (409 Conflict):** Si el cliente ya es miembro de otro círculo (`MEMBER_ALREADY_IN_CIRCLE`).
+    -   **Respuesta de Error (400 Bad Request):** Si se intenta añadir al mismo titular (`CANNOT_ADD_SELF`).
+    -   **Respuesta de Error (403 Forbidden):** Si el usuario no es el titular (`NOT_CIRCLE_HOLDER`).
+    -   **🔍 Auditoría:** Debe crear un registro de auditoría con `action: FAMILY_CIRCLE_MEMBER_ADDED` dentro de la misma transacción atómica.
+
+-   **`DELETE /clients/{client_id}/family-circle/members/{member_id}`**
+    -   **Descripción:** Remueve un miembro del círculo de afinidad familiar del titular.
+    -   **Validaciones:**
+        -   El cliente debe ser efectivamente miembro del círculo del titular
+        -   Solo el titular autenticado puede remover miembros
+    -   **Respuesta Exitosa (200 OK):** `{"message": "Member removed from family circle successfully"}`.
+    -   **Respuesta de Error (404 Not Found):** Si el miembro no está en el círculo (`MEMBER_NOT_IN_CIRCLE`).
+    -   **🔍 Auditoría:** Debe crear un registro de auditoría con `action: FAMILY_CIRCLE_MEMBER_REMOVED` dentro de la misma transacción atómica.
+
+-   **`GET /clients/{client_id}/family-circle`**
+    -   **Descripción:** Obtiene información sobre el círculo de afinidad del cliente (como titular o como miembro).
+    -   **Respuesta Exitosa (200 OK) - Titular:** 
+        ```json
+        {
+          "role": "holder",
+          "members": [...],
+          "totalMembers": 2
+        }
+        ```
+    -   **Respuesta Exitosa (200 OK) - Miembro:**
+        ```json
+        {
+          "role": "member",
+          "holderId": "client-id-100",
+          "relationshipType": "child",
+          "joinedAt": "2025-12-08T12:00:00.000Z"
+        }
+        ```
+    -   **Respuesta Exitosa (200 OK) - Sin círculo:**
+        ```json
+        {
+          "role": null,
+          "message": "Client is not part of any family circle"
+        }
+        ```
+
+-   **`GET /clients/{client_id}/family-circle/members`**
+    -   **Descripción:** Lista todos los miembros del círculo de afinidad del titular.
+    -   **Validaciones:** Solo el titular puede listar sus miembros.
+    -   **Respuesta Exitosa (200 OK):** Devuelve un array con los miembros y su información básica.
+
+-   **`PATCH /clients/{client_id}/accounts/{account_id}/family-circle-config`**
+    -   **Descripción:** Actualiza la configuración de permisos de círculo familiar para una cuenta específica.
+    -   **Request Body:**
+        ```json
+        {
+          "allowMemberCredits": true,
+          "allowMemberDebits": false
+        }
+        ```
+        -   `allowMemberCredits: boolean` (opcional) - Permite que miembros del círculo generen créditos
+        -   `allowMemberDebits: boolean` (opcional) - Permite que miembros del círculo generen débitos
+        -   **Nota:** Al menos uno de los campos debe estar presente
+    -   **Validaciones:** Solo el titular de la cuenta puede modificar la configuración.
+    -   **Respuesta Exitosa (200 OK):** `{"message": "Family circle configuration updated successfully", "config": {...}}`.
+    -   **🔍 Auditoría:** Debe crear un registro de auditoría con `action: LOYALTY_ACCOUNT_FAMILY_CONFIG_UPDATED`.
+
+-   **`GET /clients/{client_id}/accounts/{account_id}/family-circle-config`**
+    -   **Descripción:** Obtiene la configuración actual de permisos de círculo familiar para una cuenta.
+    -   **Respuesta Exitosa (200 OK):** Devuelve la configuración actual o valores por defecto si no está configurada.
+
+**Modificaciones a endpoints existentes:**
+
+-   **`POST /clients/{client_id}/accounts/{account_id}/credit`**
+    -   **Query Parameter adicional:** `on_behalf_of` (opcional) - ID del cliente miembro que origina la transacción.
+    -   **Comportamiento:** Si se proporciona `on_behalf_of`, el sistema valida que el cliente sea miembro del círculo del titular y que `allowMemberCredits = true` en la cuenta. La transacción se registra con el campo `originatedBy` indicando el miembro originador.
+    -   **Respuesta de Error (403 Forbidden):** Si `allowMemberCredits = false` (`CIRCLE_CREDITS_NOT_ALLOWED`).
+    -   **🔍 Auditoría:** Debe usar `action: POINTS_CREDITED_BY_CIRCLE_MEMBER` si la transacción es originada por un miembro.
+
+-   **`POST /clients/{client_id}/accounts/{account_id}/debit`**
+    -   **Query Parameter adicional:** `on_behalf_of` (opcional) - ID del cliente miembro que origina la transacción.
+    -   **Comportamiento:** Similar a crédito, pero valida `allowMemberDebits = true`.
+    -   **Respuesta de Error (403 Forbidden):** Si `allowMemberDebits = false` (`CIRCLE_DEBITS_NOT_ALLOWED`).
+    -   **🔍 Auditoría:** Debe usar `action: POINTS_DEBITED_BY_CIRCLE_MEMBER` si la transacción es originada por un miembro.
+
+-   **`GET /clients/{client_id}/accounts/{account_id}/transactions`**
+    -   **Query Parameter adicional:** `originated_by` (opcional) - Filtrar por ID del cliente que originó las transacciones.
+    -   **Query Parameter adicional:** `circle_members_only` (opcional, boolean) - Si es `true`, solo devuelve transacciones originadas por miembros del círculo.
+    -   **Comportamiento:** Las transacciones incluyen el campo `originatedBy` si fueron originadas por un miembro del círculo.
+
 ### Módulo de Cuentas de Lealtad (`/accounts`)
 
 -   **`POST /clients/{client_id}/accounts`**

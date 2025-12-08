@@ -15,6 +15,8 @@ tags:
     description: Operaciones sobre los clientes.
   - name: Affinity Groups
     description: Gestión de grupos de afinidad y membresías.
+  - name: Family Circle
+    description: Gestión de círculos de afinidad familiares y configuración de permisos.
   - name: Loyalty Accounts
     description: Gestión de cuentas de lealtad, puntos y transacciones.
   - name: Audit Logs
@@ -356,6 +358,219 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessMessage'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # --------------------
+  # Family Circle Endpoints
+  # --------------------
+  /clients/{client_id}/family-circle:
+    get:
+      tags: [Family Circle]
+      summary: Obtener Información del Círculo Familiar
+      description: |
+        Obtiene información sobre el círculo de afinidad del cliente.
+        Si es titular, devuelve la lista de miembros.
+        Si es miembro, devuelve información del titular.
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+      responses:
+        '200':
+          description: Información del círculo familiar.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      role: { type: string, enum: [holder] }
+                      members: { type: array, items: { $ref: '#/components/schemas/FamilyCircleMember' } }
+                      totalMembers: { type: integer }
+                  - type: object
+                    properties:
+                      role: { type: string, enum: [member] }
+                      holderId: { type: string }
+                      relationshipType: { $ref: '#/components/schemas/RelationshipType' }
+                      joinedAt: { type: string, format: date-time }
+                  - type: object
+                    properties:
+                      role: { type: 'null' }
+                      message: { type: string }
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /clients/{client_id}/family-circle/members:
+    get:
+      tags: [Family Circle]
+      summary: Listar Miembros del Círculo
+      description: Lista todos los miembros del círculo de afinidad del titular.
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+      responses:
+        '200':
+          description: Lista de miembros del círculo.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        memberId: { type: string }
+                        memberName: { type: string }
+                        memberEmail: { type: string, nullable: true }
+                        relationshipType: { $ref: '#/components/schemas/RelationshipType' }
+                        addedAt: { type: string, format: date-time }
+                        addedBy: { type: string }
+                  metadata:
+                    type: object
+                    properties:
+                      totalMembers: { type: integer }
+                      holder:
+                        type: object
+                        properties:
+                          clientId: { type: string }
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Family Circle]
+      summary: Añadir Miembro al Círculo
+      description: |
+        Añade un cliente como miembro del círculo de afinidad familiar del titular.
+        Solo el titular autenticado puede añadir miembros a su círculo.
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [memberId, relationshipType]
+              properties:
+                memberId:
+                  type: string
+                  description: "ID del cliente a añadir como miembro."
+                relationshipType:
+                  $ref: '#/components/schemas/RelationshipType'
+      responses:
+        '200':
+          description: Miembro añadido exitosamente.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  member: { $ref: '#/components/schemas/FamilyCircleMember' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /clients/{client_id}/family-circle/members/{member_id}:
+    delete:
+      tags: [Family Circle]
+      summary: Remover Miembro del Círculo
+      description: |
+        Remueve un miembro del círculo de afinidad familiar del titular.
+        Solo el titular autenticado puede remover miembros de su círculo.
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+        - name: member_id
+          in: path
+          required: true
+          description: ID del miembro a remover.
+          schema: { type: string }
+      responses:
+        '200':
+          description: Miembro removido exitosamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /clients/{client_id}/accounts/{account_id}/family-circle-config:
+    get:
+      tags: [Family Circle]
+      summary: Obtener Configuración de Círculo de Cuenta
+      description: Obtiene la configuración de permisos de círculo familiar para una cuenta.
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+        - $ref: '#/components/parameters/AccountId'
+      responses:
+        '200':
+          description: Configuración actual o valores por defecto.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/FamilyCircleConfig'
+                  - type: object
+                    properties:
+                      message: { type: string, nullable: true }
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      tags: [Family Circle]
+      summary: Actualizar Configuración de Círculo de Cuenta
+      description: |
+        Actualiza la configuración de permisos de círculo familiar para una cuenta específica.
+        Solo el titular de la cuenta puede modificar la configuración.
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+        - $ref: '#/components/parameters/AccountId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                allowMemberCredits:
+                  type: boolean
+                  description: "Permite que miembros del círculo generen créditos."
+                allowMemberDebits:
+                  type: boolean
+                  description: "Permite que miembros del círculo generen débitos."
+              minProperties: 1
+      responses:
+        '200':
+          description: Configuración actualizada exitosamente.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  config: { $ref: '#/components/schemas/FamilyCircleConfig' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '401':
@@ -862,6 +1077,92 @@ components:
         isPrimary:
           type: boolean
           description: "Indica si es la dirección principal. Solo una puede ser true."
+    
+    RelationshipType:
+      type: string
+      enum: [spouse, child, parent, sibling, friend, other]
+      description: |
+        Tipo de relación en el círculo de afinidad familiar:
+        - spouse: Cónyuge
+        - child: Hijo/a
+        - parent: Padre/Madre
+        - sibling: Hermano/a
+        - friend: Amigo/a
+        - other: Otra relación
+    
+    FamilyCircleInfo:
+      type: object
+      nullable: true
+      description: "Información del círculo de afinidad familiar del cliente."
+      properties:
+        role:
+          type: string
+          enum: [holder, member]
+          nullable: true
+          description: "Rol en el círculo: holder (titular) o member (miembro). Null si no pertenece a ningún círculo."
+        holderId:
+          type: string
+          nullable: true
+          description: "ID del cliente titular del círculo. Null si el cliente es el titular."
+        relationshipType:
+          $ref: '#/components/schemas/RelationshipType'
+          nullable: true
+        joinedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: "Fecha de adhesión al círculo."
+    
+    FamilyCircleMember:
+      type: object
+      description: "Miembro del círculo de afinidad familiar."
+      properties:
+        memberId:
+          type: string
+          description: "ID del cliente miembro."
+        relationshipType:
+          $ref: '#/components/schemas/RelationshipType'
+        addedAt:
+          type: string
+          format: date-time
+          description: "Fecha en que fue añadido al círculo."
+        addedBy:
+          type: string
+          description: "UID del usuario que añadió al miembro."
+    
+    FamilyCircleConfig:
+      type: object
+      nullable: true
+      description: "Configuración de permisos de círculo familiar para una cuenta de lealtad."
+      properties:
+        allowMemberCredits:
+          type: boolean
+          description: "Indica si los miembros del círculo pueden generar transacciones de crédito en esta cuenta."
+        allowMemberDebits:
+          type: boolean
+          description: "Indica si los miembros del círculo pueden generar transacciones de débito en esta cuenta."
+        updatedAt:
+          type: string
+          format: date-time
+        updatedBy:
+          type: string
+          description: "UID del usuario que actualizó la configuración."
+    
+    TransactionOriginator:
+      type: object
+      nullable: true
+      description: "Información del cliente que originó la transacción (solo para transacciones de círculo familiar)."
+      properties:
+        clientId:
+          type: string
+          description: "ID del cliente que originó la transacción."
+        isCircleMember:
+          type: boolean
+          description: "True si la transacción fue originada por un miembro del círculo, false si fue el titular."
+        relationshipType:
+          $ref: '#/components/schemas/RelationshipType'
+          nullable: true
+    
     Client:
       type: object
       properties:
@@ -887,6 +1188,14 @@ components:
           description: "Lista de direcciones del cliente (puede estar vacía)."
         extra_data: { type: object, additionalProperties: true, description: "Datos adicionales en formato clave-valor." }
         affinityGroupIds: { type: array, items: { type: string }, description: "IDs de grupos de afinidad a los que pertenece." }
+        familyCircle:
+          $ref: '#/components/schemas/FamilyCircleInfo'
+        familyCircleMembers:
+          type: array
+          items:
+            $ref: '#/components/schemas/FamilyCircleMember'
+          nullable: true
+          description: "Lista de miembros del círculo (solo presente si el cliente es titular)."
         account_balances: { type: object, additionalProperties: { type: number }, description: "Mapa desnormalizado de saldos por cuenta." }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
@@ -903,6 +1212,8 @@ components:
         id: { type: string }
         account_name: { type: string }
         points: { type: integer }
+        familyCircleConfig:
+          $ref: '#/components/schemas/FamilyCircleConfig'
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
     Transaction:
@@ -912,6 +1223,8 @@ components:
         transaction_type: { type: string, enum: [credit, debit] }
         amount: { type: number, description: "Siempre positivo." }
         description: { type: string }
+        originatedBy:
+          $ref: '#/components/schemas/TransactionOriginator'
         timestamp: { type: string, format: date-time }
     
     # Audit Trail Entities
@@ -924,6 +1237,14 @@ components:
         - ACCOUNT_CREATED
         - POINTS_CREDITED
         - POINTS_DEBITED
+        - GROUP_CREATED
+        - CLIENT_ADDED_TO_GROUP
+        - CLIENT_REMOVED_FROM_GROUP
+        - FAMILY_CIRCLE_MEMBER_ADDED
+        - FAMILY_CIRCLE_MEMBER_REMOVED
+        - LOYALTY_ACCOUNT_FAMILY_CONFIG_UPDATED
+        - POINTS_CREDITED_BY_CIRCLE_MEMBER
+        - POINTS_DEBITED_BY_CIRCLE_MEMBER
         - GROUP_CREATED
         - CLIENT_ADDED_TO_GROUP
         - CLIENT_REMOVED_FROM_GROUP
@@ -1126,6 +1447,11 @@ components:
           schema: { $ref: '#/components/schemas/Error' }
     Conflict:
       description: Conflicto, el recurso ya existe.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: El usuario no tiene permisos para realizar esta operación.
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
