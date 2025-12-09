@@ -47,10 +47,8 @@ router.get(
         throw new ValidationError("Limit must be between 1 and 100");
       }
 
-      const { clients, nextCursor: newCursor } = await clientService.listClients(
-        limit,
-        nextCursor
-      );
+      const { clients, nextCursor: newCursor } =
+        await clientService.listClients(limit, nextCursor);
 
       res.status(200).json({
         data: clients,

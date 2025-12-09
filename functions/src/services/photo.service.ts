@@ -17,9 +17,9 @@ export class PhotoService {
 
   private get bucket(): ReturnType<ReturnType<typeof getStorage>["bucket"]> {
     // Use default bucket or emulator bucket
-    const bucketName = process.env.FIREBASE_STORAGE_EMULATOR_HOST 
-      ? "loyalty-gen.appspot.com"  // Emulator doesn't need real bucket
-      : undefined;  // Use default bucket in production
+    const bucketName = process.env.FIREBASE_STORAGE_EMULATOR_HOST
+      ? "loyalty-gen.appspot.com" // Emulator doesn't need real bucket
+      : undefined; // Use default bucket in production
     return this.storage.bucket(bucketName);
   }
 
@@ -170,14 +170,14 @@ export class PhotoService {
    */
   private getFileExtension(mimeType: string): string {
     switch (mimeType) {
-    case "image/jpeg":
-      return "jpg";
-    case "image/png":
-      return "png";
-    case "image/webp":
-      return "webp";
-    default:
-      return "jpg";
+      case "image/jpeg":
+        return "jpg";
+      case "image/png":
+        return "png";
+      case "image/webp":
+        return "webp";
+      default:
+        return "jpg";
     }
   }
 }

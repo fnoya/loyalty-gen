@@ -1,4 +1,9 @@
-import { AppError, NotFoundError, ConflictError, ValidationError } from "./errors";
+import {
+  AppError,
+  NotFoundError,
+  ConflictError,
+  ValidationError,
+} from "./errors";
 
 describe("Core Error Classes", () => {
   describe("AppError", () => {
@@ -34,10 +39,7 @@ describe("Core Error Classes", () => {
 
   describe("ConflictError", () => {
     it("should create a 409 error with field-specific code", () => {
-      const error = new ConflictError(
-        "El email ya existe",
-        "email"
-      );
+      const error = new ConflictError("El email ya existe", "email");
 
       expect(error.statusCode).toBe(409);
       expect(error.code).toBe("EMAIL_ALREADY_EXISTS");

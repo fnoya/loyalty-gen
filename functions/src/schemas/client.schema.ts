@@ -106,46 +106,29 @@ export type AddressType = z.infer<typeof addressTypeSchema>;
  */
 export const addressSchema = z.object({
   type: addressTypeSchema,
-  street: z
-    .string()
-    .max(100)
-    .describe("Street name"),
+  street: z.string().max(100).describe("Street name"),
   buildingBlock: z
     .string()
     .max(50)
     .optional()
     .nullable()
     .describe("Building, block, etc. (optional)"),
-  number: z
-    .string()
-    .max(20)
-    .describe("Street number"),
+  number: z.string().max(20).describe("Street number"),
   apartment: z
     .string()
     .max(20)
     .optional()
     .nullable()
     .describe("Apartment, unit, etc. (optional)"),
-  locality: z
-    .string()
-    .max(100)
-    .describe("City or locality"),
-  state: z
-    .string()
-    .max(100)
-    .describe("State, province, or department"),
-  postalCode: z
-    .string()
-    .max(20)
-    .describe("Postal code"),
+  locality: z.string().max(100).describe("City or locality"),
+  state: z.string().max(100).describe("State, province, or department"),
+  postalCode: z.string().max(20).describe("Postal code"),
   country: z
     .string()
     .length(2, "Country code must be 2 characters")
     .regex(/^[A-Z]{2}$/, "Country code must be uppercase ISO 3166-1 alpha-2")
     .describe("ISO 3166-1 alpha-2 country code"),
-  isPrimary: z
-    .boolean()
-    .describe("Indicates if this is the primary address"),
+  isPrimary: z.boolean().describe("Indicates if this is the primary address"),
 });
 
 export type Address = z.infer<typeof addressSchema>;
@@ -212,14 +195,8 @@ export const clientSchema = z.object({
     .optional()
     .nullable()
     .describe("Profile photo URL in Firebase Storage"),
-  phones: z
-    .array(phoneSchema)
-    .default([])
-    .describe("List of phone numbers"),
-  addresses: z
-    .array(addressSchema)
-    .default([])
-    .describe("List of addresses"),
+  phones: z.array(phoneSchema).default([]).describe("List of phone numbers"),
+  addresses: z.array(addressSchema).default([]).describe("List of addresses"),
   extra_data: z
     .record(z.unknown())
     .default({})
@@ -280,13 +257,10 @@ export const createClientRequestSchema = z
       .default({})
       .describe("Additional key-value data"),
   })
-  .refine(
-    (data) => data.email || data.identity_document,
-    {
-      message: "At least one identifier required: email or identity_document",
-      path: ["email"],
-    }
-  )
+  .refine((data) => data.email || data.identity_document, {
+    message: "At least one identifier required: email or identity_document",
+    path: ["email"],
+  })
   .refine(
     (data) => {
       if (data.phones && data.phones.length > 0) {

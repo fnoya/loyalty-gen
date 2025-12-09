@@ -6,11 +6,7 @@ import {
   createClientRequestSchema,
   updateClientRequestSchema,
 } from "../schemas/client.schema";
-import {
-  NotFoundError,
-  ConflictError,
-  ValidationError,
-} from "../core/errors";
+import { NotFoundError, ConflictError, ValidationError } from "../core/errors";
 
 /**
  * Client Service - Business logic for client management
@@ -22,7 +18,7 @@ export class ClientService {
 
   private get clientsCollection(): ReturnType<
     ReturnType<typeof getFirestore>["collection"]
-    > {
+  > {
     return this.db.collection("clients");
   }
 
@@ -67,14 +63,15 @@ export class ClientService {
         firstName: validatedData.name.firstName.toLowerCase(),
         secondName: validatedData.name.secondName?.toLowerCase() || null,
         firstLastName: validatedData.name.firstLastName.toLowerCase(),
-        secondLastName: validatedData.name.secondLastName?.toLowerCase() || null,
+        secondLastName:
+          validatedData.name.secondLastName?.toLowerCase() || null,
       },
       email_lower: validatedData.email?.toLowerCase() || null,
       identity_document_lower: validatedData.identity_document
         ? {
-          type: validatedData.identity_document.type.toLowerCase(),
-          number: validatedData.identity_document.number.toLowerCase(),
-        }
+            type: validatedData.identity_document.type.toLowerCase(),
+            number: validatedData.identity_document.number.toLowerCase(),
+          }
         : null,
       // Add phone numbers as array for easier searching
       phone_numbers: validatedData.phones?.map((p) => p.number) || [],
@@ -138,7 +135,8 @@ export class ClientService {
         firstName: validatedData.name.firstName.toLowerCase(),
         secondName: validatedData.name.secondName?.toLowerCase() || null,
         firstLastName: validatedData.name.firstLastName.toLowerCase(),
-        secondLastName: validatedData.name.secondLastName?.toLowerCase() || null,
+        secondLastName:
+          validatedData.name.secondLastName?.toLowerCase() || null,
       };
     }
 
@@ -176,10 +174,14 @@ export class ClientService {
     limit: number = 30,
     startAfterCursor?: string
   ): Promise<{ clients: Client[]; nextCursor: string | null }> {
-    let query = this.clientsCollection.orderBy("created_at", "desc").limit(limit);
+    let query = this.clientsCollection
+      .orderBy("created_at", "desc")
+      .limit(limit);
 
     if (startAfterCursor) {
-      const cursorDoc = await this.clientsCollection.doc(startAfterCursor).get();
+      const cursorDoc = await this.clientsCollection
+        .doc(startAfterCursor)
+        .get();
       if (cursorDoc.exists) {
         query = query.startAfter(cursorDoc);
       }
@@ -236,10 +238,7 @@ export class ClientService {
   /**
    * Search by name (supports multi-word queries)
    */
-  private async searchByName(
-    query: string,
-    limit: number
-  ): Promise<Client[]> {
+  private async searchByName(query: string, limit: number): Promise<Client[]> {
     const words = query.split(/\s+/).filter((w) => w.length > 0);
 
     if (words.length === 0) {
@@ -384,15 +383,11 @@ export class ClientService {
   /**
    * Merge and deduplicate results from multiple queries
    */
-  private mergeAndDeduplicateResults(
-    ...resultArrays: Client[][]
-  ): Client[];
+  private mergeAndDeduplicateResults(...resultArrays: Client[][]): Client[];
   private mergeAndDeduplicateResults(
     ...args: [...Client[][], number]
   ): Client[];
-  private mergeAndDeduplicateResults(
-    ...args: (Client[] | number)[]
-  ): Client[] {
+  private mergeAndDeduplicateResults(...args: (Client[] | number)[]): Client[] {
     const limit =
       typeof args[args.length - 1] === "number"
         ? (args.pop() as number)
@@ -421,9 +416,7 @@ export class ClientService {
   /**
    * Convert Firestore document to Client type
    */
-  private documentToClient(
-    doc: FirebaseFirestore.DocumentSnapshot
-  ): Client {
+  private documentToClient(doc: FirebaseFirestore.DocumentSnapshot): Client {
     const data = doc.data();
     if (!data) {
       throw new Error("Document data is undefined");

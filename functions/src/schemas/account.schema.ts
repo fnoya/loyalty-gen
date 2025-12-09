@@ -78,11 +78,7 @@ export type CreditDebitRequest = z.infer<typeof creditDebitRequestSchema>;
  * Balance response schema
  */
 export const balanceResponseSchema = z.object({
-  points: z
-    .number()
-    .int()
-    .min(0)
-    .describe("Current point balance"),
+  points: z.number().int().min(0).describe("Current point balance"),
 });
 
 export type BalanceResponse = z.infer<typeof balanceResponseSchema>;
@@ -90,9 +86,9 @@ export type BalanceResponse = z.infer<typeof balanceResponseSchema>;
 /**
  * All balances response schema
  */
-export const allBalancesResponseSchema = z.record(
-  z.number().int().min(0)
-).describe("Map of account IDs to point balances");
+export const allBalancesResponseSchema = z
+  .record(z.number().int().min(0))
+  .describe("Map of account IDs to point balances");
 
 export type AllBalancesResponse = z.infer<typeof allBalancesResponseSchema>;
 

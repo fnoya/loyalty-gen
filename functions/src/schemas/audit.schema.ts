@@ -57,10 +57,7 @@ export const auditChangesSchema = z.object({
     .record(z.unknown())
     .nullable()
     .describe("State before the operation"),
-  after: z
-    .record(z.unknown())
-    .nullable()
-    .describe("State after the operation"),
+  after: z.record(z.unknown()).nullable().describe("State after the operation"),
 });
 
 export type AuditChanges = z.infer<typeof auditChangesSchema>;

@@ -7,7 +7,10 @@ import {
   updateClientRequestSchema,
 } from "./client.schema";
 import { createGroupRequestSchema } from "./group.schema";
-import { createAccountRequestSchema, creditDebitRequestSchema } from "./account.schema";
+import {
+  createAccountRequestSchema,
+  creditDebitRequestSchema,
+} from "./account.schema";
 
 describe("Client Schemas", () => {
   describe("clientNameSchema", () => {
@@ -331,9 +334,7 @@ describe("Client Schemas", () => {
           firstName: "Francisco",
           firstLastName: "Noya",
         },
-        phones: [
-          { type: "mobile", number: "099123456", isPrimary: true },
-        ],
+        phones: [{ type: "mobile", number: "099123456", isPrimary: true }],
         extra_data: { note: "VIP client" },
       };
       expect(() => updateClientRequestSchema.parse(request)).not.toThrow();

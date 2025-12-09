@@ -1,6 +1,6 @@
 /**
  * Central export point for all Zod schemas
- * 
+ *
  * This module provides a single entry point for importing schemas throughout the application.
  * All TypeScript types are inferred from Zod schemas to ensure consistency.
  */

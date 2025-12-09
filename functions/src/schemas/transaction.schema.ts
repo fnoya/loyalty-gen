@@ -14,7 +14,9 @@ export type TransactionType = z.infer<typeof transactionTypeSchema>;
  */
 export const transactionOriginatorSchema = z
   .object({
-    clientId: firestoreIdSchema.describe("ID of client who originated the transaction"),
+    clientId: firestoreIdSchema.describe(
+      "ID of client who originated the transaction"
+    ),
     isCircleMember: z
       .boolean()
       .describe("True if originated by circle member, false if by holder"),
@@ -22,9 +24,7 @@ export const transactionOriginatorSchema = z
   })
   .nullable();
 
-export type TransactionOriginator = z.infer<
-  typeof transactionOriginatorSchema
->;
+export type TransactionOriginator = z.infer<typeof transactionOriginatorSchema>;
 
 /**
  * Point transaction schema

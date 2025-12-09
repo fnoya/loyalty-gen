@@ -55,23 +55,29 @@ describe("Client Routes", () => {
 
       expect(res.status).toBe(201);
       expect(res.body).toEqual(mockClient);
-      expect(clientService.createClient).toHaveBeenCalledWith(expect.any(Object));
+      expect(clientService.createClient).toHaveBeenCalledWith(
+        expect.any(Object)
+      );
     });
 
     it("should handle validation errors", async () => {
       const error = new ValidationError("Validation failed");
       (clientService.createClient as jest.Mock).mockRejectedValue(error);
 
-      const res = await request(app)
-        .post("/api/v1/clients")
-        .send({});
+      const res = await request(app).post("/api/v1/clients").send({});
 
       expect(res.status).toBe(400);
     });
 
     it("should handle duplicate email", async () => {
-      const conflictError = new AppError("Email already exists", 409, "CONFLICT");
-      (clientService.createClient as jest.Mock).mockRejectedValue(conflictError);
+      const conflictError = new AppError(
+        "Email already exists",
+        409,
+        "CONFLICT"
+      );
+      (clientService.createClient as jest.Mock).mockRejectedValue(
+        conflictError
+      );
 
       const res = await request(app)
         .post("/api/v1/clients")
@@ -141,7 +147,10 @@ describe("Client Routes", () => {
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockClient);
-      expect(clientService.updateClient).toHaveBeenCalledWith("123", expect.any(Object));
+      expect(clientService.updateClient).toHaveBeenCalledWith(
+        "123",
+        expect.any(Object)
+      );
     });
   });
 
@@ -158,12 +167,17 @@ describe("Client Routes", () => {
 
   describe("POST /api/v1/clients/:id/photo", () => {
     it("should upload a photo", async () => {
-      const mockClient = { id: "123", photoUrl: "http://example.com/photo.jpg" };
-      (photoService.uploadPhoto as jest.Mock).mockResolvedValue("http://example.com/photo.jpg");
+      const mockClient = {
+        id: "123",
+        photoUrl: "http://example.com/photo.jpg",
+      };
+      (photoService.uploadPhoto as jest.Mock).mockResolvedValue(
+        "http://example.com/photo.jpg"
+      );
       (clientService.getClient as jest.Mock).mockResolvedValue(mockClient);
 
       const buffer = Buffer.from("fake-image-data");
-      
+
       const res = await request(app)
         .post("/api/v1/clients/123/photo")
         .attach("photo", buffer, "test.png");
@@ -176,15 +190,20 @@ describe("Client Routes", () => {
     it("should handle missing file", async () => {
       const res = await request(app)
         .post("/api/v1/clients/123/photo")
-        .set("Content-Type", "multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW")
-        .send('------WebKitFormBoundary7MA4YWxkTrZu0gW\r\nContent-Disposition: form-data; name="other"\r\n\r\ndata\r\n------WebKitFormBoundary7MA4YWxkTrZu0gW--');
+        .set(
+          "Content-Type",
+          "multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW"
+        )
+        .send(
+          '------WebKitFormBoundary7MA4YWxkTrZu0gW\r\nContent-Disposition: form-data; name="other"\r\n\r\ndata\r\n------WebKitFormBoundary7MA4YWxkTrZu0gW--'
+        );
 
       // Busboy might hang if no file is sent and we don't handle 'finish' correctly for empty streams?
       // Actually, if no file is sent, 'file' event won't fire. 'finish' will fire.
       // In our code:
       // busboy.on("finish", async () => { if (!fileBuffer) throw ... })
       // So it should return 400 (ValidationError)
-      
+
       expect(res.status).toBe(400);
     });
 
@@ -193,7 +212,7 @@ describe("Client Routes", () => {
       (photoService.uploadPhoto as jest.Mock).mockRejectedValue(error);
 
       const buffer = Buffer.from("fake-text-data");
-      
+
       const res = await request(app)
         .post("/api/v1/clients/123/photo")
         .attach("photo", buffer, "test.txt");

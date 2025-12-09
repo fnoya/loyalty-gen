@@ -41,6 +41,7 @@ Este directorio contiene toda la documentación técnica y funcional del proyect
 | [API-DESIGN.md](./API-DESIGN.md) | Convenciones de API, versionado y formatos | Desarrolladores API |
 | [SPECS.md](./SPECS.md) | Requisitos funcionales y no funcionales | QA, Desarrolladores |
 | [GUIDELINES.md](./GUIDELINES.md) | Estilo de código, tipado y políticas | Todos los Desarrolladores |
+| [FIREBASE-BEST-PRACTICES.md](./FIREBASE-BEST-PRACTICES.md) | **⭐ Prácticas críticas para Firebase/Firestore** | **Todos los Desarrolladores** |
 
 ### 📦 Documentos de Especificaciones de Features
 

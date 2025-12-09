@@ -45,9 +45,7 @@ export class NotFoundError extends AppError {
  */
 export class ConflictError extends AppError {
   constructor(message: string, field?: string) {
-    const code = field
-      ? `${field.toUpperCase()}_ALREADY_EXISTS`
-      : "CONFLICT";
+    const code = field ? `${field.toUpperCase()}_ALREADY_EXISTS` : "CONFLICT";
     super(message, 409, code);
   }
 }

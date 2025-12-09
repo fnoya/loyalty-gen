@@ -61,7 +61,9 @@ export async function authenticate(
     if (error instanceof Error) {
       // Log error type but NOT the token value
       console.error("Token verification failed:", error.message);
-      next(new UnauthorizedError("Token de autenticación inválido o expirado."));
+      next(
+        new UnauthorizedError("Token de autenticación inválido o expirado.")
+      );
       return;
     }
 
