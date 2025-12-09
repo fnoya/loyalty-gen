@@ -7,16 +7,20 @@ import * as crypto from "crypto";
  * Photo Service - Manages client profile photos in Firebase Storage
  */
 export class PhotoService {
-  private get storage() {
+  private get storage(): ReturnType<typeof getStorage> {
     return getStorage();
   }
 
-  private get db() {
+  private get db(): ReturnType<typeof getFirestore> {
     return getFirestore();
   }
 
-  private get bucket() {
-    return this.storage.bucket();
+  private get bucket(): ReturnType<ReturnType<typeof getStorage>["bucket"]> {
+    // Use default bucket or emulator bucket
+    const bucketName = process.env.FIREBASE_STORAGE_EMULATOR_HOST 
+      ? "loyalty-gen.appspot.com"  // Emulator doesn't need real bucket
+      : undefined;  // Use default bucket in production
+    return this.storage.bucket(bucketName);
   }
 
   // Allowed MIME types
@@ -84,11 +88,20 @@ export class PhotoService {
       },
     });
 
-    // Make file publicly accessible with a signed URL (valid for 50 years)
-    const [url] = await file.getSignedUrl({
-      action: "read",
-      expires: Date.now() + 50 * 365 * 24 * 60 * 60 * 1000, // 50 years
-    });
+    // Generate URL (emulator uses public URL, production uses signed URL)
+    let url: string;
+    if (process.env.FIREBASE_STORAGE_EMULATOR_HOST) {
+      // Emulator: use public URL format
+      const emulatorHost = process.env.FIREBASE_STORAGE_EMULATOR_HOST;
+      url = `http://${emulatorHost}/v0/b/${this.bucket.name}/o/${encodeURIComponent(filePath)}?alt=media`;
+    } else {
+      // Production: use signed URL (valid for 50 years)
+      const [signedUrl] = await file.getSignedUrl({
+        action: "read",
+        expires: Date.now() + 50 * 365 * 24 * 60 * 60 * 1000, // 50 years
+      });
+      url = signedUrl;
+    }
 
     // Update client document with new photoUrl
     await clientRef.update({

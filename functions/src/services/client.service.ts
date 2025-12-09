@@ -16,11 +16,13 @@ import {
  * Client Service - Business logic for client management
  */
 export class ClientService {
-  private get db() {
+  private get db(): ReturnType<typeof getFirestore> {
     return getFirestore();
   }
 
-  private get clientsCollection() {
+  private get clientsCollection(): ReturnType<
+    ReturnType<typeof getFirestore>["collection"]
+    > {
     return this.db.collection("clients");
   }
 

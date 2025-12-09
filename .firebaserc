@@ -1,5 +1,7 @@
 {
   "projects": {
     "default": "loyalty-gen"
-  }
+  },
+  "targets": {},
+  "etags": {}
 }

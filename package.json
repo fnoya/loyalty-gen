@@ -1,6 +1,7 @@
 {
   "devDependencies": {
     "firebase-admin": "^13.6.0",
+    "form-data": "^4.0.5",
     "node-fetch": "^2.7.0"
   }
 }

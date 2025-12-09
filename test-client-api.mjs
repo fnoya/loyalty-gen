@@ -12,6 +12,7 @@ import { createRequire } from 'module';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fetch from 'node-fetch';
+import FormData from 'form-data';
 import fs from 'fs';
 import os from 'os';
 
@@ -35,9 +36,57 @@ admin.initializeApp({
   projectId: 'loyalty-gen',
 });
 
+/**
+ * Convert stream to buffer
+ */
+async function streamToBuffer(stream) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    stream.on('data', (chunk) => chunks.push(chunk));
+    stream.on('error', reject);
+    stream.on('end', () => resolve(Buffer.concat(chunks)));
+  });
+}
+
+/**
+ * Helper to send multipart request using native http module
+ * Bypasses node-fetch v2 issues with multipart/form-data
+ */
+const http = require('http');
+
+function postMultipart(url, headers, buffer) {
+  return new Promise((resolve, reject) => {
+    const urlObj = new URL(url);
+    const options = {
+      hostname: urlObj.hostname,
+      port: urlObj.port,
+      path: urlObj.pathname,
+      method: 'POST',
+      headers: headers,
+    };
+
+    const req = http.request(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => data += chunk);
+      res.on('end', () => {
+        resolve({
+          status: res.statusCode,
+          text: () => Promise.resolve(data),
+          json: () => Promise.resolve(JSON.parse(data)),
+        });
+      });
+    });
+
+    req.on('error', reject);
+    req.write(buffer);
+    req.end();
+  });
+}
+
 // Test state
 let authToken = '';
 let createdClientId = '';
+let photoClientId = ''; // For photo tests
 
 /**
  * Make HTTP request to API
@@ -313,6 +362,117 @@ const tests = [
       throw new Error(`Expected 400 for invalid email, got ${status}: ${JSON.stringify(data)}`);
     }
     assertError(data, 'VALIDATION_FAILED');
+  }),
+
+  test('15. Create Client for Photo Tests', async () => {
+    const uniqueEmail = `photo.test.${Date.now()}@example.com`;
+    const { status, data } = await apiRequest('POST', '', authToken, {
+      name: {
+        firstName: 'Photo',
+        firstLastName: 'Test',
+      },
+      email: uniqueEmail,
+    });
+    if (status !== 201) {
+      throw new Error(`Expected 201, got ${status}: ${JSON.stringify(data)}`);
+    }
+    photoClientId = data.id;
+    assertTrue(photoClientId, 'Should have photo client ID');
+  }),
+
+  test('16. Upload Photo (Multipart)', async () => {
+    // Create a small test image (1x1 pixel PNG)
+    const pngData = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+    
+    const form = new FormData();
+    form.append('photo', pngData, {
+      filename: 'test.png',
+      contentType: 'image/png',
+    });
+    
+    const buffer = Buffer.concat([form.getBuffer(), Buffer.from('\r\n')]);
+
+    const response = await postMultipart(`${API_BASE}/${photoClientId}/photo`, {
+      'Authorization': `Bearer ${authToken}`,
+      ...form.getHeaders(),
+      'Content-Length': buffer.length.toString(),
+    }, buffer);
+    
+    const status = response.status;
+    const text = await response.text();
+    let data;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = text;
+    }
+    
+    if (status !== 200) {
+      throw new Error(`Expected 200 for photo upload, got ${status}: ${JSON.stringify(data)}`);
+    }
+    assertTrue(data.photoUrl, 'Should return photoUrl');
+    // Check for production URL or emulator URL
+    const isValidUrl = data.photoUrl.includes('storage.googleapis.com') || 
+                       data.photoUrl.includes('firebasestorage') ||
+                       data.photoUrl.includes('127.0.0.1') ||
+                       data.photoUrl.includes('localhost');
+    assertTrue(isValidUrl, `PhotoUrl should be a valid storage URL, got: ${data.photoUrl}`);
+  }),
+
+  test('17. Verify Photo URL in Client', async () => {
+    const { status, data } = await apiRequest('GET', `/${photoClientId}`, authToken);
+    if (status !== 200) {
+      throw new Error(`Expected 200, got ${status}`);
+    }
+    assertTrue(data.photoUrl, 'Client should have photoUrl');
+  }),
+
+  test('18. Delete Photo', async () => {
+    const response = await fetch(`${API_BASE}/${photoClientId}/photo`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+      },
+    });
+    
+    const status = response.status;
+    if (status !== 200) {
+      const text = await response.text();
+      throw new Error(`Expected 200 for photo delete, got ${status}: ${text}`);
+    }
+  }),
+
+  test('19. Verify Photo Deleted', async () => {
+    const { status, data } = await apiRequest('GET', `/${photoClientId}`, authToken);
+    if (status !== 200) {
+      throw new Error(`Expected 200, got ${status}`);
+    }
+    assertTrue(data.photoUrl === null, 'Client photoUrl should be null after deletion');
+  }),
+
+  test('20. Upload Invalid File Type', async () => {
+    // Create a text file
+    const textData = Buffer.from('This is not an image');
+    
+    const form = new FormData();
+    form.append('photo', textData, {
+      filename: 'test.txt',
+      contentType: 'text/plain',
+    });
+    
+    const buffer = form.getBuffer();
+
+    const response = await postMultipart(`${API_BASE}/${photoClientId}/photo`, {
+      'Authorization': `Bearer ${authToken}`,
+      ...form.getHeaders(),
+      'Content-Length': buffer.length.toString(),
+    }, buffer);
+    
+    const status = response.status;
+    if (status !== 400) {
+      const text = await response.text();
+      throw new Error(`Expected 400 for invalid file type, got ${status}: ${text}`);
+    }
   }),
 ];
 
