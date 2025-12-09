@@ -19,7 +19,7 @@ const require = createRequire(import.meta.url);
 
 // Load firebase-admin from functions directory
 const admin = require(
-  path.join(__dirname, "functions", "node_modules", "firebase-admin"),
+  path.join(__dirname, "../..", "functions", "node_modules", "firebase-admin"),
 );
 
 // Test configuration
