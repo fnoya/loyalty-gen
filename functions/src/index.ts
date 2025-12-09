@@ -6,6 +6,7 @@ import {
   errorHandler,
   notFoundHandler,
 } from "./api/middleware/error.middleware";
+import clientRoutes from "./api/routes/client.routes";
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
@@ -27,9 +28,8 @@ app.get("/health", (_req: Request, res: Response) => {
   });
 });
 
-// API routes will be registered here
-// Example:
-// app.use('/api/v1/clients', authenticate, clientRoutes);
+// API v1 routes
+app.use("/api/v1/clients", clientRoutes);
 
 // 404 handler (must be after all routes)
 app.use(notFoundHandler);
