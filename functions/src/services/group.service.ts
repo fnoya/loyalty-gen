@@ -12,7 +12,7 @@ import { AuditActor } from "../schemas/audit.schema";
 /**
  * Service for managing affinity groups
  */
-class GroupService {
+export class GroupService {
   private _firestore: admin.firestore.Firestore | null = null;
   private _auditService: AuditService | null = null;
 

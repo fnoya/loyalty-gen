@@ -16,7 +16,7 @@ import { AuditActor } from "../schemas/audit.schema";
 /**
  * Service for managing loyalty accounts and transactions
  */
-class AccountService {
+export class AccountService {
   private _firestore: admin.firestore.Firestore | null = null;
   private _auditService: AuditService | null = null;
 
