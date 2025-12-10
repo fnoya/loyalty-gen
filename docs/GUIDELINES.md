@@ -106,7 +106,7 @@ Para más detalles sobre la estrategia de búsqueda y las limitaciones de Firest
 
 -   **Framework:** Utilizar **`Jest`**.
 -   **Tipos de Pruebas:** Se deben escribir pruebas unitarias para los servicios (usando mocks) y pruebas de integración para las Cloud Functions (usando `firebase-functions-test` y el emulador).
--   **Cobertura:** La cobertura de código debe ser superior al 80%.
+-   **Cobertura:** La cobertura de código debe ser superior al 80%. **CRÍTICO:** Se debe mantener este nivel de cobertura en todas las fases futuras del desarrollo.
 
 ## 6. Manejo de Desnormalización de Datos
 

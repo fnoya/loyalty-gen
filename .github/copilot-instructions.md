@@ -233,6 +233,7 @@ async updateWithTransaction(id: string, data: UpdateData): Promise<Entity> {
 - **Framework:** Jest with `firebase-functions-test`
 - Write unit tests for services (using mocks) and integration tests for Cloud Functions
 - Target code coverage: **>80%**
+- **CRITICAL:** Maintain at least 80% lines, functions, statements and branch coverage in all future development phases.
 
 ## Commit Messages
 

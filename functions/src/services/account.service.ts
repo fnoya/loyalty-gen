@@ -17,26 +17,19 @@ import { AuditActor } from "../schemas/audit.schema";
  * Service for managing loyalty accounts and transactions
  */
 export class AccountService {
-  private _firestore: admin.firestore.Firestore | null = null;
-  private _auditService: AuditService | null = null;
+  private _firestore: admin.firestore.Firestore;
+  private _auditService: AuditService;
 
-  /**
-   * Lazy-loaded Firestore instance
-   */
+  constructor(firestore?: admin.firestore.Firestore) {
+    this._firestore = firestore || admin.firestore();
+    this._auditService = new AuditService(this._firestore);
+  }
+
   private get firestore(): admin.firestore.Firestore {
-    if (!this._firestore) {
-      this._firestore = admin.firestore();
-    }
     return this._firestore;
   }
 
-  /**
-   * Lazy-loaded AuditService instance
-   */
   private get auditService(): AuditService {
-    if (!this._auditService) {
-      this._auditService = new AuditService(this.firestore);
-    }
     return this._auditService;
   }
 
@@ -495,4 +488,13 @@ export class AccountService {
   }
 }
 
-export const accountService = new AccountService();
+// Lazy singleton
+let _accountServiceInstance: AccountService | null = null;
+export const accountService = {
+  get instance(): AccountService {
+    if (!_accountServiceInstance) {
+      _accountServiceInstance = new AccountService();
+    }
+    return _accountServiceInstance;
+  },
+};

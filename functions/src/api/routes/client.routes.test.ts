@@ -103,6 +103,11 @@ describe("Client Routes", () => {
       expect(res.body.paging.next_cursor).toBe("next-page");
       expect(clientService.listClients).toHaveBeenCalledWith(10, undefined);
     });
+
+    it("should return 400 for invalid limit", async () => {
+      const res = await request(app).get("/api/v1/clients?limit=-1");
+      expect(res.status).toBe(400);
+    });
   });
 
   describe("GET /api/v1/clients/search", () => {
@@ -120,6 +125,11 @@ describe("Client Routes", () => {
 
     it("should return 400 if query is missing", async () => {
       const res = await request(app).get("/api/v1/clients/search");
+      expect(res.status).toBe(400);
+    });
+
+    it("should return 400 for invalid limit", async () => {
+      const res = await request(app).get("/api/v1/clients/search?q=John&limit=101");
       expect(res.status).toBe(400);
     });
   });

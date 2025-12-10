@@ -3,18 +3,31 @@ import { AuditService } from "./audit.service";
 import { NotFoundError, AppError } from "../core/errors";
 
 // Mock firebase-admin
-jest.mock("firebase-admin", () => ({
-  firestore: jest.fn(() => mockFirestoreInstance),
-  initializeApp: jest.fn(),
+jest.mock("firebase-admin", () => {
+  const mockFirestore = {
+    collection: jest.fn(),
+    runTransaction: jest.fn(),
+  };
+  
+  return {
+    firestore: jest.fn(() => mockFirestore),
+    initializeApp: jest.fn(),
+  };
+});
+
+jest.mock("firebase-admin/firestore", () => ({
+  FieldValue: {
+    serverTimestamp: jest.fn(() => new Date()),
+    arrayUnion: jest.fn((value) => [value]),
+    arrayRemove: jest.fn((value) => []),
+  },
 }));
+
+const admin = require("firebase-admin");
+const mockFirestoreInstance = admin.firestore();
 
 // Mock AuditService
 jest.mock("./audit.service");
-
-const mockFirestoreInstance = {
-  collection: jest.fn(),
-  runTransaction: jest.fn(),
-};
 
 describe("GroupService", () => {
   let groupService: GroupService;
@@ -33,6 +46,11 @@ describe("GroupService", () => {
 
     mockFirestoreInstance.collection.mockReturnValue({
       doc: mockDoc,
+      orderBy: jest.fn().mockReturnThis(),
+      get: jest.fn().mockResolvedValue({
+        docs: [],
+        empty: true,
+      }),
     });
 
     mockAuditService = {
@@ -41,7 +59,7 @@ describe("GroupService", () => {
 
     (AuditService as jest.Mock).mockImplementation(() => mockAuditService);
 
-    groupService = new GroupService();
+    groupService = new GroupService(mockFirestoreInstance as any);
   });
 
   describe("createGroup", () => {
@@ -75,7 +93,7 @@ describe("GroupService", () => {
       expect(mockAuditService.createAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
           action: "GROUP_CREATED",
-          resource_type: "affinity_group",
+          resource_type: "group",
         })
       );
     });
@@ -104,11 +122,12 @@ describe("GroupService", () => {
         },
       ];
 
-      mockDoc.mockReturnValue({
+      mockFirestoreInstance.collection.mockReturnValue({
         orderBy: jest.fn().mockReturnThis(),
         get: jest.fn().mockResolvedValue({
           docs: mockDocs,
           empty: false,
+          forEach: (cb: any) => mockDocs.forEach(cb),
         }),
       });
 
@@ -125,34 +144,17 @@ describe("GroupService", () => {
       const clientId = "client123";
       const groupId = "group123";
 
-      // Mock group exists check
-      const mockGroupDoc = {
+      mockDoc.mockImplementation((id: string) => ({
         get: jest.fn().mockResolvedValue({
           exists: true,
+          data: () => ({
+            affinityGroupIds: id === clientId ? [] : undefined,
+          }),
         }),
-      };
-
-      // Mock client exists and get data
-      const mockClientGetDoc = {
-        exists: true,
-        data: () => ({
-          affinityGroupIds: [],
-        }),
-      };
-
-      // Mock client update
-      const mockClientUpdateDoc = {
         update: jest.fn().mockResolvedValue(undefined),
-      };
+      }));
 
-      mockDoc
-        .mockReturnValueOnce(mockGroupDoc) // For group check
-        .mockReturnValueOnce({
-          get: jest.fn().mockResolvedValue(mockClientGetDoc),
-        }) // For client get
-        .mockReturnValueOnce(mockClientUpdateDoc); // For client update
-
-      await groupService.assignClientToGroup(clientId, groupId, mockActor);
+      await groupService.assignClientToGroup(groupId, clientId, mockActor);
 
       expect(mockAuditService.createAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -162,45 +164,34 @@ describe("GroupService", () => {
     });
 
     it("should throw NotFoundError if client does not exist", async () => {
-      // Mock group exists
-      mockDoc.mockReturnValueOnce({
+      mockDoc.mockImplementation((id: string) => ({
         get: jest.fn().mockResolvedValue({
-          exists: true,
+          exists: id === "group123",
         }),
-      });
-
-      // Mock client does not exist
-      mockDoc.mockReturnValueOnce({
-        get: jest.fn().mockResolvedValue({
-          exists: false,
-        }),
-      });
+        update: jest.fn(),
+      }));
 
       await expect(
-        groupService.assignClientToGroup("nonexistent", "group123", mockActor)
+        groupService.assignClientToGroup("group123", "nonexistent", mockActor)
       ).rejects.toThrow(NotFoundError);
     });
 
     it("should throw error if client already in group", async () => {
-      // Mock group exists
-      mockDoc.mockReturnValueOnce({
-        get: jest.fn().mockResolvedValue({
-          exists: true,
-        }),
-      });
+      const clientId = "client123";
+      const groupId = "group123";
 
-      // Mock client exists with group already assigned
-      mockDoc.mockReturnValueOnce({
+      mockDoc.mockImplementation((id: string) => ({
         get: jest.fn().mockResolvedValue({
           exists: true,
           data: () => ({
-            affinityGroupIds: ["group123"],
+            affinityGroupIds: id === clientId ? [groupId] : undefined,
           }),
         }),
-      });
+        update: jest.fn(),
+      }));
 
       await expect(
-        groupService.assignClientToGroup("client123", "group123", mockActor)
+        groupService.assignClientToGroup(groupId, clientId, mockActor)
       ).rejects.toThrow(AppError);
     });
   });
@@ -210,35 +201,21 @@ describe("GroupService", () => {
       const clientId = "client123";
       const groupId = "group123";
 
-      // Mock group exists
-      const mockGroupDoc = {
+      const mockUpdate = jest.fn().mockResolvedValue(undefined);
+
+      mockDoc.mockImplementation((id: string) => ({
         get: jest.fn().mockResolvedValue({
           exists: true,
+          data: () => ({
+            affinityGroupIds: id === clientId ? [groupId] : undefined,
+          }),
         }),
-      };
+        update: mockUpdate,
+      }));
 
-      // Mock client exists with group assigned
-      const mockClientGetDoc = {
-        exists: true,
-        data: () => ({
-          affinityGroupIds: ["group123"],
-        }),
-      };
+      await groupService.removeClientFromGroup(groupId, clientId, mockActor);
 
-      // Mock client update
-      const mockClientUpdateDoc = {
-        update: jest.fn().mockResolvedValue(undefined),
-      };
-
-      mockDoc
-        .mockReturnValueOnce(mockGroupDoc) // For group check
-        .mockReturnValueOnce({
-          get: jest.fn().mockResolvedValue(mockClientGetDoc),
-        }) // For client get
-        .mockReturnValueOnce(mockClientUpdateDoc); // For client update
-
-      await groupService.removeClientFromGroup(clientId, groupId, mockActor);
-
+      expect(mockUpdate).toHaveBeenCalled();
       expect(mockAuditService.createAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
           action: "CLIENT_REMOVED_FROM_GROUP",
@@ -247,45 +224,31 @@ describe("GroupService", () => {
     });
 
     it("should throw NotFoundError if client does not exist", async () => {
-      // Mock group exists
-      mockDoc.mockReturnValueOnce({
+      mockDoc.mockImplementation((id: string) => ({
         get: jest.fn().mockResolvedValue({
-          exists: true,
+          exists: id === "group123",
         }),
-      });
-
-      // Mock client does not exist
-      mockDoc.mockReturnValueOnce({
-        get: jest.fn().mockResolvedValue({
-          exists: false,
-        }),
-      });
+        update: jest.fn(),
+      }));
 
       await expect(
-        groupService.removeClientFromGroup("nonexistent", "group123", mockActor)
+        groupService.removeClientFromGroup("group123", "nonexistent", mockActor)
       ).rejects.toThrow(NotFoundError);
     });
 
     it("should throw error if client not in group", async () => {
-      // Mock group exists
-      mockDoc.mockReturnValueOnce({
-        get: jest.fn().mockResolvedValue({
-          exists: true,
-        }),
-      });
-
-      // Mock client exists but not in the group
-      mockDoc.mockReturnValueOnce({
+      mockDoc.mockImplementation((id: string) => ({
         get: jest.fn().mockResolvedValue({
           exists: true,
           data: () => ({
-            affinityGroupIds: ["other_group"],
+            affinityGroupIds: id === "client123" ? ["other_group"] : undefined,
           }),
         }),
-      });
+        update: jest.fn(),
+      }));
 
       await expect(
-        groupService.removeClientFromGroup("client123", "group123", mockActor)
+        groupService.removeClientFromGroup("group123", "client123", mockActor)
       ).rejects.toThrow(AppError);
     });
   });

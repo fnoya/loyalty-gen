@@ -15,13 +15,15 @@ import { AuditActor } from "../schemas/audit.schema";
  */
 export class ClientService {
   private auditService: AuditService;
+  private _db: ReturnType<typeof getFirestore>;
 
-  constructor() {
-    this.auditService = new AuditService(this.db);
+  constructor(db?: ReturnType<typeof getFirestore>) {
+    this._db = db || getFirestore();
+    this.auditService = new AuditService(this._db);
   }
 
   private get db(): ReturnType<typeof getFirestore> {
-    return getFirestore();
+    return this._db;
   }
 
   private get clientsCollection(): ReturnType<

@@ -35,7 +35,7 @@ router.get(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { clientId } = req.params;
-      const accounts = await accountService.listAccounts(clientId!);
+      const accounts = await accountService.instance.listAccounts(clientId!);
       res.status(200).json(accounts);
     } catch (error) {
       next(error);
@@ -56,7 +56,7 @@ router.post(
       const { clientId } = req.params;
       const actor = getActor(req);
       const validated = createAccountRequestSchema.parse(req.body);
-      const account = await accountService.createAccount(
+      const account = await accountService.instance.createAccount(
         clientId!,
         validated,
         actor
@@ -81,7 +81,7 @@ router.post(
       const { clientId, accountId } = req.params;
       const actor = getActor(req);
       const validated = creditDebitRequestSchema.parse(req.body);
-      const account = await accountService.creditPoints(
+      const account = await accountService.instance.creditPoints(
         clientId!,
         accountId!,
         validated,
@@ -107,7 +107,7 @@ router.post(
       const { clientId, accountId } = req.params;
       const actor = getActor(req);
       const validated = creditDebitRequestSchema.parse(req.body);
-      const account = await accountService.debitPoints(
+      const account = await accountService.instance.debitPoints(
         clientId!,
         accountId!,
         validated,
@@ -140,7 +140,7 @@ router.get(
       }
 
       const { transactions, nextCursor: newCursor } =
-        await accountService.listTransactions(
+        await accountService.instance.listTransactions(
           clientId!,
           accountId!,
           limit,
@@ -170,7 +170,7 @@ router.get(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { clientId } = req.params;
-      const balances = await accountService.getAllBalances(clientId!);
+      const balances = await accountService.instance.getAllBalances(clientId!);
       res.status(200).json(balances);
     } catch (error) {
       next(error);
@@ -189,7 +189,7 @@ router.get(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { clientId, accountId } = req.params;
-      const balance = await accountService.getAccountBalance(
+      const balance = await accountService.instance.getAccountBalance(
         clientId!,
         accountId!
       );

@@ -11,8 +11,24 @@ jest.mock("firebase-admin", () => ({
   }),
 }));
 
-// Mock Services
-jest.mock("../../services/account.service");
+// Mock Services - Create mock instance
+const mockAccountServiceInstance = {
+  listAccounts: jest.fn(),
+  createAccount: jest.fn(),
+  creditPoints: jest.fn(),
+  debitPoints: jest.fn(),
+  listTransactions: jest.fn(),
+  getAllBalances: jest.fn(),
+  getAccountBalance: jest.fn(),
+};
+
+jest.mock("../../services/account.service", () => ({
+  accountService: {
+    get instance() {
+      return mockAccountServiceInstance;
+    },
+  },
+}));
 
 // Mock Auth Middleware
 jest.mock("../middleware/auth.middleware", () => ({
@@ -47,7 +63,7 @@ describe("Account Routes", () => {
           updated_at: "2024-01-02T00:00:00.000Z",
         },
       ];
-      (accountService.listAccounts as jest.Mock).mockResolvedValue(
+      (accountService.instance.listAccounts as jest.Mock).mockResolvedValue(
         mockAccounts
       );
 
@@ -55,11 +71,11 @@ describe("Account Routes", () => {
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockAccounts);
-      expect(accountService.listAccounts).toHaveBeenCalledWith("client-123");
+      expect(accountService.instance.listAccounts).toHaveBeenCalledWith("client-123");
     });
 
     it("should handle client not found", async () => {
-      (accountService.listAccounts as jest.Mock).mockRejectedValue(
+      (accountService.instance.listAccounts as jest.Mock).mockRejectedValue(
         new NotFoundError("Client", "invalid-client")
       );
 
@@ -81,7 +97,7 @@ describe("Account Routes", () => {
         created_at: "2024-01-03T00:00:00.000Z",
         updated_at: "2024-01-03T00:00:00.000Z",
       };
-      (accountService.createAccount as jest.Mock).mockResolvedValue(
+      (accountService.instance.createAccount as jest.Mock).mockResolvedValue(
         mockAccount
       );
 
@@ -93,7 +109,7 @@ describe("Account Routes", () => {
 
       expect(res.status).toBe(201);
       expect(res.body).toEqual(mockAccount);
-      expect(accountService.createAccount).toHaveBeenCalledWith(
+      expect(accountService.instance.createAccount).toHaveBeenCalledWith(
         "client-123",
         {
           account_name: "New Account",
@@ -111,7 +127,7 @@ describe("Account Routes", () => {
     });
 
     it("should handle client not found", async () => {
-      (accountService.createAccount as jest.Mock).mockRejectedValue(
+      (accountService.instance.createAccount as jest.Mock).mockRejectedValue(
         new NotFoundError("Client", "invalid-client")
       );
 
@@ -135,7 +151,7 @@ describe("Account Routes", () => {
         created_at: "2024-01-04T00:00:00.000Z",
         updated_at: "2024-01-04T00:00:00.000Z",
       };
-      (accountService.creditPoints as jest.Mock).mockResolvedValue(mockAccount);
+      (accountService.instance.creditPoints as jest.Mock).mockResolvedValue(mockAccount);
 
       const res = await request(app)
         .post("/api/v1/clients/client-123/accounts/account-123/credit")
@@ -146,7 +162,7 @@ describe("Account Routes", () => {
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockAccount);
-      expect(accountService.creditPoints).toHaveBeenCalledWith(
+      expect(accountService.instance.creditPoints).toHaveBeenCalledWith(
         "client-123",
         "account-123",
         {
@@ -178,7 +194,7 @@ describe("Account Routes", () => {
     });
 
     it("should handle account not found", async () => {
-      (accountService.creditPoints as jest.Mock).mockRejectedValue(
+      (accountService.instance.creditPoints as jest.Mock).mockRejectedValue(
         new NotFoundError("LoyaltyAccount", "invalid-account")
       );
 
@@ -202,7 +218,7 @@ describe("Account Routes", () => {
         created_at: "2024-01-05T00:00:00.000Z",
         updated_at: "2024-01-05T00:00:00.000Z",
       };
-      (accountService.debitPoints as jest.Mock).mockResolvedValue(mockAccount);
+      (accountService.instance.debitPoints as jest.Mock).mockResolvedValue(mockAccount);
 
       const res = await request(app)
         .post("/api/v1/clients/client-123/accounts/account-123/debit")
@@ -213,7 +229,7 @@ describe("Account Routes", () => {
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockAccount);
-      expect(accountService.debitPoints).toHaveBeenCalledWith(
+      expect(accountService.instance.debitPoints).toHaveBeenCalledWith(
         "client-123",
         "account-123",
         {
@@ -230,7 +246,7 @@ describe("Account Routes", () => {
         400,
         "INSUFFICIENT_BALANCE"
       );
-      (accountService.debitPoints as jest.Mock).mockRejectedValue(error);
+      (accountService.instance.debitPoints as jest.Mock).mockRejectedValue(error);
 
       const res = await request(app)
         .post("/api/v1/clients/client-123/accounts/account-123/debit")
@@ -252,7 +268,7 @@ describe("Account Routes", () => {
     });
 
     it("should handle account not found", async () => {
-      (accountService.debitPoints as jest.Mock).mockRejectedValue(
+      (accountService.instance.debitPoints as jest.Mock).mockRejectedValue(
         new NotFoundError("LoyaltyAccount", "invalid-account")
       );
 
@@ -284,7 +300,7 @@ describe("Account Routes", () => {
           timestamp: "2024-01-07T00:00:00.000Z",
         },
       ];
-      (accountService.listTransactions as jest.Mock).mockResolvedValue({
+      (accountService.instance.listTransactions as jest.Mock).mockResolvedValue({
         transactions: mockTransactions,
         nextCursor: "next-cursor",
       });
@@ -296,7 +312,7 @@ describe("Account Routes", () => {
       expect(res.status).toBe(200);
       expect(res.body.data).toEqual(mockTransactions);
       expect(res.body.paging.next_cursor).toBe("next-cursor");
-      expect(accountService.listTransactions).toHaveBeenCalledWith(
+      expect(accountService.instance.listTransactions).toHaveBeenCalledWith(
         "client-123",
         "account-123",
         10,
@@ -305,7 +321,7 @@ describe("Account Routes", () => {
     });
 
     it("should use default limit of 50", async () => {
-      (accountService.listTransactions as jest.Mock).mockResolvedValue({
+      (accountService.instance.listTransactions as jest.Mock).mockResolvedValue({
         transactions: [],
         nextCursor: null,
       });
@@ -315,7 +331,7 @@ describe("Account Routes", () => {
       );
 
       expect(res.status).toBe(200);
-      expect(accountService.listTransactions).toHaveBeenCalledWith(
+      expect(accountService.instance.listTransactions).toHaveBeenCalledWith(
         "client-123",
         "account-123",
         50,
@@ -346,7 +362,7 @@ describe("Account Routes", () => {
         "account-1": 100,
         "account-2": 50,
       };
-      (accountService.getAllBalances as jest.Mock).mockResolvedValue(
+      (accountService.instance.getAllBalances as jest.Mock).mockResolvedValue(
         mockBalances
       );
 
@@ -354,11 +370,11 @@ describe("Account Routes", () => {
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockBalances);
-      expect(accountService.getAllBalances).toHaveBeenCalledWith("client-123");
+      expect(accountService.instance.getAllBalances).toHaveBeenCalledWith("client-123");
     });
 
     it("should handle client not found", async () => {
-      (accountService.getAllBalances as jest.Mock).mockRejectedValue(
+      (accountService.instance.getAllBalances as jest.Mock).mockRejectedValue(
         new NotFoundError("Client", "invalid-client")
       );
 
@@ -373,7 +389,7 @@ describe("Account Routes", () => {
   describe("GET /api/v1/clients/:clientId/accounts/:accountId/balance", () => {
     it("should get balance for a specific account", async () => {
       const mockBalance = { points: 100 };
-      (accountService.getAccountBalance as jest.Mock).mockResolvedValue(
+      (accountService.instance.getAccountBalance as jest.Mock).mockResolvedValue(
         mockBalance
       );
 
@@ -383,14 +399,14 @@ describe("Account Routes", () => {
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockBalance);
-      expect(accountService.getAccountBalance).toHaveBeenCalledWith(
+      expect(accountService.instance.getAccountBalance).toHaveBeenCalledWith(
         "client-123",
         "account-123"
       );
     });
 
     it("should handle account not found", async () => {
-      (accountService.getAccountBalance as jest.Mock).mockRejectedValue(
+      (accountService.instance.getAccountBalance as jest.Mock).mockRejectedValue(
         new NotFoundError("LoyaltyAccount", "invalid-account")
       );
 

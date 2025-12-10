@@ -30,7 +30,7 @@ router.get(
   authenticate,
   async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const groups = await groupService.listGroups();
+      const groups = await groupService.instance.listGroups();
       res.status(200).json(groups);
     } catch (error) {
       next(error);
@@ -50,7 +50,7 @@ router.post(
     try {
       const actor = getActor(req);
       const validated = createGroupRequestSchema.parse(req.body);
-      const group = await groupService.createGroup(validated, actor);
+      const group = await groupService.instance.createGroup(validated, actor);
       res.status(201).json(group);
     } catch (error) {
       next(error);
@@ -70,7 +70,7 @@ router.post(
     try {
       const { groupId, clientId } = req.params;
       const actor = getActor(req);
-      await groupService.assignClientToGroup(groupId!, clientId!, actor);
+      await groupService.instance.assignClientToGroup(groupId!, clientId!, actor);
       res.status(200).json({
         message: `Client '${clientId}' assigned to group '${groupId}'`,
       });
@@ -92,7 +92,7 @@ router.delete(
     try {
       const { groupId, clientId } = req.params;
       const actor = getActor(req);
-      await groupService.removeClientFromGroup(groupId!, clientId!, actor);
+      await groupService.instance.removeClientFromGroup(groupId!, clientId!, actor);
       res.status(200).json({
         message: `Client '${clientId}' removed from group '${groupId}'`,
       });

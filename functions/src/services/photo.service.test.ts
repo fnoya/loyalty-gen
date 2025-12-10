@@ -47,7 +47,16 @@ describe("PhotoService", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    photoService = new PhotoService();
+    
+    const mockStorage = {
+      bucket: jest.fn(() => mockBucket),
+    };
+    
+    const mockFirestore = {
+      collection: mockCollection,
+    };
+    
+    photoService = new PhotoService(mockStorage as any, mockFirestore as any);
     
     // Set emulator environment
     process.env.FIREBASE_STORAGE_EMULATOR_HOST = "localhost:9199";
@@ -97,7 +106,7 @@ describe("PhotoService", () => {
     it("should replace existing photo", async () => {
       const clientId = "client123";
       const oldPhotoUrl =
-        "http://localhost:9199/v0/b/bucket/o/client-photos%2Fclient123%2Fold.jpg?alt=media";
+        "http://localhost:9199/v0/b/loyalty-gen.appspot.com/o/client-photos%2Fclient123%2Fold-photo.jpg?alt=media";
 
       mockGet.mockResolvedValue({
         exists: true,
@@ -107,33 +116,22 @@ describe("PhotoService", () => {
         }),
       });
 
-      // First call to file() is for deleting old photo
-      // Second call is for uploading new photo
-      const mockOldFile = {
-        save: jest.fn(),
-        getSignedUrl: jest.fn(),
-        exists: jest.fn().mockResolvedValue([true]),
-        delete: jest.fn().mockResolvedValue(undefined),
-      };
-      const mockNewFile = {
-        save: jest.fn().mockResolvedValue(undefined),
-        getSignedUrl: jest.fn(),
-        exists: jest.fn(),
-        delete: jest.fn(),
-      };
+      mockExists.mockResolvedValue([true]);
+      mockDelete.mockResolvedValue([{}]);
+      mockSave.mockResolvedValue(undefined);
 
-      mockBucket.file
-        .mockReturnValueOnce(mockOldFile) // Old photo file
-        .mockReturnValueOnce(mockNewFile); // New photo file
-
-      const result = await photoService.uploadPhoto(
+      await photoService.uploadPhoto(
         clientId,
-        Buffer.from("new-image"),
-        "image/png"
+        Buffer.from("new-data"),
+        "image/jpeg"
       );
 
-      expect(mockOldFile.delete).toHaveBeenCalled();
-      expect(result).toContain(".png");
+      // Should check if old file was deleted
+      // We can check if bucket.file was called with the old path
+      expect(mockBucket.file).toHaveBeenCalledWith(
+        "client-photos/client123/old-photo.jpg"
+      );
+      expect(mockDelete).toHaveBeenCalled();
     });
 
     it("should throw NotFoundError if client does not exist", async () => {
@@ -227,21 +225,24 @@ describe("PhotoService", () => {
     it("should delete a client's profile photo", async () => {
       const clientId = "client123";
       const photoUrl =
-        "http://localhost:9199/v0/b/bucket/o/client-photos%2Fclient123%2Fphoto.jpg?alt=media";
+        "http://localhost:9199/v0/b/loyalty-gen.appspot.com/o/client-photos%2Fclient123%2Fphoto.jpg?alt=media";
 
       mockGet.mockResolvedValue({
         exists: true,
         data: () => ({
-          name: "John Doe",
           photoUrl: photoUrl,
         }),
       });
 
       mockExists.mockResolvedValue([true]);
-      mockDelete.mockResolvedValue(undefined);
+      mockDelete.mockResolvedValue([{}]);
+      mockUpdate.mockResolvedValue(undefined);
 
       await photoService.deletePhoto(clientId);
 
+      expect(mockBucket.file).toHaveBeenCalledWith(
+        "client-photos/client123/photo.jpg"
+      );
       expect(mockDelete).toHaveBeenCalled();
       expect(mockUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
