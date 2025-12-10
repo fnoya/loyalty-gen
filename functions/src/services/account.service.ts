@@ -10,12 +10,15 @@ import {
 } from "../schemas/account.schema";
 import { Transaction, transactionSchema } from "../schemas/transaction.schema";
 import { NotFoundError, AppError } from "../core/errors";
+import { AuditService } from "./audit.service";
+import { AuditActor } from "../schemas/audit.schema";
 
 /**
  * Service for managing loyalty accounts and transactions
  */
 class AccountService {
   private _firestore: admin.firestore.Firestore | null = null;
+  private _auditService: AuditService | null = null;
 
   /**
    * Lazy-loaded Firestore instance
@@ -28,11 +31,22 @@ class AccountService {
   }
 
   /**
+   * Lazy-loaded AuditService instance
+   */
+  private get auditService(): AuditService {
+    if (!this._auditService) {
+      this._auditService = new AuditService(this.firestore);
+    }
+    return this._auditService;
+  }
+
+  /**
    * Create a new loyalty account for a client
    */
   async createAccount(
     clientId: string,
-    request: CreateAccountRequest
+    request: CreateAccountRequest,
+    actor: AuditActor
   ): Promise<LoyaltyAccount> {
     // Verify client exists
     const clientDoc = await this.firestore
@@ -72,7 +86,7 @@ class AccountService {
     const createdDoc = await accountRef.get();
     const data = createdDoc.data()!;
 
-    return loyaltyAccountSchema.parse({
+    const account = loyaltyAccountSchema.parse({
       id: createdDoc.id,
       account_name: data.account_name,
       points: data.points,
@@ -84,6 +98,22 @@ class AccountService {
         ? data.updated_at.toDate()
         : data.updated_at,
     });
+
+    // Create audit log
+    await this.auditService.createAuditLog({
+      action: "ACCOUNT_CREATED",
+      resource_type: "account",
+      resource_id: account.id,
+      client_id: clientId,
+      account_id: account.id,
+      actor,
+      changes: {
+        before: null,
+        after: account,
+      },
+    });
+
+    return account;
   }
 
   /**
@@ -178,7 +208,8 @@ class AccountService {
   async creditPoints(
     clientId: string,
     accountId: string,
-    request: CreditDebitRequest
+    request: CreditDebitRequest,
+    actor: AuditActor
   ): Promise<LoyaltyAccount> {
     const accountRef = this.firestore
       .collection("clients")
@@ -189,6 +220,9 @@ class AccountService {
     const transactionRef = accountRef.collection("pointTransactions").doc();
     const clientRef = this.firestore.collection("clients").doc(clientId);
 
+    let pointsBefore = 0;
+    let pointsAfter = 0;
+
     // Atomic transaction to credit points
     await this.firestore.runTransaction(async (transaction) => {
       // Read account
@@ -198,18 +232,18 @@ class AccountService {
       }
 
       const accountData = accountDoc.data()!;
-      const currentPoints = accountData.points || 0;
-      const newPoints = currentPoints + request.amount;
+      pointsBefore = accountData.points || 0;
+      pointsAfter = pointsBefore + request.amount;
 
       // Update account points (source of truth)
       transaction.update(accountRef, {
-        points: newPoints,
+        points: pointsAfter,
         updated_at: FieldValue.serverTimestamp(),
       });
 
       // Update denormalized balance in client document
       transaction.update(clientRef, {
-        [`account_balances.${accountId}`]: newPoints,
+        [`account_balances.${accountId}`]: pointsAfter,
         updated_at: FieldValue.serverTimestamp(),
       });
 
@@ -220,6 +254,27 @@ class AccountService {
         description: request.description || "",
         timestamp: FieldValue.serverTimestamp(),
       });
+
+      // CRITICAL: Create audit log within the same transaction
+      await this.auditService.createAuditLog(
+        {
+          action: "POINTS_CREDITED",
+          resource_type: "transaction",
+          resource_id: transactionRef.id,
+          client_id: clientId,
+          account_id: accountId,
+          transaction_id: transactionRef.id,
+          actor,
+          changes: {
+            before: { points: pointsBefore },
+            after: { points: pointsAfter },
+          },
+          metadata: {
+            description: request.description || null,
+          },
+        },
+        transaction
+      );
     });
 
     // Fetch updated account to get actual server timestamp
@@ -246,7 +301,8 @@ class AccountService {
   async debitPoints(
     clientId: string,
     accountId: string,
-    request: CreditDebitRequest
+    request: CreditDebitRequest,
+    actor: AuditActor
   ): Promise<LoyaltyAccount> {
     const accountRef = this.firestore
       .collection("clients")
@@ -257,6 +313,9 @@ class AccountService {
     const transactionRef = accountRef.collection("pointTransactions").doc();
     const clientRef = this.firestore.collection("clients").doc(clientId);
 
+    let pointsBefore = 0;
+    let pointsAfter = 0;
+
     // Atomic transaction to debit points
     await this.firestore.runTransaction(async (transaction) => {
       // Read account
@@ -266,13 +325,13 @@ class AccountService {
       }
 
       const accountData = accountDoc.data()!;
-      const currentPoints = accountData.points || 0;
-      const newPoints = currentPoints - request.amount;
+      pointsBefore = accountData.points || 0;
+      pointsAfter = pointsBefore - request.amount;
 
       // Check for insufficient balance
-      if (newPoints < 0) {
+      if (pointsAfter < 0) {
         throw new AppError(
-          `Insufficient balance. Current: ${currentPoints}, Required: ${request.amount}`,
+          `Insufficient balance. Current: ${pointsBefore}, Required: ${request.amount}`,
           400,
           "INSUFFICIENT_BALANCE"
         );
@@ -280,13 +339,13 @@ class AccountService {
 
       // Update account points (source of truth)
       transaction.update(accountRef, {
-        points: newPoints,
+        points: pointsAfter,
         updated_at: FieldValue.serverTimestamp(),
       });
 
       // Update denormalized balance in client document
       transaction.update(clientRef, {
-        [`account_balances.${accountId}`]: newPoints,
+        [`account_balances.${accountId}`]: pointsAfter,
         updated_at: FieldValue.serverTimestamp(),
       });
 
@@ -297,6 +356,27 @@ class AccountService {
         description: request.description || "",
         timestamp: FieldValue.serverTimestamp(),
       });
+
+      // CRITICAL: Create audit log within the same transaction
+      await this.auditService.createAuditLog(
+        {
+          action: "POINTS_DEBITED",
+          resource_type: "transaction",
+          resource_id: transactionRef.id,
+          client_id: clientId,
+          account_id: accountId,
+          transaction_id: transactionRef.id,
+          actor,
+          changes: {
+            before: { points: pointsBefore },
+            after: { points: pointsAfter },
+          },
+          metadata: {
+            description: request.description || null,
+          },
+        },
+        transaction
+      );
     });
 
     // Fetch updated account to get actual server timestamp

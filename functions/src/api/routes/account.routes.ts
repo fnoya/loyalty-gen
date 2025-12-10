@@ -1,13 +1,28 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { accountService } from "../../services/account.service";
-import { authenticate } from "../middleware/auth.middleware";
+import {
+  authenticate,
+  AuthenticatedRequest,
+} from "../middleware/auth.middleware";
 import {
   createAccountRequestSchema,
   creditDebitRequestSchema,
 } from "../../schemas/account.schema";
 import { ValidationError } from "../../core/errors";
+import { AuditActor } from "../../schemas/audit.schema";
 
 const router = Router();
+
+/**
+ * Helper function to extract actor from authenticated request
+ */
+function getActor(req: Request): AuditActor {
+  const authReq = req as AuthenticatedRequest;
+  return {
+    uid: authReq.user.uid,
+    email: authReq.user.email || null,
+  };
+}
 
 /**
  * @route GET /api/v1/clients/:clientId/accounts
@@ -39,8 +54,13 @@ router.post(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { clientId } = req.params;
+      const actor = getActor(req);
       const validated = createAccountRequestSchema.parse(req.body);
-      const account = await accountService.createAccount(clientId!, validated);
+      const account = await accountService.createAccount(
+        clientId!,
+        validated,
+        actor
+      );
       res.status(201).json(account);
     } catch (error) {
       next(error);
@@ -59,11 +79,13 @@ router.post(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { clientId, accountId } = req.params;
+      const actor = getActor(req);
       const validated = creditDebitRequestSchema.parse(req.body);
       const account = await accountService.creditPoints(
         clientId!,
         accountId!,
-        validated
+        validated,
+        actor
       );
       res.status(200).json(account);
     } catch (error) {
@@ -83,11 +105,13 @@ router.post(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { clientId, accountId } = req.params;
+      const actor = getActor(req);
       const validated = creditDebitRequestSchema.parse(req.body);
       const account = await accountService.debitPoints(
         clientId!,
         accountId!,
-        validated
+        validated,
+        actor
       );
       res.status(200).json(account);
     } catch (error) {

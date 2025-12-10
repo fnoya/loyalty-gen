@@ -7,6 +7,7 @@ import {
 import clientRoutes from "./api/routes/client.routes";
 import groupRoutes from "./api/routes/group.routes";
 import accountRoutes from "./api/routes/account.routes";
+import auditRoutes from "./api/routes/audit.routes";
 
 // Create Express app
 const app = express();
@@ -29,6 +30,8 @@ app.get("/health", (_req: Request, res: Response) => {
 app.use("/api/v1/clients", clientRoutes);
 app.use("/api/v1/groups", groupRoutes);
 app.use("/api/v1/clients", accountRoutes);
+app.use("/api/v1/audit-logs", auditRoutes);
+app.use("/api/v1", auditRoutes); // For /clients/:id/audit-logs paths
 
 // 404 handler (must be after all routes)
 app.use(notFoundHandler);

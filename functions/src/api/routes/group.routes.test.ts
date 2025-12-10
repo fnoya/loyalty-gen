@@ -79,10 +79,13 @@ describe("Group Routes", () => {
 
       expect(res.status).toBe(201);
       expect(res.body).toEqual(mockGroup);
-      expect(groupService.createGroup).toHaveBeenCalledWith({
-        name: "New Group",
-        description: "Test group",
-      });
+      expect(groupService.createGroup).toHaveBeenCalledWith(
+        {
+          name: "New Group",
+          description: "Test group",
+        },
+        { uid: "test-user", email: null }
+      );
     });
 
     it("should handle validation errors for missing name", async () => {
@@ -118,10 +121,13 @@ describe("Group Routes", () => {
       });
 
       expect(res.status).toBe(201);
-      expect(groupService.createGroup).toHaveBeenCalledWith({
-        name: "New Group",
-        description: "",
-      });
+      expect(groupService.createGroup).toHaveBeenCalledWith(
+        {
+          name: "New Group",
+          description: "",
+        },
+        { uid: "test-user", email: null }
+      );
     });
   });
 
@@ -139,7 +145,8 @@ describe("Group Routes", () => {
       expect(res.body.message).toContain("assigned");
       expect(groupService.assignClientToGroup).toHaveBeenCalledWith(
         "group-123",
-        "client-456"
+        "client-456",
+        { uid: "test-user", email: null }
       );
     });
 
@@ -194,7 +201,8 @@ describe("Group Routes", () => {
       expect(res.body.message).toContain("removed");
       expect(groupService.removeClientFromGroup).toHaveBeenCalledWith(
         "group-123",
-        "client-456"
+        "client-456",
+        { uid: "test-user", email: null }
       );
     });
 

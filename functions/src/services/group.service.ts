@@ -6,12 +6,15 @@ import {
   groupSchema,
 } from "../schemas/group.schema";
 import { NotFoundError, ValidationError } from "../core/errors";
+import { AuditService } from "./audit.service";
+import { AuditActor } from "../schemas/audit.schema";
 
 /**
  * Service for managing affinity groups
  */
 class GroupService {
   private _firestore: admin.firestore.Firestore | null = null;
+  private _auditService: AuditService | null = null;
 
   /**
    * Lazy-loaded Firestore instance
@@ -24,9 +27,22 @@ class GroupService {
   }
 
   /**
+   * Lazy-loaded AuditService instance
+   */
+  private get auditService(): AuditService {
+    if (!this._auditService) {
+      this._auditService = new AuditService(this.firestore);
+    }
+    return this._auditService;
+  }
+
+  /**
    * Create a new affinity group
    */
-  async createGroup(request: CreateGroupRequest): Promise<Group> {
+  async createGroup(
+    request: CreateGroupRequest,
+    actor: AuditActor
+  ): Promise<Group> {
     const groupRef = this.firestore.collection("affinityGroups").doc();
 
     // Write to Firestore with server timestamps
@@ -40,7 +56,7 @@ class GroupService {
     const createdDoc = await groupRef.get();
     const data = createdDoc.data()!;
 
-    return groupSchema.parse({
+    const group = groupSchema.parse({
       id: createdDoc.id,
       name: data.name,
       description: data.description,
@@ -48,6 +64,21 @@ class GroupService {
         ? data.created_at.toDate()
         : data.created_at,
     });
+
+    // Create audit log
+    await this.auditService.createAuditLog({
+      action: "GROUP_CREATED",
+      resource_type: "group",
+      resource_id: group.id,
+      group_id: group.id,
+      actor,
+      changes: {
+        before: null,
+        after: group,
+      },
+    });
+
+    return group;
   }
 
   /**
@@ -104,7 +135,11 @@ class GroupService {
   /**
    * Assign a client to an affinity group
    */
-  async assignClientToGroup(groupId: string, clientId: string): Promise<void> {
+  async assignClientToGroup(
+    groupId: string,
+    clientId: string,
+    actor: AuditActor
+  ): Promise<void> {
     // Verify group exists
     const groupDoc = await this.firestore
       .collection("affinityGroups")
@@ -143,6 +178,20 @@ class GroupService {
         affinityGroupIds: FieldValue.arrayUnion(groupId),
         updated_at: FieldValue.serverTimestamp(),
       });
+
+    // Create audit log
+    await this.auditService.createAuditLog({
+      action: "CLIENT_ADDED_TO_GROUP",
+      resource_type: "group",
+      resource_id: groupId,
+      client_id: clientId,
+      group_id: groupId,
+      actor,
+      changes: {
+        before: { affinityGroupIds: currentGroups },
+        after: { affinityGroupIds: [...currentGroups, groupId] },
+      },
+    });
   }
 
   /**
@@ -150,7 +199,8 @@ class GroupService {
    */
   async removeClientFromGroup(
     groupId: string,
-    clientId: string
+    clientId: string,
+    actor: AuditActor
   ): Promise<void> {
     // Verify group exists
     const groupDoc = await this.firestore
@@ -190,6 +240,22 @@ class GroupService {
         affinityGroupIds: FieldValue.arrayRemove(groupId),
         updated_at: FieldValue.serverTimestamp(),
       });
+
+    // Create audit log
+    await this.auditService.createAuditLog({
+      action: "CLIENT_REMOVED_FROM_GROUP",
+      resource_type: "group",
+      resource_id: groupId,
+      client_id: clientId,
+      group_id: groupId,
+      actor,
+      changes: {
+        before: { affinityGroupIds: currentGroups },
+        after: {
+          affinityGroupIds: currentGroups.filter((id) => id !== groupId),
+        },
+      },
+    });
   }
 }
 

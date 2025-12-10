@@ -1,8 +1,12 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { clientService } from "../../services/client.service";
 import { photoService } from "../../services/photo.service";
-import { authenticate } from "../middleware/auth.middleware";
+import {
+  authenticate,
+  AuthenticatedRequest,
+} from "../middleware/auth.middleware";
 import { ValidationError } from "../../core/errors";
+import { AuditActor } from "../../schemas/audit.schema";
 import Busboy from "busboy";
 
 const router = Router();
@@ -10,6 +14,17 @@ const router = Router();
 // Helper interface for Firebase Functions Request
 interface FirebaseRequest extends Request {
   rawBody?: Buffer;
+}
+
+/**
+ * Helper function to extract actor from authenticated request
+ */
+function getActor(req: Request): AuditActor {
+  const authReq = req as AuthenticatedRequest;
+  return {
+    uid: authReq.user.uid,
+    email: authReq.user.email || null,
+  };
 }
 
 /**
@@ -22,7 +37,8 @@ router.post(
   authenticate,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const client = await clientService.createClient(req.body);
+      const actor = getActor(req);
+      const client = await clientService.createClient(req.body, actor);
       res.status(201).json(client);
     } catch (error) {
       next(error);
@@ -143,7 +159,12 @@ router.put(
   authenticate,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const client = await clientService.updateClient(req.params.id!, req.body);
+      const actor = getActor(req);
+      const client = await clientService.updateClient(
+        req.params.id!,
+        req.body,
+        actor
+      );
       res.status(200).json(client);
     } catch (error) {
       next(error);
@@ -161,7 +182,8 @@ router.delete(
   authenticate,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      await clientService.deleteClient(req.params.id!);
+      const actor = getActor(req);
+      await clientService.deleteClient(req.params.id!, actor);
       res.status(202).json({
         message: `Client deletion process initiated for ID '${req.params.id}'`,
       });

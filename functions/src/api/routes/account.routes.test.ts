@@ -93,9 +93,13 @@ describe("Account Routes", () => {
 
       expect(res.status).toBe(201);
       expect(res.body).toEqual(mockAccount);
-      expect(accountService.createAccount).toHaveBeenCalledWith("client-123", {
-        account_name: "New Account",
-      });
+      expect(accountService.createAccount).toHaveBeenCalledWith(
+        "client-123",
+        {
+          account_name: "New Account",
+        },
+        { uid: "test-user", email: null }
+      );
     });
 
     it("should handle validation errors for missing account_name", async () => {
@@ -148,7 +152,8 @@ describe("Account Routes", () => {
         {
           amount: 50,
           description: "Bonus points",
-        }
+        },
+        { uid: "test-user", email: null }
       );
     });
 
@@ -214,7 +219,8 @@ describe("Account Routes", () => {
         {
           amount: 50,
           description: "Redemption",
-        }
+        },
+        { uid: "test-user", email: null }
       );
     });
 

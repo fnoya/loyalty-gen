@@ -1,9 +1,24 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { groupService } from "../../services/group.service";
-import { authenticate } from "../middleware/auth.middleware";
+import {
+  authenticate,
+  AuthenticatedRequest,
+} from "../middleware/auth.middleware";
 import { createGroupRequestSchema } from "../../schemas/group.schema";
+import { AuditActor } from "../../schemas/audit.schema";
 
 const router = Router();
+
+/**
+ * Helper function to extract actor from authenticated request
+ */
+function getActor(req: Request): AuditActor {
+  const authReq = req as AuthenticatedRequest;
+  return {
+    uid: authReq.user.uid,
+    email: authReq.user.email || null,
+  };
+}
 
 /**
  * @route GET /api/v1/groups
@@ -33,8 +48,9 @@ router.post(
   authenticate,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
+      const actor = getActor(req);
       const validated = createGroupRequestSchema.parse(req.body);
-      const group = await groupService.createGroup(validated);
+      const group = await groupService.createGroup(validated, actor);
       res.status(201).json(group);
     } catch (error) {
       next(error);
@@ -53,7 +69,8 @@ router.post(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { groupId, clientId } = req.params;
-      await groupService.assignClientToGroup(groupId!, clientId!);
+      const actor = getActor(req);
+      await groupService.assignClientToGroup(groupId!, clientId!, actor);
       res.status(200).json({
         message: `Client '${clientId}' assigned to group '${groupId}'`,
       });
@@ -74,7 +91,8 @@ router.delete(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { groupId, clientId } = req.params;
-      await groupService.removeClientFromGroup(groupId!, clientId!);
+      const actor = getActor(req);
+      await groupService.removeClientFromGroup(groupId!, clientId!, actor);
       res.status(200).json({
         message: `Client '${clientId}' removed from group '${groupId}'`,
       });

@@ -56,7 +56,8 @@ describe("Client Routes", () => {
       expect(res.status).toBe(201);
       expect(res.body).toEqual(mockClient);
       expect(clientService.createClient).toHaveBeenCalledWith(
-        expect.any(Object)
+        expect.any(Object),
+        { uid: "test-user", email: null }
       );
     });
 
@@ -149,7 +150,8 @@ describe("Client Routes", () => {
       expect(res.body).toEqual(mockClient);
       expect(clientService.updateClient).toHaveBeenCalledWith(
         "123",
-        expect.any(Object)
+        expect.any(Object),
+        { uid: "test-user", email: null }
       );
     });
   });
@@ -161,7 +163,10 @@ describe("Client Routes", () => {
       const res = await request(app).delete("/api/v1/clients/123");
 
       expect(res.status).toBe(202);
-      expect(clientService.deleteClient).toHaveBeenCalledWith("123");
+      expect(clientService.deleteClient).toHaveBeenCalledWith("123", {
+        uid: "test-user",
+        email: null,
+      });
     });
   });
 

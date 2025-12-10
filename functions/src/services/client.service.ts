@@ -7,25 +7,36 @@ import {
   updateClientRequestSchema,
 } from "../schemas/client.schema";
 import { NotFoundError, ConflictError, ValidationError } from "../core/errors";
+import { AuditService } from "./audit.service";
+import { AuditActor } from "../schemas/audit.schema";
 
 /**
  * Client Service - Business logic for client management
  */
 export class ClientService {
+  private auditService: AuditService;
+
+  constructor() {
+    this.auditService = new AuditService(this.db);
+  }
+
   private get db(): ReturnType<typeof getFirestore> {
     return getFirestore();
   }
 
   private get clientsCollection(): ReturnType<
     ReturnType<typeof getFirestore>["collection"]
-  > {
+    > {
     return this.db.collection("clients");
   }
 
   /**
    * Create a new client with uniqueness validation
    */
-  async createClient(data: CreateClientRequest): Promise<Client> {
+  async createClient(
+    data: CreateClientRequest,
+    actor: AuditActor
+  ): Promise<Client> {
     // Validate input with Zod
     const validatedData = createClientRequestSchema.parse(data);
 
@@ -69,9 +80,9 @@ export class ClientService {
       email_lower: validatedData.email?.toLowerCase() || null,
       identity_document_lower: validatedData.identity_document
         ? {
-            type: validatedData.identity_document.type.toLowerCase(),
-            number: validatedData.identity_document.number.toLowerCase(),
-          }
+          type: validatedData.identity_document.type.toLowerCase(),
+          number: validatedData.identity_document.number.toLowerCase(),
+        }
         : null,
       // Add phone numbers as array for easier searching
       phone_numbers: validatedData.phones?.map((p) => p.number) || [],
@@ -88,7 +99,22 @@ export class ClientService {
 
     // Fetch the created document to return with server-generated timestamp
     const createdDoc = await clientRef.get();
-    return this.documentToClient(createdDoc);
+    const client = this.documentToClient(createdDoc);
+
+    // Create audit log
+    await this.auditService.createAuditLog({
+      action: "CLIENT_CREATED",
+      resource_type: "client",
+      resource_id: client.id,
+      client_id: client.id,
+      actor,
+      changes: {
+        before: null,
+        after: client,
+      },
+    });
+
+    return client;
   }
 
   /**
@@ -110,7 +136,8 @@ export class ClientService {
    */
   async updateClient(
     clientId: string,
-    data: UpdateClientRequest
+    data: UpdateClientRequest,
+    actor: AuditActor
   ): Promise<Client> {
     // Validate input with Zod
     const validatedData = updateClientRequestSchema.parse(data);
@@ -122,6 +149,9 @@ export class ClientService {
     if (!existingDoc.exists) {
       throw new NotFoundError("Client", clientId);
     }
+
+    // Capture before state for audit
+    const beforeState = this.documentToClient(existingDoc);
 
     // Prepare update data with normalized fields
     const updateData: Record<string, unknown> = {
@@ -149,13 +179,28 @@ export class ClientService {
 
     // Fetch updated document
     const updatedDoc = await docRef.get();
-    return this.documentToClient(updatedDoc);
+    const afterState = this.documentToClient(updatedDoc);
+
+    // Create audit log
+    await this.auditService.createAuditLog({
+      action: "CLIENT_UPDATED",
+      resource_type: "client",
+      resource_id: clientId,
+      client_id: clientId,
+      actor,
+      changes: {
+        before: beforeState,
+        after: afterState,
+      },
+    });
+
+    return afterState;
   }
 
   /**
    * Delete a client (soft delete by marking as deleted)
    */
-  async deleteClient(clientId: string): Promise<void> {
+  async deleteClient(clientId: string, actor: AuditActor): Promise<void> {
     const docRef = this.clientsCollection.doc(clientId);
     const doc = await docRef.get();
 
@@ -163,8 +208,24 @@ export class ClientService {
       throw new NotFoundError("Client", clientId);
     }
 
+    // Capture before state for audit
+    const beforeState = this.documentToClient(doc);
+
     // For MVP, we do hard delete. In production, consider soft delete.
     await docRef.delete();
+
+    // Create audit log
+    await this.auditService.createAuditLog({
+      action: "CLIENT_DELETED",
+      resource_type: "client",
+      resource_id: clientId,
+      client_id: clientId,
+      actor,
+      changes: {
+        before: beforeState,
+        after: null,
+      },
+    });
   }
 
   /**
