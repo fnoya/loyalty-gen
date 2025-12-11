@@ -18,6 +18,7 @@ import { apiRequest } from "@/lib/api";
 import { Client } from "@/types/client";
 import { ClientAvatar } from "@/components/clients/client-avatar";
 import { auth } from "@/lib/firebase";
+import { toast } from "@/components/ui/toast";
 
 export default function EditClientPage() {
   const params = useParams();
@@ -117,6 +118,7 @@ export default function EditClientPage() {
 
       const updatedClient = await response.json();
       setClient(updatedClient);
+      toast.success("Foto actualizada exitosamente");
       // Force refresh of the page/image might be needed if URL is same but content changed
       // But usually URL changes or we rely on cache busting. 
       // For now, just updating client state should update the avatar if URL changed.
@@ -141,9 +143,11 @@ export default function EditClientPage() {
         method: "PUT", // or PATCH depending on API
         body: JSON.stringify(data),
       });
+      toast.success("Cliente actualizado exitosamente");
       router.push(`/dashboard/clients/${id}`);
     } catch (err: any) {
       setError(err.message || "Failed to update client");
+      toast.error("Error al actualizar el cliente");
     } finally {
       setSaving(false);
     }

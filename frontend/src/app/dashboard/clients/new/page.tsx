@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { clientSchema, ClientFormValues } from "@/schemas/client";
 import { apiRequest } from "@/lib/api";
 import { auth } from "@/lib/firebase";
+import { toast } from "@/components/ui/toast";
 
 export default function NewClientPage() {
   const router = useRouter();
@@ -90,6 +91,7 @@ export default function NewClientPage() {
         }
       }
 
+      toast.success("Cliente creado exitosamente");
       router.push("/dashboard/clients");
     } catch (err: any) {
       setError(err.message || "Failed to create client");

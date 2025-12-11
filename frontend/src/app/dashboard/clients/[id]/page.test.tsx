@@ -89,12 +89,12 @@ describe('ClientDetailPage', () => {
     });
 
     // Click delete button
-    fireEvent.click(screen.getByText('Delete'));
+    fireEvent.click(screen.getByText('Eliminar'));
 
     // Confirm delete in dialog
     // Note: Radix UI Dialog might render in a portal, so we need to check if it's in the document
     // But testing-library usually finds it if it's in the body.
-    const confirmButton = await screen.findByText('Delete', { selector: 'button.bg-red-600' });
+    const confirmButton = await screen.findByText('Eliminar', { selector: 'button.bg-red-600' });
     fireEvent.click(confirmButton);
 
     await waitFor(() => {

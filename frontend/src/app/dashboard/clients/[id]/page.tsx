@@ -23,6 +23,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientAuditHistory } from "@/components/clients/client-audit-history";
 import { ClientAvatar } from "@/components/clients/client-avatar";
+import { toast } from "@/components/ui/toast";
 
 export default function ClientDetailPage() {
   const params = useParams();
@@ -53,9 +54,11 @@ export default function ClientDetailPage() {
   const handleDelete = async () => {
     try {
       await apiRequest(`/clients/${id}`, { method: "DELETE" });
+      toast.success("El proceso de eliminación del cliente ha comenzado");
       router.push("/dashboard/clients");
     } catch (err: any) {
       setError(err.message || "Failed to delete client");
+      toast.error("Error al eliminar el cliente");
     }
   };
 
@@ -103,21 +106,20 @@ export default function ClientDetailPage() {
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive">
-                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                <Trash2 className="mr-2 h-4 w-4" /> Eliminar
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogTitle>¿Eliminar cliente?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete the client
-                  and all associated data.
+                  Esta acción es irreversible. Se eliminarán todos los datos del cliente, incluyendo sus cuentas de lealtad y transacciones.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
                 <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
-                  Delete
+                  Eliminar
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

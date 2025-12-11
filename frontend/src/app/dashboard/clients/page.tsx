@@ -27,6 +27,7 @@ import { Client } from "@/types/client";
 import { EmptyState } from "@/components/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ClientAvatar } from "@/components/clients/client-avatar";
+import { toast } from "@/components/ui/toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -69,8 +70,10 @@ export default function ClientsPage() {
       await apiRequest(`/clients/${clientToDelete}`, { method: "DELETE" });
       setClients(clients.filter((c) => c.id !== clientToDelete));
       setClientToDelete(null);
+      toast.success("El proceso de eliminación del cliente ha comenzado");
     } catch (error) {
       console.error("Failed to delete client:", error);
+      toast.error("Error al eliminar el cliente");
     }
   };
 
@@ -187,16 +190,15 @@ export default function ClientsPage() {
       <AlertDialog open={!!clientToDelete} onOpenChange={(open) => !open && setClientToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogTitle>¿Eliminar cliente?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the client
-              and all associated data.
+              Esta acción es irreversible. Se eliminarán todos los datos del cliente, incluyendo sus cuentas de lealtad y transacciones.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
-              Delete
+              Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
