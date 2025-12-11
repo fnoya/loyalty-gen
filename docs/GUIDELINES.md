@@ -106,11 +106,123 @@ Para más detalles sobre la estrategia de búsqueda y las limitaciones de Firest
 
 -   **Framework:** Utilizar **`Jest`**.
 -   **Tipos de Pruebas:** Se deben escribir pruebas unitarias para los servicios (usando mocks) y pruebas de integración para las Cloud Functions (usando `firebase-functions-test` y el emulador).
--   **Cobertura:** La cobertura de código debe ser superior al 80%.
+-   **Cobertura:** La cobertura de código debe ser superior al 80%. **CRÍTICO:** Se debe mantener este nivel de cobertura en todas las fases futuras del desarrollo.
 
 ## 6. Manejo de Desnormalización de Datos
 
 -   **Regla de Oro - Atomicidad:** Es **crítico** mantener la consistencia de los datos desnormalizados. Cualquier operación que modifique la fuente de verdad (ej. `points` en `loyaltyAccount`) **debe** actualizar el dato desnormalizado (ej. `account_balances` en `client`) dentro de la **misma transacción atómica de Firestore**.
+
+## 6.1. Manejo de Timestamps en Firebase
+
+**CRÍTICO:** Al trabajar con Firebase emulators o producción:
+
+### Reglas de Timestamps
+
+1. **Siempre importar FieldValue desde firebase-admin/firestore:**
+   ```typescript
+   import { FieldValue } from "firebase-admin/firestore";
+   ```
+
+2. **NUNCA usar `admin.firestore.Timestamp.now()`** - está indefinido en entornos de emulator.
+
+3. **Para escrituras, usar `FieldValue.serverTimestamp()`:**
+   ```typescript
+   await docRef.set({
+     name: data.name,
+     created_at: FieldValue.serverTimestamp(),
+     updated_at: FieldValue.serverTimestamp()
+   });
+   ```
+
+4. **Para lecturas, convertir Firestore Timestamps a Dates:**
+   ```typescript
+   const data = doc.data()!;
+   return schema.parse({
+     id: doc.id,
+     name: data.name,
+     created_at: data.created_at.toDate ? data.created_at.toDate() : data.created_at,
+     updated_at: data.updated_at.toDate ? data.updated_at.toDate() : data.updated_at
+   });
+   ```
+
+5. **NUNCA validar objetos que contienen `FieldValue.serverTimestamp()`** - es un valor centinela, no un Date:
+   - Escribir a Firestore con centinela
+   - Recuperar el documento después de la escritura
+   - Convertir timestamps a Dates
+   - Entonces validar con Zod
+
+6. **Usar FieldValue importado para operaciones de array:**
+   ```typescript
+   // ✅ CORRECTO
+   affinityGroupIds: FieldValue.arrayUnion(groupId)
+   
+   // ❌ INCORRECTO - indefinido en emulators
+   affinityGroupIds: admin.firestore.FieldValue.arrayUnion(groupId)
+   ```
+
+### Patrón para Operaciones de Creación
+
+```typescript
+async createEntity(data: CreateRequest): Promise<Entity> {
+  const docRef = this.firestore.collection("entities").doc();
+  
+  // Escribir con centinela de timestamp del servidor
+  await docRef.set({
+    name: data.name,
+    created_at: FieldValue.serverTimestamp(),
+    updated_at: FieldValue.serverTimestamp()
+  });
+  
+  // Recuperar para obtener timestamps reales
+  const doc = await docRef.get();
+  const docData = doc.data()!;
+  
+  // Convertir y validar
+  return entitySchema.parse({
+    id: doc.id,
+    name: docData.name,
+    created_at: docData.created_at.toDate(),
+    updated_at: docData.updated_at.toDate()
+  });
+}
+```
+
+### Patrón para Operaciones con Transacciones
+
+```typescript
+async updateWithTransaction(id: string, data: UpdateData): Promise<Entity> {
+  const docRef = this.firestore.collection("entities").doc(id);
+  
+  // Ejecutar transacción con timestamp del servidor
+  await this.firestore.runTransaction(async (transaction) => {
+    const doc = await transaction.get(docRef);
+    if (!doc.exists) throw new NotFoundError("Entity", id);
+    
+    transaction.update(docRef, {
+      ...data,
+      updated_at: FieldValue.serverTimestamp()
+    });
+  });
+  
+  // Recuperar después de la transacción para obtener timestamp real
+  const updatedDoc = await docRef.get();
+  const docData = updatedDoc.data()!;
+  
+  return entitySchema.parse({
+    id: updatedDoc.id,
+    ...docData,
+    created_at: docData.created_at.toDate(),
+    updated_at: docData.updated_at.toDate()
+  });
+}
+```
+
+### Lecciones Clave
+
+- `FieldValue.serverTimestamp()` no puede ser validado en valores de retorno de transacciones
+- Se deben recuperar documentos después de transacciones atómicas para obtener timestamps reales del servidor
+- Todas las actualizaciones desnormalizadas deben estar en la misma transacción que las actualizaciones de la fuente de verdad
+- Los tests de integración detectan problemas específicos de emulators que los tests unitarios no detectan
 
 ## 7. Gestión de la Configuración y Secretos
 

@@ -1,0 +1,24 @@
+rules_version = '2';
+
+// Firebase Storage Security Rules for LoyaltyGen
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Client photos - only authenticated users can upload/delete
+    match /client-photos/{clientId}/{fileName} {
+      // Allow read for any authenticated user
+      allow read: if request.auth != null;
+      
+      // Allow write (upload/update/delete) for any authenticated user
+      // In production, you might want to restrict this to admin users only
+      allow write: if request.auth != null 
+                   && request.resource.size < 5 * 1024 * 1024  // Max 5MB
+                   && request.resource.contentType.matches('image/(jpeg|png|webp)');
+    }
+    
+    // Deny all other paths by default
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

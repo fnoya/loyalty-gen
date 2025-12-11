@@ -1,0 +1,45 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to check if user owns the resource
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Clients collection
+    match /clients/{clientId} {
+      // All operations require authentication
+      allow read, write: if isAuthenticated();
+
+      // Loyalty accounts subcollection
+      match /loyaltyAccounts/{accountId} {
+        allow read, write: if isAuthenticated();
+
+        // Point transactions subcollection
+        match /transactions/{transactionId} {
+          allow read: if isAuthenticated();
+          // Transactions should be created by backend only
+          allow write: if false;
+        }
+      }
+    }
+
+    // Affinity groups collection
+    match /affinityGroups/{groupId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Audit logs collection
+    match /auditLogs/{logId} {
+      allow read: if isAuthenticated();
+      // Audit logs should be created by backend only, never modified
+      allow write: if false;
+    }
+  }
+}

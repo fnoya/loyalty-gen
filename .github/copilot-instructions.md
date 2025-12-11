@@ -88,6 +88,132 @@ All API errors must follow this standardized format:
 
 **Critical Rule:** Operations that modify the source of truth (e.g., `points` in `loyaltyAccount`) **must** update denormalized data (e.g., `account_balances` in `client`) within the **same atomic Firestore transaction**.
 
+## Firebase & Firestore Best Practices
+
+### Running emulators
+
+When in need of restarting or starting emulators, consider using the following command to ensure a clean environment:
+
+```bash
+cd /Users/fnoya/Projects/google/loyalty-gen/functions && npm run build && pkill -f "firebase emulators" && sleep 2 && cd /Users/fnoya/Projects/google/loyalty-gen && nohup firebase emulators:start --only functions,firestore,auth,storage > /tmp/firebase-emulator.log 2>&1 &
+```
+Wait 10 seconds for emulators to start before running tests or making requests.
+You can tail the log file to monitor startup or to
+ catch any errors:
+
+```bash
+tail -f /tmp/firebase-emulator.log
+```
+
+### Timestamp Handling
+
+**CRITICAL:** When working with Firebase emulators or production:
+
+1. **Always import FieldValue from firebase-admin/firestore:**
+   ```typescript
+   import { FieldValue } from "firebase-admin/firestore";
+   ```
+
+2. **NEVER use `admin.firestore.Timestamp.now()`** - it's undefined in emulator environments
+
+3. **For writes, use `FieldValue.serverTimestamp()`:**
+   ```typescript
+   await docRef.set({
+     name: data.name,
+     created_at: FieldValue.serverTimestamp(),
+     updated_at: FieldValue.serverTimestamp()
+   });
+   ```
+
+4. **For reads, convert Firestore Timestamps to Dates:**
+   ```typescript
+   const data = doc.data()!;
+   return schema.parse({
+     id: doc.id,
+     name: data.name,
+     created_at: data.created_at.toDate ? data.created_at.toDate() : data.created_at,
+     updated_at: data.updated_at.toDate ? data.updated_at.toDate() : data.updated_at
+   });
+   ```
+
+5. **NEVER validate objects containing `FieldValue.serverTimestamp()`** - it's a sentinel value, not a Date:
+   - Write to Firestore with sentinel
+   - Fetch the document back
+   - Convert timestamps to Dates
+   - Then validate with Zod
+
+6. **Use imported FieldValue for array operations:**
+   ```typescript
+   // ✅ CORRECT
+   affinityGroupIds: FieldValue.arrayUnion(groupId)
+   
+   // ❌ WRONG - undefined in emulators
+   affinityGroupIds: admin.firestore.FieldValue.arrayUnion(groupId)
+   ```
+
+### Atomic Transactions
+
+- `FieldValue.serverTimestamp()` can't be validated in transaction return values
+- Must refetch documents after atomic transactions to get actual server timestamps
+- All denormalized updates must be in the same transaction as source of truth updates
+
+### Common Pattern for Create Operations
+
+```typescript
+async createEntity(data: CreateRequest): Promise<Entity> {
+  const docRef = this.firestore.collection("entities").doc();
+  
+  // Write with server timestamp sentinel
+  await docRef.set({
+    name: data.name,
+    created_at: FieldValue.serverTimestamp(),
+    updated_at: FieldValue.serverTimestamp()
+  });
+  
+  // Fetch to get actual timestamps
+  const doc = await docRef.get();
+  const docData = doc.data()!;
+  
+  // Convert and validate
+  return entitySchema.parse({
+    id: doc.id,
+    name: docData.name,
+    created_at: docData.created_at.toDate(),
+    updated_at: docData.updated_at.toDate()
+  });
+}
+```
+
+### Common Pattern for Transaction Operations
+
+```typescript
+async updateWithTransaction(id: string, data: UpdateData): Promise<Entity> {
+  const docRef = this.firestore.collection("entities").doc(id);
+  
+  // Execute transaction with server timestamp
+  await this.firestore.runTransaction(async (transaction) => {
+    const doc = await transaction.get(docRef);
+    if (!doc.exists) throw new NotFoundError("Entity", id);
+    
+    transaction.update(docRef, {
+      ...data,
+      updated_at: FieldValue.serverTimestamp()
+    });
+  });
+  
+  // Fetch after transaction to get actual timestamp
+  const updatedDoc = await docRef.get();
+  const docData = updatedDoc.data()!;
+  
+  return entitySchema.parse({
+    id: updatedDoc.id,
+    ...docData,
+    created_at: docData.created_at.toDate(),
+    updated_at: docData.updated_at.toDate()
+  });
+}
+```
+
 ## Security Guidelines
 
 - All API endpoints must be protected with Firebase Authentication (JWT tokens)
@@ -107,6 +233,7 @@ All API errors must follow this standardized format:
 - **Framework:** Jest with `firebase-functions-test`
 - Write unit tests for services (using mocks) and integration tests for Cloud Functions
 - Target code coverage: **>80%**
+- **CRITICAL:** Maintain at least 80% lines, functions, statements and branch coverage in all future development phases.
 
 ## Commit Messages
 

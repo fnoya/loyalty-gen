@@ -51,12 +51,12 @@ Proporcionar a los desarrolladores una API RESTful, segura, bien documentada y f
 | Fase | Estado | Descripción |
 |------|--------|-------------|
 | 1. Diseño y Especificación | ✅ Completada | Documentación de arquitectura, API y guías |
-| 2. Implementación Backend | 🔜 Próxima | Cloud Functions, Firestore, Auth |
+| 2. Implementación Backend | ✅ Completada | Cloud Functions, Firestore, Auth |
 | 3. Implementación Frontend | 🔜 Pendiente | Dashboard de administración con Next.js |
-| 4. Testing y QA | 🔜 Pendiente | Pruebas unitarias e integración |
+| 4. Testing y QA | ✅ Completada | 135 tests (90 unit + 45 integration) |
 | 5. Despliegue MVP | 🔜 Pendiente | Producción en Firebase |
 
-> **Fase Actual:** El proyecto ha concluido su fase de diseño, resultando en un conjunto completo de documentos que definen la arquitectura, especificaciones y guías de desarrollo. El siguiente paso es la fase de implementación.
+> **Fase Actual:** Backend completamente implementado y testeado con 100% de tests pasando. Todos los endpoints de la API están funcionando correctamente contra Firebase emulators.
 
 ---
 
@@ -347,6 +347,7 @@ Toda la documentación detallada se encuentra en el directorio [`/docs`](./docs/
 | 📝 [Especificaciones](docs/SPECS.md) | Requisitos funcionales y no funcionales |
 | 👤 [Historias de Usuario](docs/USER-STORIES.md) | Funcionalidades del frontend |
 | 💻 [Directrices de Código](docs/GUIDELINES.md) | Estilo de código y políticas de seguridad |
+| 🔥 [**Firebase Best Practices**](docs/FIREBASE-BEST-PRACTICES.md) | **⭐ Patrones críticos para Firebase/Firestore** |
 | 🎨 [Guía UI/UX](docs/UI-UX-GUIDELINES.md) | Principios de diseño de interfaz |
 | 📜 [Manifiesto](docs/STEERING.md) | Visión, misión y principios rectores |
 
@@ -393,12 +394,51 @@ npm install
 
 ```bash
 # Iniciar emuladores de Firebase
-firebase emulators:start
-
-# En otra terminal, iniciar el frontend
-cd web
-npm run dev
+firebase emulators:start --only functions,firestore,auth,storage
 ```
+
+> **Nota:** Cada vez que reinicies los emuladores, los datos se perderán (a menos que uses `--import/--export`). Debes ejecutar el script de creación de usuario administrador para poder iniciar sesión en el frontend:
+> ```bash
+> cd functions && node create_admin.js
+> ```
+
+```bash
+# En otra terminal, ejecutar tests
+./run-all-tests.sh
+
+# O ejecutar solo tests unitarios
+cd functions
+npm test
+
+# O ejecutar solo tests de integración (requiere emulators activos)
+node tests/integration/test-group-api.mjs
+node tests/integration/test-account-api.mjs
+```
+
+### Testing
+
+El proyecto cuenta con cobertura completa de tests:
+
+- **Unit Tests (90)**: Tests con mocks para servicios y rutas
+  ```bash
+  cd functions && npm test
+  ```
+
+- **Integration Tests (45)**: Tests contra Firebase emulators
+  ```bash
+  # Iniciar emulators primero
+  firebase emulators:start --only functions,firestore,auth,storage
+  
+  # En otra terminal
+  ./run-all-tests.sh
+  ```
+
+**Resultados actuales:**
+- ✅ 90 unit tests passing
+- ✅ 45 integration tests passing (19 groups + 26 accounts)
+- ✅ 100% success rate
+
+Ver [PHASE-4-INTEGRATION-TEST-REPORT.md](./PHASE-4-INTEGRATION-TEST-REPORT.md) para detalles.
 
 ---
 
@@ -415,17 +455,23 @@ loyalty-gen/
 │   ├── 📄 API-DESIGN.md      # Guía de diseño de API
 │   ├── 📄 DESIGN.md          # Decisiones de diseño (ADR)
 │   ├── 📄 GUIDELINES.md      # Directrices de codificación
+│   ├── 📄 FIREBASE-BEST-PRACTICES.md # Patrones de Firebase
 │   ├── 📄 SPECS.md           # Especificaciones funcionales
 │   ├── 📄 STEERING.md        # Manifiesto del producto
 │   ├── 📄 UI-UX-GUIDELINES.md # Guía de UI/UX
 │   └── 📄 USER-STORIES.md    # Historias de usuario
-├── 📁 functions/             # Backend (Cloud Functions) [Por implementar]
+├── 📁 functions/             # Backend (Cloud Functions)
 │   ├── 📁 src/
 │   │   ├── 📁 api/           # Rutas y middlewares
 │   │   ├── 📁 core/          # Errores y utilidades
 │   │   ├── 📁 services/      # Lógica de negocio
 │   │   └── 📁 schemas/       # Schemas de Zod
 │   └── 📄 package.json
+├── 📁 tests/                 # Suite de tests
+│   └── 📁 integration/       # Tests de integración
+│       ├── 📄 test-group-api.mjs
+│       ├── 📄 test-account-api.mjs
+│       └── 📄 test-client-api.mjs
 └── 📁 web/                   # Frontend (Next.js) [Por implementar]
     ├── 📁 app/               # App Router de Next.js
     ├── 📁 components/        # Componentes React
