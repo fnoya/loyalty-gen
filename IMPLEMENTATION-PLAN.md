@@ -585,26 +585,26 @@ Total:            172 passed, 0 failed (172 tests)
 **Priority:** High | **Estimated Time:** 12-16 hours
 
 **Deliverables:**
-- [ ] `app/dashboard/clients/page.tsx` - Client listing page (HU1)
+- [x] `app/dashboard/clients/page.tsx` - Client listing page (HU1)
   - Table with columns: Name, Email, Identity Document
   - `Skeleton` loading state
   - Empty state component with "Create New Client" CTA
   - `DropdownMenu` for each row with View/Edit/Delete actions
-- [ ] `components/empty-state.tsx` - Reusable empty state component
-- [ ] `app/dashboard/clients/new/page.tsx` - Client creation page (HU2)
-- [ ] `components/clients/client-form.tsx` - Reusable form component
+- [x] `components/empty-state.tsx` - Reusable empty state component
+- [x] `app/dashboard/clients/new/page.tsx` - Client creation page (HU2)
+- [x] `components/clients/client-form.tsx` - Reusable form component
   - Zod validation for required fields
   - Identity document type selector (Cédula/Pasaporte)
   - Form state management with React Hook Form
   - Disabled state until form is valid
   - Spinner during submission
-  - Toast notification on success
+  [ ] Toast notification on success
   - Conflict error handling (409) for duplicate email/document
-- [ ] `components/clients/delete-client-dialog.tsx` - Deletion confirmation (HU3)
+- [x] `components/clients/delete-client-dialog.tsx` - Deletion confirmation (HU3)
   - `AlertDialog` with destructive styling
   - Clear warning message about irreversibility
   - Spinner during deletion
-  - Toast notification on 202 Accepted
+  [ ] Toast notification on 202 Accepted
 
 **Acceptance Criteria:**
 - [ ] All HU1 criteria met (listing, skeleton, empty state, dropdown menu)
