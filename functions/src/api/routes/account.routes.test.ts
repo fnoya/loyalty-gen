@@ -43,7 +43,7 @@ describe("Account Routes", () => {
     jest.clearAllMocks();
   });
 
-  describe("GET /api/v1/clients/:clientId/accounts", () => {
+  describe("GET /v1/clients/:clientId/accounts", () => {
     it("should list all accounts for a client", async () => {
       const mockAccounts = [
         {
@@ -67,7 +67,7 @@ describe("Account Routes", () => {
         mockAccounts
       );
 
-      const res = await request(app).get("/api/v1/clients/client-123/accounts");
+      const res = await request(app).get("/v1/clients/client-123/accounts");
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockAccounts);
@@ -80,14 +80,14 @@ describe("Account Routes", () => {
       );
 
       const res = await request(app).get(
-        "/api/v1/clients/invalid-client/accounts"
+        "/v1/clients/invalid-client/accounts"
       );
 
       expect(res.status).toBe(404);
     });
   });
 
-  describe("POST /api/v1/clients/:clientId/accounts", () => {
+  describe("POST /v1/clients/:clientId/accounts", () => {
     it("should create a new account", async () => {
       const mockAccount = {
         id: "account-123",
@@ -102,7 +102,7 @@ describe("Account Routes", () => {
       );
 
       const res = await request(app)
-        .post("/api/v1/clients/client-123/accounts")
+        .post("/v1/clients/client-123/accounts")
         .send({
           account_name: "New Account",
         });
@@ -120,7 +120,7 @@ describe("Account Routes", () => {
 
     it("should handle validation errors for missing account_name", async () => {
       const res = await request(app)
-        .post("/api/v1/clients/client-123/accounts")
+        .post("/v1/clients/client-123/accounts")
         .send({});
 
       expect(res.status).toBe(400);
@@ -132,7 +132,7 @@ describe("Account Routes", () => {
       );
 
       const res = await request(app)
-        .post("/api/v1/clients/invalid-client/accounts")
+        .post("/v1/clients/invalid-client/accounts")
         .send({
           account_name: "New Account",
         });
@@ -141,7 +141,7 @@ describe("Account Routes", () => {
     });
   });
 
-  describe("POST /api/v1/clients/:clientId/accounts/:accountId/credit", () => {
+  describe("POST /v1/clients/:clientId/accounts/:accountId/credit", () => {
     it("should credit points to an account", async () => {
       const mockAccount = {
         id: "account-123",
@@ -154,7 +154,7 @@ describe("Account Routes", () => {
       (accountService.instance.creditPoints as jest.Mock).mockResolvedValue(mockAccount);
 
       const res = await request(app)
-        .post("/api/v1/clients/client-123/accounts/account-123/credit")
+        .post("/v1/clients/client-123/accounts/account-123/credit")
         .send({
           amount: 50,
           description: "Bonus points",
@@ -175,7 +175,7 @@ describe("Account Routes", () => {
 
     it("should handle validation errors for negative amount", async () => {
       const res = await request(app)
-        .post("/api/v1/clients/client-123/accounts/account-123/credit")
+        .post("/v1/clients/client-123/accounts/account-123/credit")
         .send({
           amount: -10,
         });
@@ -185,7 +185,7 @@ describe("Account Routes", () => {
 
     it("should handle validation errors for zero amount", async () => {
       const res = await request(app)
-        .post("/api/v1/clients/client-123/accounts/account-123/credit")
+        .post("/v1/clients/client-123/accounts/account-123/credit")
         .send({
           amount: 0,
         });
@@ -199,7 +199,7 @@ describe("Account Routes", () => {
       );
 
       const res = await request(app)
-        .post("/api/v1/clients/client-123/accounts/invalid-account/credit")
+        .post("/v1/clients/client-123/accounts/invalid-account/credit")
         .send({
           amount: 50,
         });
@@ -208,7 +208,7 @@ describe("Account Routes", () => {
     });
   });
 
-  describe("POST /api/v1/clients/:clientId/accounts/:accountId/debit", () => {
+  describe("POST /v1/clients/:clientId/accounts/:accountId/debit", () => {
     it("should debit points from an account", async () => {
       const mockAccount = {
         id: "account-123",
@@ -221,7 +221,7 @@ describe("Account Routes", () => {
       (accountService.instance.debitPoints as jest.Mock).mockResolvedValue(mockAccount);
 
       const res = await request(app)
-        .post("/api/v1/clients/client-123/accounts/account-123/debit")
+        .post("/v1/clients/client-123/accounts/account-123/debit")
         .send({
           amount: 50,
           description: "Redemption",
@@ -249,7 +249,7 @@ describe("Account Routes", () => {
       (accountService.instance.debitPoints as jest.Mock).mockRejectedValue(error);
 
       const res = await request(app)
-        .post("/api/v1/clients/client-123/accounts/account-123/debit")
+        .post("/v1/clients/client-123/accounts/account-123/debit")
         .send({
           amount: 1000,
         });
@@ -259,7 +259,7 @@ describe("Account Routes", () => {
 
     it("should handle validation errors for negative amount", async () => {
       const res = await request(app)
-        .post("/api/v1/clients/client-123/accounts/account-123/debit")
+        .post("/v1/clients/client-123/accounts/account-123/debit")
         .send({
           amount: -10,
         });
@@ -273,7 +273,7 @@ describe("Account Routes", () => {
       );
 
       const res = await request(app)
-        .post("/api/v1/clients/client-123/accounts/invalid-account/debit")
+        .post("/v1/clients/client-123/accounts/invalid-account/debit")
         .send({
           amount: 50,
         });
@@ -282,7 +282,7 @@ describe("Account Routes", () => {
     });
   });
 
-  describe("GET /api/v1/clients/:clientId/accounts/:accountId/transactions", () => {
+  describe("GET /v1/clients/:clientId/accounts/:accountId/transactions", () => {
     it("should list transactions with pagination", async () => {
       const mockTransactions = [
         {
@@ -306,7 +306,7 @@ describe("Account Routes", () => {
       });
 
       const res = await request(app).get(
-        "/api/v1/clients/client-123/accounts/account-123/transactions?limit=10"
+        "/v1/clients/client-123/accounts/account-123/transactions?limit=10"
       );
 
       expect(res.status).toBe(200);
@@ -327,7 +327,7 @@ describe("Account Routes", () => {
       });
 
       const res = await request(app).get(
-        "/api/v1/clients/client-123/accounts/account-123/transactions"
+        "/v1/clients/client-123/accounts/account-123/transactions"
       );
 
       expect(res.status).toBe(200);
@@ -341,7 +341,7 @@ describe("Account Routes", () => {
 
     it("should handle limit validation", async () => {
       const res = await request(app).get(
-        "/api/v1/clients/client-123/accounts/account-123/transactions?limit=0"
+        "/v1/clients/client-123/accounts/account-123/transactions?limit=0"
       );
 
       expect(res.status).toBe(400);
@@ -349,14 +349,14 @@ describe("Account Routes", () => {
 
     it("should handle limit too large", async () => {
       const res = await request(app).get(
-        "/api/v1/clients/client-123/accounts/account-123/transactions?limit=101"
+        "/v1/clients/client-123/accounts/account-123/transactions?limit=101"
       );
 
       expect(res.status).toBe(400);
     });
   });
 
-  describe("GET /api/v1/clients/:clientId/balance", () => {
+  describe("GET /v1/clients/:clientId/balance", () => {
     it("should get all balances for a client", async () => {
       const mockBalances = {
         "account-1": 100,
@@ -366,7 +366,7 @@ describe("Account Routes", () => {
         mockBalances
       );
 
-      const res = await request(app).get("/api/v1/clients/client-123/balance");
+      const res = await request(app).get("/v1/clients/client-123/balance");
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockBalances);
@@ -379,14 +379,14 @@ describe("Account Routes", () => {
       );
 
       const res = await request(app).get(
-        "/api/v1/clients/invalid-client/balance"
+        "/v1/clients/invalid-client/balance"
       );
 
       expect(res.status).toBe(404);
     });
   });
 
-  describe("GET /api/v1/clients/:clientId/accounts/:accountId/balance", () => {
+  describe("GET /v1/clients/:clientId/accounts/:accountId/balance", () => {
     it("should get balance for a specific account", async () => {
       const mockBalance = { points: 100 };
       (accountService.instance.getAccountBalance as jest.Mock).mockResolvedValue(
@@ -394,7 +394,7 @@ describe("Account Routes", () => {
       );
 
       const res = await request(app).get(
-        "/api/v1/clients/client-123/accounts/account-123/balance"
+        "/v1/clients/client-123/accounts/account-123/balance"
       );
 
       expect(res.status).toBe(200);
@@ -411,7 +411,7 @@ describe("Account Routes", () => {
       );
 
       const res = await request(app).get(
-        "/api/v1/clients/client-123/accounts/invalid-account/balance"
+        "/v1/clients/client-123/accounts/invalid-account/balance"
       );
 
       expect(res.status).toBe(404);

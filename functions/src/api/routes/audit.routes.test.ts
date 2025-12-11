@@ -39,7 +39,7 @@ describe("Audit Routes", () => {
     // Setup express app
     app = express();
     app.use(express.json());
-    app.use("/api/v1/audit-logs", auditRoutes);
+    app.use("/v1/audit-logs", auditRoutes);
     // Add error handler
     app.use(
       (
@@ -58,7 +58,7 @@ describe("Audit Routes", () => {
     );
   });
 
-  describe("GET /api/v1/audit-logs", () => {
+  describe("GET /v1/audit-logs", () => {
     it("should list audit logs with default limit", async () => {
       const mockResult = {
         data: [{ id: "log1", action: "TEST_ACTION" }],
@@ -66,7 +66,7 @@ describe("Audit Routes", () => {
       };
       auditServiceInstance.listAuditLogs.mockResolvedValue(mockResult);
 
-      const response = await request(app).get("/api/v1/audit-logs");
+      const response = await request(app).get("/v1/audit-logs");
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual(mockResult);
@@ -80,7 +80,7 @@ describe("Audit Routes", () => {
       auditServiceInstance.listAuditLogs.mockResolvedValue(mockResult);
 
       const response = await request(app)
-        .get("/api/v1/audit-logs")
+        .get("/v1/audit-logs")
         .query({
           action: "CREATE",
           resource_type: "client",
@@ -102,7 +102,7 @@ describe("Audit Routes", () => {
       auditServiceInstance.listAuditLogs.mockResolvedValue(mockResult);
 
       const response = await request(app)
-        .get("/api/v1/audit-logs")
+        .get("/v1/audit-logs")
         .query({
           client_id: "c1",
           account_id: "a1",
@@ -125,7 +125,7 @@ describe("Audit Routes", () => {
 
     it("should return 500 (or error status) for invalid limit (too low)", async () => {
       const response = await request(app)
-        .get("/api/v1/audit-logs")
+        .get("/v1/audit-logs")
         .query({ limit: "0" });
 
       expect(response.status).not.toBe(200);
@@ -133,20 +133,20 @@ describe("Audit Routes", () => {
 
     it("should return 500 (or error status) for invalid limit (too high)", async () => {
       const response = await request(app)
-        .get("/api/v1/audit-logs")
+        .get("/v1/audit-logs")
         .query({ limit: "101" });
 
       expect(response.status).not.toBe(200);
     });
   });
 
-  describe("GET /api/v1/audit-logs/clients/:clientId/audit-logs", () => {
+  describe("GET /v1/audit-logs/clients/:clientId/audit-logs", () => {
     it("should get client audit logs", async () => {
       const mockResult = { data: [], paging: { has_more: false } };
       auditServiceInstance.getClientAuditLogs.mockResolvedValue(mockResult);
 
       const response = await request(app)
-        .get("/api/v1/audit-logs/clients/c1/audit-logs");
+        .get("/v1/audit-logs/clients/c1/audit-logs");
 
       expect(response.status).toBe(200);
       expect(auditServiceInstance.getClientAuditLogs).toHaveBeenCalledWith(
@@ -158,20 +158,20 @@ describe("Audit Routes", () => {
 
     it("should handle invalid limit for client logs", async () => {
       const response = await request(app)
-        .get("/api/v1/audit-logs/clients/c1/audit-logs")
+        .get("/v1/audit-logs/clients/c1/audit-logs")
         .query({ limit: "101" });
 
       expect(response.status).not.toBe(200);
     });
   });
 
-  describe("GET /api/v1/audit-logs/clients/:clientId/loyalty-accounts/:accountId/audit-logs", () => {
+  describe("GET /v1/audit-logs/clients/:clientId/loyalty-accounts/:accountId/audit-logs", () => {
     it("should get account audit logs", async () => {
       const mockResult = { data: [], paging: { has_more: false } };
       (auditServiceInstance.getAccountAuditLogs as jest.Mock).mockResolvedValue(mockResult);
 
       const response = await request(app)
-        .get("/api/v1/audit-logs/clients/c1/loyalty-accounts/a1/audit-logs");
+        .get("/v1/audit-logs/clients/c1/loyalty-accounts/a1/audit-logs");
 
       expect(response.status).toBe(200);
       expect(auditServiceInstance.getAccountAuditLogs).toHaveBeenCalledWith(
@@ -183,7 +183,7 @@ describe("Audit Routes", () => {
 
     it("should handle invalid limit for account logs", async () => {
       const response = await request(app)
-        .get("/api/v1/audit-logs/clients/c1/loyalty-accounts/a1/audit-logs")
+        .get("/v1/audit-logs/clients/c1/loyalty-accounts/a1/audit-logs")
         .query({ limit: "101" });
 
       expect(response.status).not.toBe(200);

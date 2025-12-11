@@ -30,7 +30,7 @@ export type IdentityDocument = z.infer<typeof identityDocumentSchema>;
  * Client name schema with structured fields
  * Pattern allows letters, spaces, hyphens, apostrophes, and Spanish characters
  */
-const namePattern = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]+$/;
+const namePattern = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]*$/;
 
 export const clientNameSchema = z.object({
   firstName: z
@@ -82,7 +82,7 @@ export const phoneSchema = z.object({
     .describe("Phone number, preferably in E.164 format"),
   extension: z
     .string()
-    .regex(/^[0-9]+$/, "Extension must be numeric")
+    .regex(/^[0-9]*$/, "Extension must be numeric")
     .max(10)
     .optional()
     .nullable()
@@ -292,11 +292,12 @@ export type CreateClientRequest = z.infer<typeof createClientRequestSchema>;
 
 /**
  * Update client request schema
- * Note: email and identity_document cannot be changed after creation
  */
 export const updateClientRequestSchema = z
   .object({
     name: clientNameSchema.optional(),
+    email: z.string().email("Invalid email address").optional().nullable(),
+    identity_document: identityDocumentSchema.optional().nullable(),
     photoUrl: z
       .string()
       .url("Invalid photo URL")

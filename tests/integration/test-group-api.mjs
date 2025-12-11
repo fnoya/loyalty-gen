@@ -24,9 +24,9 @@ const admin = require(
 
 // Test configuration
 const GROUPS_API_BASE =
-  "http://127.0.0.1:5001/loyalty-gen/us-central1/api/api/v1/groups";
+  "http://127.0.0.1:5001/loyalty-gen/us-central1/api/v1/groups";
 const CLIENTS_API_BASE =
-  "http://127.0.0.1:5001/loyalty-gen/us-central1/api/api/v1/clients";
+  "http://127.0.0.1:5001/loyalty-gen/us-central1/api/v1/clients";
 const HEALTH_URL = "http://127.0.0.1:5001/loyalty-gen/us-central1/api/health";
 
 // Configure Firebase Admin for emulator

@@ -37,7 +37,7 @@ describe("Client Routes", () => {
     });
   });
 
-  describe("POST /api/v1/clients", () => {
+  describe("POST /v1/clients", () => {
     it("should create a client", async () => {
       const mockClient = {
         id: "client-123",
@@ -47,7 +47,7 @@ describe("Client Routes", () => {
       (clientService.createClient as jest.Mock).mockResolvedValue(mockClient);
 
       const res = await request(app)
-        .post("/api/v1/clients")
+        .post("/v1/clients")
         .send({
           name: { firstName: "John", firstLastName: "Doe" },
           email: "john@example.com",
@@ -65,7 +65,7 @@ describe("Client Routes", () => {
       const error = new ValidationError("Validation failed");
       (clientService.createClient as jest.Mock).mockRejectedValue(error);
 
-      const res = await request(app).post("/api/v1/clients").send({});
+      const res = await request(app).post("/v1/clients").send({});
 
       expect(res.status).toBe(400);
     });
@@ -81,14 +81,14 @@ describe("Client Routes", () => {
       );
 
       const res = await request(app)
-        .post("/api/v1/clients")
+        .post("/v1/clients")
         .send({ email: "duplicate@example.com" });
 
       expect(res.status).toBe(409);
     });
   });
 
-  describe("GET /api/v1/clients", () => {
+  describe("GET /v1/clients", () => {
     it("should list clients", async () => {
       const mockResult = {
         clients: [{ id: "1", name: "Test" }],
@@ -96,7 +96,7 @@ describe("Client Routes", () => {
       };
       (clientService.listClients as jest.Mock).mockResolvedValue(mockResult);
 
-      const res = await request(app).get("/api/v1/clients?limit=10");
+      const res = await request(app).get("/v1/clients?limit=10");
 
       expect(res.status).toBe(200);
       expect(res.body.data).toEqual(mockResult.clients);
@@ -105,17 +105,17 @@ describe("Client Routes", () => {
     });
 
     it("should return 400 for invalid limit", async () => {
-      const res = await request(app).get("/api/v1/clients?limit=-1");
+      const res = await request(app).get("/v1/clients?limit=-1");
       expect(res.status).toBe(400);
     });
   });
 
-  describe("GET /api/v1/clients/search", () => {
+  describe("GET /v1/clients/search", () => {
     it("should search clients", async () => {
       const mockClients = [{ id: "1", name: "John" }];
       (clientService.searchClients as jest.Mock).mockResolvedValue(mockClients);
 
-      const res = await request(app).get("/api/v1/clients/search?q=John");
+      const res = await request(app).get("/v1/clients/search?q=John");
 
       expect(res.status).toBe(200);
       expect(res.body.data).toEqual(mockClients);
@@ -124,22 +124,22 @@ describe("Client Routes", () => {
     });
 
     it("should return 400 if query is missing", async () => {
-      const res = await request(app).get("/api/v1/clients/search");
+      const res = await request(app).get("/v1/clients/search");
       expect(res.status).toBe(400);
     });
 
     it("should return 400 for invalid limit", async () => {
-      const res = await request(app).get("/api/v1/clients/search?q=John&limit=101");
+      const res = await request(app).get("/v1/clients/search?q=John&limit=101");
       expect(res.status).toBe(400);
     });
   });
 
-  describe("GET /api/v1/clients/:id", () => {
+  describe("GET /v1/clients/:id", () => {
     it("should get a client by ID", async () => {
       const mockClient = { id: "123", name: "John" };
       (clientService.getClient as jest.Mock).mockResolvedValue(mockClient);
 
-      const res = await request(app).get("/api/v1/clients/123");
+      const res = await request(app).get("/v1/clients/123");
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockClient);
@@ -147,13 +147,13 @@ describe("Client Routes", () => {
     });
   });
 
-  describe("PUT /api/v1/clients/:id", () => {
+  describe("PUT /v1/clients/:id", () => {
     it("should update a client", async () => {
       const mockClient = { id: "123", name: "Updated" };
       (clientService.updateClient as jest.Mock).mockResolvedValue(mockClient);
 
       const res = await request(app)
-        .put("/api/v1/clients/123")
+        .put("/v1/clients/123")
         .send({ name: { firstName: "Updated" } });
 
       expect(res.status).toBe(200);
@@ -166,11 +166,11 @@ describe("Client Routes", () => {
     });
   });
 
-  describe("DELETE /api/v1/clients/:id", () => {
+  describe("DELETE /v1/clients/:id", () => {
     it("should delete a client", async () => {
       (clientService.deleteClient as jest.Mock).mockResolvedValue(undefined);
 
-      const res = await request(app).delete("/api/v1/clients/123");
+      const res = await request(app).delete("/v1/clients/123");
 
       expect(res.status).toBe(202);
       expect(clientService.deleteClient).toHaveBeenCalledWith("123", {
@@ -180,7 +180,7 @@ describe("Client Routes", () => {
     });
   });
 
-  describe("POST /api/v1/clients/:id/photo", () => {
+  describe("POST /v1/clients/:id/photo", () => {
     it("should upload a photo", async () => {
       const mockClient = {
         id: "123",
@@ -194,7 +194,7 @@ describe("Client Routes", () => {
       const buffer = Buffer.from("fake-image-data");
 
       const res = await request(app)
-        .post("/api/v1/clients/123/photo")
+        .post("/v1/clients/123/photo")
         .attach("photo", buffer, "test.png");
 
       expect(res.status).toBe(200);
@@ -204,7 +204,7 @@ describe("Client Routes", () => {
 
     it("should handle missing file", async () => {
       const res = await request(app)
-        .post("/api/v1/clients/123/photo")
+        .post("/v1/clients/123/photo")
         .set(
           "Content-Type",
           "multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW"
@@ -229,18 +229,18 @@ describe("Client Routes", () => {
       const buffer = Buffer.from("fake-text-data");
 
       const res = await request(app)
-        .post("/api/v1/clients/123/photo")
+        .post("/v1/clients/123/photo")
         .attach("photo", buffer, "test.txt");
 
       expect(res.status).toBe(400);
     });
   });
 
-  describe("DELETE /api/v1/clients/:id/photo", () => {
+  describe("DELETE /v1/clients/:id/photo", () => {
     it("should delete a photo", async () => {
       (photoService.deletePhoto as jest.Mock).mockResolvedValue(undefined);
 
-      const res = await request(app).delete("/api/v1/clients/123/photo");
+      const res = await request(app).delete("/v1/clients/123/photo");
 
       expect(res.status).toBe(200);
       expect(photoService.deletePhoto).toHaveBeenCalledWith("123");

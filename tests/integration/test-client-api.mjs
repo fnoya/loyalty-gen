@@ -27,7 +27,7 @@ const admin = require(
 
 // Test configuration
 const API_BASE =
-  "http://127.0.0.1:5001/loyalty-gen/us-central1/api/api/v1/clients";
+  "http://127.0.0.1:5001/loyalty-gen/us-central1/api/v1/clients";
 const HEALTH_URL = "http://127.0.0.1:5001/loyalty-gen/us-central1/api/health";
 const EMULATOR_AUTH_URL = "http://127.0.0.1:9099";
 

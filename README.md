@@ -395,7 +395,14 @@ npm install
 ```bash
 # Iniciar emuladores de Firebase
 firebase emulators:start --only functions,firestore,auth,storage
+```
 
+> **Nota:** Cada vez que reinicies los emuladores, los datos se perderán (a menos que uses `--import/--export`). Debes ejecutar el script de creación de usuario administrador para poder iniciar sesión en el frontend:
+> ```bash
+> cd functions && node create_admin.js
+> ```
+
+```bash
 # En otra terminal, ejecutar tests
 ./run-all-tests.sh
 

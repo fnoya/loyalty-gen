@@ -40,7 +40,7 @@ describe("Group Routes", () => {
     jest.clearAllMocks();
   });
 
-  describe("GET /api/v1/groups", () => {
+  describe("GET /v1/groups", () => {
     it("should list all groups", async () => {
       const mockGroups = [
         {
@@ -58,7 +58,7 @@ describe("Group Routes", () => {
       ];
       (groupService.instance.listGroups as jest.Mock).mockResolvedValue(mockGroups);
 
-      const res = await request(app).get("/api/v1/groups");
+      const res = await request(app).get("/v1/groups");
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockGroups);
@@ -69,13 +69,13 @@ describe("Group Routes", () => {
       const error = new Error("Database error");
       (groupService.instance.listGroups as jest.Mock).mockRejectedValue(error);
 
-      const res = await request(app).get("/api/v1/groups");
+      const res = await request(app).get("/v1/groups");
 
       expect(res.status).toBe(500);
     });
   });
 
-  describe("POST /api/v1/groups", () => {
+  describe("POST /v1/groups", () => {
     it("should create a new group", async () => {
       const mockGroup = {
         id: "group-123",
@@ -85,7 +85,7 @@ describe("Group Routes", () => {
       };
       (groupService.instance.createGroup as jest.Mock).mockResolvedValue(mockGroup);
 
-      const res = await request(app).post("/api/v1/groups").send({
+      const res = await request(app).post("/v1/groups").send({
         name: "New Group",
         description: "Test group",
       });
@@ -102,7 +102,7 @@ describe("Group Routes", () => {
     });
 
     it("should handle validation errors for missing name", async () => {
-      const res = await request(app).post("/api/v1/groups").send({
+      const res = await request(app).post("/v1/groups").send({
         description: "Test group",
       });
 
@@ -111,7 +111,7 @@ describe("Group Routes", () => {
 
     it("should handle validation errors for name too long", async () => {
       const res = await request(app)
-        .post("/api/v1/groups")
+        .post("/v1/groups")
         .send({
           name: "x".repeat(101),
           description: "Test",
@@ -129,7 +129,7 @@ describe("Group Routes", () => {
       };
       (groupService.instance.createGroup as jest.Mock).mockResolvedValue(mockGroup);
 
-      const res = await request(app).post("/api/v1/groups").send({
+      const res = await request(app).post("/v1/groups").send({
         name: "New Group",
       });
 
@@ -144,14 +144,14 @@ describe("Group Routes", () => {
     });
   });
 
-  describe("POST /api/v1/groups/:groupId/clients/:clientId", () => {
+  describe("POST /v1/groups/:groupId/clients/:clientId", () => {
     it("should assign a client to a group", async () => {
       (groupService.instance.assignClientToGroup as jest.Mock).mockResolvedValue(
         undefined
       );
 
       const res = await request(app).post(
-        "/api/v1/groups/group-123/clients/client-456"
+        "/v1/groups/group-123/clients/client-456"
       );
 
       expect(res.status).toBe(200);
@@ -169,7 +169,7 @@ describe("Group Routes", () => {
       );
 
       const res = await request(app).post(
-        "/api/v1/groups/invalid-group/clients/client-456"
+        "/v1/groups/invalid-group/clients/client-456"
       );
 
       expect(res.status).toBe(404);
@@ -181,7 +181,7 @@ describe("Group Routes", () => {
       );
 
       const res = await request(app).post(
-        "/api/v1/groups/group-123/clients/invalid-client"
+        "/v1/groups/group-123/clients/invalid-client"
       );
 
       expect(res.status).toBe(404);
@@ -193,21 +193,21 @@ describe("Group Routes", () => {
       );
 
       const res = await request(app).post(
-        "/api/v1/groups/group-123/clients/client-456"
+        "/v1/groups/group-123/clients/client-456"
       );
 
       expect(res.status).toBe(400);
     });
   });
 
-  describe("DELETE /api/v1/groups/:groupId/clients/:clientId", () => {
+  describe("DELETE /v1/groups/:groupId/clients/:clientId", () => {
     it("should remove a client from a group", async () => {
       (groupService.instance.removeClientFromGroup as jest.Mock).mockResolvedValue(
         undefined
       );
 
       const res = await request(app).delete(
-        "/api/v1/groups/group-123/clients/client-456"
+        "/v1/groups/group-123/clients/client-456"
       );
 
       expect(res.status).toBe(200);
@@ -225,7 +225,7 @@ describe("Group Routes", () => {
       );
 
       const res = await request(app).delete(
-        "/api/v1/groups/invalid-group/clients/client-456"
+        "/v1/groups/invalid-group/clients/client-456"
       );
 
       expect(res.status).toBe(404);
@@ -237,7 +237,7 @@ describe("Group Routes", () => {
       );
 
       const res = await request(app).delete(
-        "/api/v1/groups/group-123/clients/invalid-client"
+        "/v1/groups/group-123/clients/invalid-client"
       );
 
       expect(res.status).toBe(404);
@@ -249,7 +249,7 @@ describe("Group Routes", () => {
       );
 
       const res = await request(app).delete(
-        "/api/v1/groups/group-123/clients/client-456"
+        "/v1/groups/group-123/clients/client-456"
       );
 
       expect(res.status).toBe(400);

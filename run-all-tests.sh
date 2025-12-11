@@ -65,6 +65,16 @@ UNIT_TESTS_FAILED=$(grep -oE "Tests:.*[0-9]+ failed" /tmp/unit-test-output.txt |
 cd ..
 echo
 
+# Run frontend tests
+echo "🖥️ Running Frontend Tests..."
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+cd frontend
+npm test 2>&1 | tee /tmp/frontend-test-output.txt || true
+FRONTEND_TESTS_PASSED=$(grep -oE "Tests:.*[0-9]+ passed" /tmp/frontend-test-output.txt | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+" || echo "0")
+FRONTEND_TESTS_FAILED=$(grep -oE "Tests:.*[0-9]+ failed" /tmp/frontend-test-output.txt | grep -oE "[0-9]+ failed" | grep -oE "[0-9]+" || echo "0")
+cd ..
+echo
+
 # Run integration tests
 echo
 echo "🌐 Running Integration Tests..."
@@ -105,8 +115,8 @@ echo
 INTEGRATION_TESTS_PASSED=$((CLIENT_TESTS_PASSED + GROUP_TESTS_PASSED + ACCOUNT_TESTS_PASSED + AUDIT_TESTS_PASSED))
 INTEGRATION_TESTS_FAILED=$((CLIENT_TESTS_FAILED + GROUP_TESTS_FAILED + ACCOUNT_TESTS_FAILED + AUDIT_TESTS_FAILED))
 INTEGRATION_TESTS_TOTAL=$((INTEGRATION_TESTS_PASSED + INTEGRATION_TESTS_FAILED))
-TOTAL_TESTS_PASSED=$((UNIT_TESTS_PASSED + INTEGRATION_TESTS_PASSED))
-TOTAL_TESTS_FAILED=$((UNIT_TESTS_FAILED + INTEGRATION_TESTS_FAILED))
+TOTAL_TESTS_PASSED=$((UNIT_TESTS_PASSED + FRONTEND_TESTS_PASSED + INTEGRATION_TESTS_PASSED))
+TOTAL_TESTS_FAILED=$((UNIT_TESTS_FAILED + FRONTEND_TESTS_FAILED + INTEGRATION_TESTS_FAILED))
 TOTAL_TESTS=$((TOTAL_TESTS_PASSED + TOTAL_TESTS_FAILED))
 
 # Determine status
@@ -122,7 +132,8 @@ fi
 echo "╔════════════════════════════════════════════════════════════════════════════════╗"
 printf "║                       %s %-53s ║\n" "$STATUS_ICON" "$STATUS_TEXT"
 echo "╠════════════════════════════════════════════════════════════════════════════════╣"
-printf "║  %-77s ║\n" "Unit Tests:        $UNIT_TESTS_PASSED passed, $UNIT_TESTS_FAILED failed"
+printf "║  %-77s ║\n" "Backend Tests:     $UNIT_TESTS_PASSED passed, $UNIT_TESTS_FAILED failed"
+printf "║  %-77s ║\n" "Frontend Tests:    $FRONTEND_TESTS_PASSED passed, $FRONTEND_TESTS_FAILED failed"
 printf "║  %-76s ║\n" "Integration Tests: $INTEGRATION_TESTS_PASSED passed, $INTEGRATION_TESTS_FAILED failed ($CLIENT_TESTS_PASSED clients + $GROUP_TESTS_PASSED groups + $ACCOUNT_TESTS_PASSED accounts + $AUDIT_TESTS_PASSED audit)"
 printf "║  %-77s ║\n" "Total:            $TOTAL_TESTS_PASSED passed, $TOTAL_TESTS_FAILED failed ($TOTAL_TESTS tests)"
 echo "╚════════════════════════════════════════════════════════════════════════════════╝"

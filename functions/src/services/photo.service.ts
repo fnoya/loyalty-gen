@@ -87,6 +87,9 @@ export class PhotoService {
     const filename = `${timestamp}-${randomId}.${extension}`;
     const filePath = `client-photos/${clientId}/${filename}`;
 
+    // Generate a download token for the emulator/public access
+    const downloadToken = crypto.randomUUID();
+
     // Upload to Firebase Storage
     const file = this.bucket.file(filePath);
     await file.save(fileBuffer, {
@@ -95,6 +98,7 @@ export class PhotoService {
         metadata: {
           clientId: clientId,
           uploadedAt: new Date().toISOString(),
+          firebaseStorageDownloadTokens: downloadToken,
         },
       },
     });
@@ -103,8 +107,12 @@ export class PhotoService {
     let url: string;
     if (process.env.FIREBASE_STORAGE_EMULATOR_HOST) {
       // Emulator: use public URL format
-      const emulatorHost = process.env.FIREBASE_STORAGE_EMULATOR_HOST;
-      url = `http://${emulatorHost}/v0/b/${this.bucket.name}/o/${encodeURIComponent(filePath)}?alt=media`;
+      let emulatorHost = process.env.FIREBASE_STORAGE_EMULATOR_HOST;
+      // Replace 127.0.0.1 with localhost to avoid mixed content/CORS issues in some browsers
+      if (emulatorHost.startsWith("127.0.0.1")) {
+        emulatorHost = emulatorHost.replace("127.0.0.1", "localhost");
+      }
+      url = `http://${emulatorHost}/v0/b/${this.bucket.name}/o/${encodeURIComponent(filePath)}?alt=media&token=${downloadToken}`;
     } else {
       // Production: use signed URL (valid for 50 years)
       const [signedUrl] = await file.getSignedUrl({

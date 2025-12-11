@@ -10,7 +10,7 @@
 import fetch from 'node-fetch';
 import admin from 'firebase-admin';
 
-const BASE_URL = 'http://127.0.0.1:5001/loyalty-gen/us-central1/api/api/v1';
+const BASE_URL = 'http://127.0.0.1:5001/loyalty-gen/us-central1/api/v1';
 const EMULATOR_AUTH_URL = 'http://127.0.0.1:9099';
 let authToken = null;
 let testClientId = null;

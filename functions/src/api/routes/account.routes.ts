@@ -30,7 +30,7 @@ function getActor(req: Request): AuditActor {
  * @access Protected
  */
 router.get(
-  "/:clientId/accounts",
+  "/clients/:clientId/accounts",
   authenticate,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -49,7 +49,7 @@ router.get(
  * @access Protected
  */
 router.post(
-  "/:clientId/accounts",
+  "/clients/:clientId/accounts",
   authenticate,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -74,7 +74,7 @@ router.post(
  * @access Protected
  */
 router.post(
-  "/:clientId/accounts/:accountId/credit",
+  "/clients/:clientId/accounts/:accountId/credit",
   authenticate,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -100,7 +100,7 @@ router.post(
  * @access Protected
  */
 router.post(
-  "/:clientId/accounts/:accountId/debit",
+  "/clients/:clientId/accounts/:accountId/debit",
   authenticate,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -126,7 +126,7 @@ router.post(
  * @access Protected
  */
 router.get(
-  "/:clientId/accounts/:accountId/transactions",
+  "/clients/:clientId/accounts/:accountId/transactions",
   authenticate,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -165,7 +165,7 @@ router.get(
  * @access Protected
  */
 router.get(
-  "/:clientId/balance",
+  "/clients/:clientId/balance",
   authenticate,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -184,7 +184,7 @@ router.get(
  * @access Protected
  */
 router.get(
-  "/:clientId/accounts/:accountId/balance",
+  "/clients/:clientId/accounts/:accountId/balance",
   authenticate,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {

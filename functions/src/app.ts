@@ -27,11 +27,11 @@ app.get("/health", (_req: Request, res: Response) => {
 });
 
 // API v1 routes
-app.use("/api/v1/clients", clientRoutes);
-app.use("/api/v1/groups", groupRoutes);
-app.use("/api/v1/clients", accountRoutes);
-app.use("/api/v1/audit-logs", auditRoutes);
-app.use("/api/v1", auditRoutes); // For /clients/:id/audit-logs paths
+app.use("/v1/clients", clientRoutes);
+app.use("/v1/groups", groupRoutes);
+app.use("/v1", accountRoutes);
+app.use("/v1/audit-logs", auditRoutes);
+app.use("/v1", auditRoutes); // For /clients/:id/audit-logs paths
 
 // 404 handler (must be after all routes)
 app.use(notFoundHandler);
