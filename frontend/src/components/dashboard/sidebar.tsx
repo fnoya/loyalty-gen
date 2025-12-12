@@ -5,9 +5,10 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
-  History,
+  Shield,
   Settings,
   LogOut,
+  GitBranch,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -16,10 +17,11 @@ import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 
 const navItems = [
-  { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
-  { href: "/dashboard/clients", label: "Clients", icon: Users },
-  { href: "/dashboard/audit", label: "Audit Logs", icon: History },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings },
+  { href: "/dashboard", label: "Inicio", icon: LayoutDashboard },
+  { href: "/dashboard/clients", label: "Clientes", icon: Users },
+  { href: "/dashboard/groups", label: "Grupos", icon: GitBranch },
+  { href: "/dashboard/audit", label: "Auditoría", icon: Shield },
+  { href: "/dashboard/settings", label: "Configuración", icon: Settings },
 ];
 
 export function Sidebar() {

@@ -13,7 +13,7 @@ import { apiRequest } from "@/lib/api";
 import { toast } from "@/components/ui/toast";
 
 const creditDebitSchema = z.object({
-  amount: z.number().min(1, "La cantidad debe ser al menos 1 punto"),
+  amount: z.coerce.number().min(1, "La cantidad debe ser al menos 1 punto"),
   description: z.string().optional(),
 });
 
@@ -40,7 +40,7 @@ export function CreditDebitForm({
     handleSubmit,
     formState: { errors },
     reset,
-  } = useForm<CreditDebitFormValues>({
+  } = useForm({
     resolver: zodResolver(creditDebitSchema),
   });
 
@@ -107,7 +107,7 @@ export function CreditDebitForm({
           type="number"
           min="1"
           placeholder="Ingrese la cantidad"
-          {...register("amount", { valueAsNumber: true })}
+          {...register("amount")}
           disabled={isSubmitting}
         />
         {errors.amount && (

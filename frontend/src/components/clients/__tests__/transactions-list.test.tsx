@@ -1,10 +1,26 @@
 import { render, screen } from "@testing-library/react";
 import { TransactionsList } from "./transactions-list";
 
+jest.mock("@/lib/api", () => ({
+  apiRequest: jest.fn(),
+}));
+
+jest.mock("@/components/ui/toast", () => ({
+  toast: {
+    error: jest.fn(),
+    success: jest.fn(),
+  },
+}));
+
+jest.mock("@/components/audit/audit-log-dialog", () => ({
+  AuditLogDialog: () => <div data-testid="audit-log-dialog" />,
+}));
+
 jest.mock("lucide-react", () => ({
   ArrowUp: () => <span data-testid="icon-arrow-up" />,
   ArrowDown: () => <span data-testid="icon-arrow-down" />,
   Clock: () => <span data-testid="icon-clock" />,
+  FileSearch: () => <span data-testid="icon-file-search" />,
 }));
 
 jest.mock("date-fns", () => ({
@@ -100,5 +116,84 @@ describe("TransactionsList", () => {
     expect(
       screen.getByText(/Ver más transacciones \(5 adicionales\)/i),
     ).toBeInTheDocument();
+  });
+
+  it("shows view more button even when all transactions are shown (cursor pagination)", () => {
+    const manyTransactions = Array.from({ length: 5 }, (_, i) => ({
+      ...mockTransactions[0],
+      id: `t${i}`,
+    }));
+
+    render(
+      <TransactionsList
+        transactions={manyTransactions}
+        loading={false}
+        showViewMore={true}
+        onViewMore={jest.fn()}
+      />,
+    );
+
+    // Button should still be visible when showViewMore is true
+    expect(screen.getByText(/Ver más transacciones/i)).toBeInTheDocument();
+  });
+
+  it("shows view more button without limit (cursor-based pagination)", () => {
+    const transactions = Array.from({ length: 3 }, (_, i) => ({
+      ...mockTransactions[0],
+      id: `t${i}`,
+    }));
+
+    render(
+      <TransactionsList
+        transactions={transactions}
+        loading={false}
+        showViewMore={true}
+        onViewMore={jest.fn()}
+      />,
+    );
+
+    // Button shows even without local limit when showViewMore=true
+    expect(screen.getByText(/Ver más transacciones/i)).toBeInTheDocument();
+  });
+
+  it("does not show view more button when showViewMore is false", () => {
+    const manyTransactions = Array.from({ length: 10 }, (_, i) => ({
+      ...mockTransactions[0],
+      id: `t${i}`,
+    }));
+
+    render(
+      <TransactionsList
+        transactions={manyTransactions}
+        loading={false}
+        limit={5}
+        showViewMore={false}
+      />,
+    );
+
+    expect(screen.queryByText(/Ver más transacciones/i)).not.toBeInTheDocument();
+  });
+
+  it("calls onViewMore when button is clicked", () => {
+    const handleViewMore = jest.fn();
+    const manyTransactions = Array.from({ length: 10 }, (_, i) => ({
+      ...mockTransactions[0],
+      id: `t${i}`,
+    }));
+
+    render(
+      <TransactionsList
+        transactions={manyTransactions}
+        loading={false}
+        limit={5}
+        showViewMore={true}
+        onViewMore={handleViewMore}
+      />,
+    );
+
+    const button = screen.getByText(/Ver más transacciones/i);
+    button.click();
+
+    expect(handleViewMore).toHaveBeenCalledTimes(1);
   });
 });

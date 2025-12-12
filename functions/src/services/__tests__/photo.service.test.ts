@@ -1,5 +1,5 @@
-import { PhotoService } from "./photo.service";
-import { NotFoundError, ValidationError } from "../core/errors";
+import { PhotoService } from "../photo.service";
+import { NotFoundError, ValidationError } from "../../core/errors";
 
 // Mock firebase-admin/storage
 const mockSave = jest.fn();

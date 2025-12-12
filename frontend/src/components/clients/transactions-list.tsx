@@ -1,11 +1,17 @@
 "use client";
 
-import { ArrowDown, ArrowUp, Clock } from "lucide-react";
+import { ArrowDown, ArrowUp, Clock, FileSearch } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { useState } from "react";
 
 import { Transaction } from "@/types/transaction";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { AuditLogDialog } from "@/components/audit/audit-log-dialog";
+import { apiRequest } from "@/lib/api";
+import { AuditLog } from "@/types/audit";
+import { toast } from "@/components/ui/toast";
 
 interface TransactionsListProps {
   transactions: Transaction[];
@@ -13,6 +19,8 @@ interface TransactionsListProps {
   limit?: number;
   showViewMore?: boolean;
   onViewMore?: () => void;
+  clientId?: string;
+  accountId?: string;
 }
 
 export function TransactionsList({
@@ -21,7 +29,44 @@ export function TransactionsList({
   limit,
   showViewMore = false,
   onViewMore,
+  clientId,
+  accountId,
 }: TransactionsListProps) {
+  const [selectedAuditLog, setSelectedAuditLog] = useState<AuditLog | null>(null);
+  const [loadingAudit, setLoadingAudit] = useState<string | null>(null);
+
+  const handleViewAudit = async (transactionId: string) => {
+    if (!clientId || !accountId) {
+      toast.error("Información insuficiente para cargar auditoría");
+      return;
+    }
+
+    setLoadingAudit(transactionId);
+    try {
+      const response = await apiRequest<{ data: AuditLog[] }>(
+        `/clients/${clientId}/accounts/${accountId}/transactions/${transactionId}/audit-logs`,
+      );
+      const logs = response.data || [];
+      if (logs.length > 0) {
+        setSelectedAuditLog(logs[0]);
+      } else {
+        toast.error("No se encontró registro de auditoría para esta transacción");
+      }
+    } catch (error) {
+      console.error("Failed to load transaction audit", error);
+      const errorMessage = error instanceof Error ? error.message : "Error al cargar auditoría";
+      
+      // Handle 404 specifically
+      if (errorMessage.includes("no encontrada") || errorMessage.includes("not found") || errorMessage.includes("404")) {
+        toast.error("Auditoría de transacciones aún no disponible");
+      } else {
+        toast.error("Error al cargar auditoría");
+      }
+    } finally {
+      setLoadingAudit(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-3">
@@ -50,9 +95,8 @@ export function TransactionsList({
     ? transactions.slice(0, limit)
     : transactions;
 
-  // Check if there are more transactions beyond the display limit
-  const hasMoreTransactions = limit && transactions.length > limit;
-  const additionalCount = hasMoreTransactions ? transactions.length - limit : 0;
+  // Additional count is only meaningful when a limit is provided
+  const additionalCount = limit ? Math.max(0, transactions.length - limit) : 0;
 
   return (
     <div className="space-y-2">
@@ -91,25 +135,37 @@ export function TransactionsList({
                 </p>
               </div>
             </div>
-            <div className="text-right">
-              <p className={`text-lg font-bold ${amountColor}`}>
-                {sign}
-                {transaction.amount.toLocaleString()}
-              </p>
-              <p className="text-xs text-slate-500">puntos</p>
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className={`text-lg font-bold ${amountColor}`}>
+                  {sign}
+                  {transaction.amount.toLocaleString()}
+                </p>
+                <p className="text-xs text-slate-500">puntos</p>
+              </div>
             </div>
           </div>
         );
       })}
 
-      {showViewMore && onViewMore && hasMoreTransactions && (
+      {showViewMore && onViewMore && (
         <button
           onClick={onViewMore}
           className="w-full py-2 text-sm text-blue-600 hover:text-blue-700 font-medium mt-2"
         >
-          Ver más transacciones ({additionalCount} adicionales)
+          {additionalCount > 0
+            ? `Ver más transacciones (${additionalCount} adicionales)`
+            : "Ver más transacciones"}
         </button>
       )}
+
+      <AuditLogDialog
+        log={selectedAuditLog}
+        open={!!selectedAuditLog}
+        onOpenChange={(open) => !open && setSelectedAuditLog(null)}
+        title="Auditoría de Transacción"
+        description={selectedAuditLog ? `ID: ${selectedAuditLog.id}` : undefined}
+      />
     </div>
   );
 }

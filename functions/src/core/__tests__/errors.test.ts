@@ -8,7 +8,7 @@ import {
   UnauthorizedError,
   ForbiddenError,
   InternalServerError,
-} from "./errors";
+} from "../errors";
 
 describe("Core Error Classes", () => {
   describe("AppError", () => {

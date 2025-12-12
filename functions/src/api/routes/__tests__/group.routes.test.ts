@@ -1,7 +1,7 @@
 import request from "supertest";
-import app from "../../app";
-import { groupService } from "../../services/group.service";
-import { NotFoundError, AppError } from "../../core/errors";
+import app from "../../../app";
+import { groupService } from "../../../services/group.service";
+import { NotFoundError, AppError } from "../../../core/errors";
 
 // Mock Firebase Admin
 jest.mock("firebase-admin", () => ({
@@ -19,7 +19,7 @@ const mockGroupServiceInstance = {
   removeClientFromGroup: jest.fn(),
 };
 
-jest.mock("../../services/group.service", () => ({
+jest.mock("../../../services/group.service", () => ({
   groupService: {
     get instance() {
       return mockGroupServiceInstance;
@@ -28,7 +28,7 @@ jest.mock("../../services/group.service", () => ({
 }));
 
 // Mock Auth Middleware
-jest.mock("../middleware/auth.middleware", () => ({
+jest.mock("../../middleware/auth.middleware", () => ({
   authenticate: (req: any, res: any, next: any) => {
     req.user = { uid: "test-user" };
     next();

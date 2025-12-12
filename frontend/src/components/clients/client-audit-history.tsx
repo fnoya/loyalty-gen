@@ -26,9 +26,11 @@ import {
 
 interface ClientAuditHistoryProps {
   clientId: string;
+  // Optional filters to refine results; keys should use snake_case
+  query?: Record<string, string | number | undefined>;
 }
 
-export function ClientAuditHistory({ clientId }: ClientAuditHistoryProps) {
+export function ClientAuditHistory({ clientId, query = {} }: ClientAuditHistoryProps) {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -37,12 +39,35 @@ export function ClientAuditHistory({ clientId }: ClientAuditHistoryProps) {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
 
+  const normalizeAction = (val: string) => {
+    // Convert common labels like "client created" to enum "CLIENT_CREATED"
+    return val.trim().replace(/\s+/g, "_").toUpperCase();
+  };
+
+  const buildQueryString = (extra: Record<string, string | number | undefined> = {}) => {
+    const params = new URLSearchParams();
+    // Always include client_id
+    params.set("client_id", clientId);
+    // Merge optional filters
+    Object.entries({ ...query, ...extra }).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        if (key === "action" && typeof value === "string") {
+          params.set(key, normalizeAction(value));
+        } else {
+          params.set(key, String(value));
+        }
+      }
+    });
+    return params.toString();
+  };
+
   useEffect(() => {
     const fetchLogs = async () => {
       try {
         setLoading(true);
+        const qs = buildQueryString({ limit: 10 });
         const response = await apiRequest<{ data: AuditLog[]; paging?: { next_cursor?: string } }>(
-          `/audit-logs?client_id=${clientId}&limit=10`,
+          `/audit-logs?${qs}`,
         );
         setLogs(response.data || []);
         const cursor = response.paging?.next_cursor || null;
@@ -57,14 +82,15 @@ export function ClientAuditHistory({ clientId }: ClientAuditHistoryProps) {
     };
 
     fetchLogs();
-  }, [clientId]);
+  }, [clientId, query]);
 
   const fetchMoreLogs = async () => {
     if (!nextCursor) return;
     try {
       setLoadingMore(true);
+      const qs = buildQueryString({ limit: 20, next_cursor: nextCursor });
       const response = await apiRequest<{ data: AuditLog[]; paging?: { next_cursor?: string } }>(
-        `/audit-logs?client_id=${clientId}&limit=20&next_cursor=${encodeURIComponent(nextCursor)}`,
+        `/audit-logs?${qs}`,
       );
       setLogs((prev) => [...prev, ...(response.data || [])]);
       const cursor = response.paging?.next_cursor || null;

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import { authenticate, AuthenticatedRequest } from "./auth.middleware";
-import { UnauthorizedError } from "../../core/errors";
+import { authenticate, AuthenticatedRequest } from "../auth.middleware";
+import { UnauthorizedError } from "../../../core/errors";
 
 // Mock firebase-admin
 const mockVerifyIdToken = jest.fn();

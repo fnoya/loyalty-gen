@@ -1,6 +1,6 @@
 import { Firestore } from "firebase-admin/firestore";
-import { AuditService } from "./audit.service";
-import { AuditActor } from "../schemas/audit.schema";
+import { AuditService } from "../audit.service";
+import { AuditActor } from "../../schemas/audit.schema";
 
 // Mock Firestore
 const mockFirestore = {

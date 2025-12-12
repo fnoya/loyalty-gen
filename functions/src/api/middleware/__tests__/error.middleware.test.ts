@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { ZodError, ZodIssue } from "zod";
-import { NotFoundError } from "../../core/errors";
-import { errorHandler, notFoundHandler } from "./error.middleware";
+import { NotFoundError } from "../../../core/errors";
+import { errorHandler, notFoundHandler } from "../error.middleware";
 
 describe("Error Middleware", () => {
   let mockRequest: Partial<Request>;

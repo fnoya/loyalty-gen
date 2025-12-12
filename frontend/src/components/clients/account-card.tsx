@@ -6,11 +6,13 @@ import { Wallet, TrendingUp, TrendingDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiRequest } from "@/lib/api";
 import { Transaction } from "@/types/transaction";
 import { TransactionsList } from "./transactions-list";
 import { CreditDebitForm } from "./credit-debit-form";
 import { TransactionsFilter, type TransactionFilters } from "./transactions-filter";
+import { AuditLogsList } from "@/components/audit/audit-logs-list";
 
 interface AccountCardProps {
   clientId: string;
@@ -19,6 +21,11 @@ interface AccountCardProps {
   currentBalance: number;
   onBalanceUpdate?: () => void;
 }
+
+type Account = {
+  id: string;
+  client_id: string;
+};
 
 export function AccountCard({
   clientId,
@@ -206,36 +213,54 @@ export function AccountCard({
 
         <Separator />
 
-        {/* Transaction Filter */}
-        <TransactionsFilter
-          onFilterChange={setFilters}
-        />
+        {/* Tabs for Transactions and Audit */}
+        <Tabs defaultValue="transactions" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="transactions">Transacciones</TabsTrigger>
+            <TabsTrigger value="audit">Auditoría</TabsTrigger>
+          </TabsList>
 
-        {/* Recent Transactions */}
-        <div className="space-y-3">
-          <h3 className="font-medium text-sm">
-            {showAllTransactions ? "Todas las Transacciones" : "Transacciones Recientes"}
-          </h3>
-          {loading ? (
+          <TabsContent value="transactions" className="space-y-3 mt-4">
+            {/* Transaction Filter */}
+            <TransactionsFilter onFilterChange={setFilters} />
+
+            <h3 className="font-medium text-sm">
+              {showAllTransactions ? "Todas las Transacciones" : "Transacciones Recientes"}
+            </h3>
+            {loading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
+              </div>
+            ) : (
+              <TransactionsList 
+                transactions={transactions} 
+                limit={showAllTransactions ? undefined : 5}
+                showViewMore={hasMore}
+                onViewMore={fetchMoreTransactions}
+                clientId={clientId}
+                accountId={accountId}
+              />
+            )}
+            {loadingMore && (
+              <div className="flex justify-center py-2">
+                <Skeleton className="h-8 w-48" />
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="audit" className="mt-4">
             <div className="space-y-3">
-              <Skeleton className="h-16 w-full" />
-              <Skeleton className="h-16 w-full" />
-              <Skeleton className="h-16 w-full" />
+              <h3 className="font-medium text-sm">Auditoría de Cuenta</h3>
+              <AuditLogsList
+                endpoint={`/clients/${clientId}/accounts/${accountId}/audit-logs`}
+                pageSize={10}
+                emptyMessage="No hay registros de auditoría para esta cuenta."
+              />
             </div>
-          ) : (
-            <TransactionsList 
-              transactions={transactions} 
-              limit={showAllTransactions ? undefined : 5}
-              showViewMore={hasMore}
-              onViewMore={fetchMoreTransactions}
-            />
-          )}
-          {loadingMore && (
-            <div className="flex justify-center py-2">
-              <Skeleton className="h-8 w-48" />
-            </div>
-          )}
-        </div>
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );

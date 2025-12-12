@@ -75,17 +75,24 @@ router.get(
       const { clientId } = req.params;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 30;
       const next_cursor = req.query.next_cursor as string | undefined;
+      const action = req.query.action as string | undefined;
 
       // Validate limit
       if (limit < 1 || limit > 100) {
         throw new ValidationError("Limit must be between 1 and 100");
       }
 
-      const result = await getAuditService().getClientAuditLogs(
-        clientId!,
+      const query: AuditLogQuery = {
+        client_id: clientId!,
         limit,
-        next_cursor
-      );
+        next_cursor,
+      };
+
+      if (action) {
+        query.action = action as any;
+      }
+
+      const result = await getAuditService().listAuditLogs(query);
 
       res.status(200).json({
         data: result.data,
@@ -110,17 +117,24 @@ router.get(
       const { accountId } = req.params;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 30;
       const next_cursor = req.query.next_cursor as string | undefined;
+      const action = req.query.action as string | undefined;
 
       // Validate limit
       if (limit < 1 || limit > 100) {
         throw new ValidationError("Limit must be between 1 and 100");
       }
 
-      const result = await getAuditService().getAccountAuditLogs(
-        accountId!,
+      const query: AuditLogQuery = {
+        account_id: accountId!,
         limit,
-        next_cursor
-      );
+        next_cursor,
+      };
+
+      if (action) {
+        query.action = action as any;
+      }
+
+      const result = await getAuditService().listAuditLogs(query);
 
       res.status(200).json({
         data: result.data,

@@ -1,6 +1,6 @@
-import { ClientService } from "./client.service";
-import { AuditService } from "./audit.service";
-import { NotFoundError, AppError } from "../core/errors";
+import { ClientService } from "../client.service";
+import { AuditService } from "../audit.service";
+import { NotFoundError, AppError } from "../../core/errors";
 
 // Mock firebase-admin/firestore
 jest.mock("firebase-admin/firestore", () => {
@@ -20,7 +20,7 @@ jest.mock("firebase-admin/firestore", () => {
 });
 
 // Mock AuditService
-jest.mock("./audit.service");
+jest.mock("../audit.service");
 
 // Get the mocked firestore instance for test setup
 const { getFirestore } = require("firebase-admin/firestore");

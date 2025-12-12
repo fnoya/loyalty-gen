@@ -789,22 +789,22 @@ Total:            172 passed, 0 failed (172 tests)
 **Priority:** High | **Estimated Time:** 10-12 hours
 
 **Deliverables:**
-- [ ] `components/clients/group-assignment.tsx` - Group management component
+- [x] `components/clients/group-assignment.tsx` - Group management component
   - Display current groups as `Badge` components
   - Each badge has remove button (X icon)
   - `Combobox` from shadcn/ui for adding groups
-- [ ] Group `Combobox` implementation
+- [x] Group `Combobox` implementation
   - Loads all groups via `GET /groups`
   - Filters list by typed text (case-insensitive)
   - Excludes groups client already belongs to
   - Shows "No se encontraron grupos" when no matches
   - Spinner during group loading
-- [ ] Add group functionality
+- [x] Add group functionality
   - `POST /groups/{group_id}/clients/{client_id}`
   - Spinner during operation
   - Badge added to list after success
   - Success `Toast` notification
-- [ ] Remove group functionality
+- [x] Remove group functionality
   - `AlertDialog` confirmation on badge remove click
   - Title: "¿Remover del grupo?"
   - Description with group name and warning
@@ -813,13 +813,13 @@ Total:            172 passed, 0 failed (172 tests)
   - Success `Toast` notification
 
 **Acceptance Criteria:**
-- [ ] Combobox lists available groups
-- [ ] Filter works correctly
-- [ ] Already-assigned groups not shown in list
-- [ ] Add operation updates UI and shows toast
-- [ ] Remove confirmation dialog appears
-- [ ] Remove operation updates UI and shows toast
-- [ ] Spinners shown during async operations
+- [x] Combobox lists available groups
+- [x] Filter works correctly
+- [x] Already-assigned groups not shown in list
+- [x] Add operation updates UI and shows toast
+- [x] Remove confirmation dialog appears
+- [x] Remove operation updates UI and shows toast
+- [x] Spinners shown during async operations
 
 **Reference:** USER-STORIES.md HU9
 
@@ -829,37 +829,37 @@ Total:            172 passed, 0 failed (172 tests)
 **Priority:** High | **Estimated Time:** 10-14 hours
 
 **Deliverables:**
-- [ ] `components/audit/audit-logs-list.tsx` - Audit log list component
+- [x] `components/audit/audit-logs-list.tsx` - Audit log list component
   - Chronological display (most recent first)
   - Pagination support (infinite scroll or "Load more" button)
   - `Skeleton` loading state
-- [ ] `components/audit/audit-log-item.tsx` - Individual audit record display
+- [x] `components/audit/audit-log-item.tsx` - Individual audit record display
   - Action type with descriptive label
   - Date and time formatted
   - Actor email
   - Brief resource description
   - Clickable to open detail dialog
-- [ ] `components/audit/audit-log-dialog.tsx` - Audit detail dialog
+- [x] `components/audit/audit-log-dialog.tsx` - Audit detail dialog
   - Full audit record information
   - Before/after states (if applicable)
   - Metadata display (IP, user agent, description)
   - Proper formatting for complex data
-- [ ] Client detail page audit section
+- [x] Client detail page audit section
   - Tab or collapsible section for "Historial de Auditoría"
   - Integration with `GET /clients/{client_id}/audit-logs`
-- [ ] Audit type filter
+- [x] Audit type filter
   - `Select` component with all action types
   - Filters list by selected action type
   - Works with pagination
 
 **Acceptance Criteria:**
-- [ ] Audit section visible in client detail page
-- [ ] Records displayed chronologically (most recent first)
-- [ ] Action type filter works
-- [ ] Detail dialog shows complete information
-- [ ] Pagination functions correctly
-- [ ] Skeleton shown during loading
-- [ ] Click on record opens detail dialog
+- [x] Audit section visible in client detail page
+- [x] Records displayed chronologically (most recent first)
+- [x] Action type filter works
+- [x] Detail dialog shows complete information
+- [x] Pagination functions correctly
+- [x] Skeleton shown during loading
+- [x] Click on record opens detail dialog
 
 **Reference:** USER-STORIES.md HU10
 
@@ -883,7 +883,7 @@ Total:            172 passed, 0 failed (172 tests)
     - Exact date and time
     - Metadata (IP, user agent if available)
   - Shows informative message if no audit record exists
-- [ ] Account audit section
+- [x] Account audit section
   - Tab or section showing "Auditoría de Cuenta"
   - Uses `GET /clients/{client_id}/accounts/{account_id}/audit-logs`
   - Displays all account-related audit records
@@ -892,9 +892,9 @@ Total:            172 passed, 0 failed (172 tests)
 **Acceptance Criteria:**
 - [ ] "Ver Auditoría" button appears on each transaction
 - [ ] Dialog shows complete audit information
-- [ ] Appropriate message shown if no audit record
-- [ ] Account audit section functions correctly
-- [ ] All transaction audit details formatted properly
+- [x] Appropriate message shown if no audit record
+- [x] Account audit section functions correctly
+- [x] All transaction audit details formatted properly
 
 **Reference:** USER-STORIES.md HU11
 
@@ -907,7 +907,7 @@ Total:            172 passed, 0 failed (172 tests)
 - [ ] `app/dashboard/audit/page.tsx` - Global audit page
   - Route: `/dashboard/audit`
   - Full-page audit log viewer
-- [ ] Sidebar navigation entry
+- [x] Sidebar navigation entry
   - "Auditoría" menu item
   - Navigates to `/dashboard/audit`
   - Appropriate icon (Shield, FileSearch, or similar)

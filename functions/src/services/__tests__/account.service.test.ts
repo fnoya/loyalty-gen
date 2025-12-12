@@ -1,6 +1,6 @@
-import { AccountService } from "./account.service";
-import { AuditService } from "./audit.service";
-import { NotFoundError, AppError } from "../core/errors";
+import { AccountService } from "../account.service";
+import { AuditService } from "../audit.service";
+import { NotFoundError, AppError } from "../../core/errors";
 
 // Mock firebase-admin with FieldValue
 jest.mock("firebase-admin", () => {
@@ -27,7 +27,7 @@ const admin = require("firebase-admin");
 const mockFirestoreInstance = admin.firestore();
 
 // Mock AuditService
-jest.mock("./audit.service");
+jest.mock("../audit.service");
 
 describe("AccountService", () => {
   let accountService: AccountService;

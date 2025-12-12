@@ -1,8 +1,8 @@
 import request from "supertest";
-import app from "../../app";
-import { clientService } from "../../services/client.service";
-import { photoService } from "../../services/photo.service";
-import { ValidationError, AppError } from "../../core/errors";
+import app from "../../../app";
+import { clientService } from "../../../services/client.service";
+import { photoService } from "../../../services/photo.service";
+import { ValidationError, AppError } from "../../../core/errors";
 
 // Mock Firebase Admin
 jest.mock("firebase-admin", () => ({
@@ -13,11 +13,11 @@ jest.mock("firebase-admin", () => ({
 }));
 
 // Mock Services
-jest.mock("../../services/client.service");
-jest.mock("../../services/photo.service");
+jest.mock("../../../services/client.service");
+jest.mock("../../../services/photo.service");
 
 // Mock Auth Middleware
-jest.mock("../middleware/auth.middleware", () => ({
+jest.mock("../../middleware/auth.middleware", () => ({
   authenticate: (req: any, res: any, next: any) => {
     req.user = { uid: "test-user" };
     next();

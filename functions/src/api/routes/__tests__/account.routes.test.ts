@@ -1,7 +1,7 @@
 import request from "supertest";
-import app from "../../app";
-import { accountService } from "../../services/account.service";
-import { AppError, NotFoundError } from "../../core/errors";
+import app from "../../../app";
+import { accountService } from "../../../services/account.service";
+import { AppError, NotFoundError } from "../../../core/errors";
 
 // Mock Firebase Admin
 jest.mock("firebase-admin", () => ({
@@ -22,7 +22,7 @@ const mockAccountServiceInstance = {
   getAccountBalance: jest.fn(),
 };
 
-jest.mock("../../services/account.service", () => ({
+jest.mock("../../../services/account.service", () => ({
   accountService: {
     get instance() {
       return mockAccountServiceInstance;
@@ -31,7 +31,7 @@ jest.mock("../../services/account.service", () => ({
 }));
 
 // Mock Auth Middleware
-jest.mock("../middleware/auth.middleware", () => ({
+jest.mock("../../middleware/auth.middleware", () => ({
   authenticate: (req: any, res: any, next: any) => {
     req.user = { uid: "test-user" };
     next();

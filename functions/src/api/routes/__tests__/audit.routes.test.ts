@@ -1,12 +1,12 @@
 import request from "supertest";
 import express from "express";
-import { AuditService } from "../../services/audit.service";
-import auditRoutes from "./audit.routes";
-import { authenticate } from "../middleware/auth.middleware";
+import { AuditService } from "../../../services/audit.service";
+import auditRoutes from "../audit.routes";
+import { authenticate } from "../../middleware/auth.middleware";
 
 // Mock dependencies
-jest.mock("../../services/audit.service");
-jest.mock("../middleware/auth.middleware");
+jest.mock("../../../services/audit.service");
+jest.mock("../../middleware/auth.middleware");
 jest.mock("firebase-admin", () => ({
   firestore: jest.fn(),
 }));

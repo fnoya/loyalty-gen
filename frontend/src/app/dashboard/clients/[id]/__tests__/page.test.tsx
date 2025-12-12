@@ -26,6 +26,21 @@ jest.mock("lucide-react", () => ({
   Plus: () => <span data-testid="icon-plus" />,
 }));
 
+// Mock audit components
+jest.mock("@/components/audit/audit-logs-list", () => ({
+  AuditLogsList: () => (
+    <div data-testid="audit-logs-list">Audit Logs List Component</div>
+  ),
+}));
+
+jest.mock("@/components/audit/audit-helpers", () => ({
+  AUDIT_ACTION_LABELS: {
+    create: "Crear",
+    update: "Actualizar",
+    delete: "Eliminar",
+  },
+}));
+
 // Mock ClientAuditHistory component
 jest.mock("@/components/clients/client-audit-history", () => ({
   ClientAuditHistory: () => (
@@ -145,9 +160,9 @@ describe("ClientDetailPage", () => {
     const auditTab = screen.getByText("Historial de Auditoría");
     await user.click(auditTab);
 
-    // Check that audit history component is rendered
+    // Check that audit logs list component is rendered
     await waitFor(() => {
-      expect(screen.getByTestId("client-audit-history")).toBeInTheDocument();
+      expect(screen.getByTestId("audit-logs-list")).toBeInTheDocument();
     });
   });
 });

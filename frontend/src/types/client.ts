@@ -36,6 +36,7 @@ export interface Client {
   photoUrl?: string | null;
   phones?: Phone[];
   addresses?: Address[];
+  affinityGroupIds?: string[];
   created_at: string;
   updated_at: string;
 }

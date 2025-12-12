@@ -5,12 +5,12 @@ import {
   addressSchema,
   createClientRequestSchema,
   updateClientRequestSchema,
-} from "./client.schema";
-import { createGroupRequestSchema } from "./group.schema";
+} from "../client.schema";
+import { createGroupRequestSchema } from "../group.schema";
 import {
   createAccountRequestSchema,
   creditDebitRequestSchema,
-} from "./account.schema";
+} from "../account.schema";
 
 describe("Client Schemas", () => {
   describe("clientNameSchema", () => {

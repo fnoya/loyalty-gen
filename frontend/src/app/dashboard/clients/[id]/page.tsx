@@ -30,7 +30,15 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ClientAuditHistory } from "@/components/clients/client-audit-history";
+import { AuditLogsList } from "@/components/audit/audit-logs-list";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { AUDIT_ACTION_LABELS } from "@/components/audit/audit-helpers";
 import { ClientAvatar } from "@/components/clients/client-avatar";
 import { AffinityGroupsSection } from "@/components/clients/affinity-groups-section";
 import { AccountsSummary } from "@/components/clients/accounts-summary";
@@ -48,6 +56,7 @@ export default function ClientDetailPage() {
   const [error, setError] = useState("");
   const [balanceRefreshKey, setBalanceRefreshKey] = useState(0);
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
+  const [auditActionFilter, setAuditActionFilter] = useState<string>("");
 
   const fetchClientData = useCallback(async () => {
     try {
@@ -305,7 +314,7 @@ export default function ClientDetailPage() {
           {/* Affinity Groups Section */}
           <AffinityGroupsSection
             clientId={id}
-            groupIds={[]} // TODO: Add affinityGroupIds to Client type
+            groupIds={client.affinityGroupIds ?? []}
           />
         </TabsContent>
 
@@ -351,7 +360,33 @@ export default function ClientDetailPage() {
         </TabsContent>
 
         <TabsContent value="audit" className="mt-6">
-          <ClientAuditHistory clientId={id} />
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Historial de Auditoría</h3>
+              <Select
+                value={auditActionFilter}
+                onValueChange={(val) => setAuditActionFilter(val === "all" ? "" : val)}
+              >
+                <SelectTrigger className="w-64">
+                  <SelectValue placeholder="Filtrar por acción" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas las acciones</SelectItem>
+                  {Object.entries(AUDIT_ACTION_LABELS).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <AuditLogsList
+              endpoint={`/clients/${id}/audit-logs`}
+              query={{ action: auditActionFilter || undefined }}
+              pageSize={10}
+              emptyMessage="No hay registros de auditoría para este cliente."
+            />
+          </div>
         </TabsContent>
       </Tabs>
     </div>
