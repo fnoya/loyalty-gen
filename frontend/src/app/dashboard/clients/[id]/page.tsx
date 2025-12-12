@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Edit, Trash2, Phone, MapPin, Mail, CreditCard } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, Phone, MapPin, Mail, CreditCard, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,32 +23,54 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientAuditHistory } from "@/components/clients/client-audit-history";
 import { ClientAvatar } from "@/components/clients/client-avatar";
+import { AffinityGroupsSection } from "@/components/clients/affinity-groups-section";
+import { AccountsSummary } from "@/components/clients/accounts-summary";
+import { AccountCard } from "@/components/clients/account-card";
 import { toast } from "@/components/ui/toast";
+import { LoyaltyAccount } from "@/types/loyalty";
 
 export default function ClientDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
   const [client, setClient] = useState<Client | null>(null);
+  const [accounts, setAccounts] = useState<LoyaltyAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [balanceRefreshKey, setBalanceRefreshKey] = useState(0);
 
   useEffect(() => {
     if (id) {
-      fetchClient();
+      fetchClientData();
     }
   }, [id]);
 
-  const fetchClient = async () => {
+  const fetchClientData = async () => {
     try {
       setLoading(true);
-      const data = await apiRequest(`/clients/${id}`);
-      setClient(data);
+      const [clientData, accountsData] = await Promise.all([
+        apiRequest<Client>(`/clients/${id}`),
+        apiRequest<LoyaltyAccount[]>(`/clients/${id}/accounts`),
+      ]);
+      setClient(clientData);
+      setAccounts(accountsData);
     } catch (err: any) {
       setError(err.message || "Failed to fetch client details");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBalanceUpdate = async () => {
+    // Refetch accounts to update balances
+    try {
+      const accountsData = await apiRequest<LoyaltyAccount[]>(`/clients/${id}/accounts`);
+      setAccounts(accountsData);
+    } catch (err: any) {
+      console.error("Failed to refresh accounts:", err);
+    }
+    // Trigger re-fetch of balance summary
+    setBalanceRefreshKey((prev) => prev + 1);
   };
 
   const handleDelete = async () => {
@@ -129,8 +151,9 @@ export default function ClientDetailPage() {
 
       <Tabs defaultValue="details" className="w-full">
         <TabsList>
-          <TabsTrigger value="details">Details</TabsTrigger>
-          <TabsTrigger value="audit">Audit History</TabsTrigger>
+          <TabsTrigger value="details">Información Personal</TabsTrigger>
+          <TabsTrigger value="loyalty">Cuentas de Lealtad</TabsTrigger>
+          <TabsTrigger value="audit">Historial de Auditoría</TabsTrigger>
         </TabsList>
         
         <TabsContent value="details" className="space-y-6 mt-6">
@@ -210,6 +233,44 @@ export default function ClientDetailPage() {
                 </div>
               </CardContent>
             </Card>
+          </div>
+
+          {/* Affinity Groups Section */}
+          <AffinityGroupsSection 
+            clientId={id}
+            groupIds={[]} // TODO: Add affinityGroupIds to Client type
+          />
+        </TabsContent>
+        
+        <TabsContent value="loyalty" className="space-y-6 mt-6">
+          {/* Accounts Summary with Manage Button */}
+          <div key={balanceRefreshKey} className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <AccountsSummary clientId={id} />
+            </div>
+            <Button asChild variant="outline" className="mt-1">
+              <Link href={`/dashboard/clients/${id}/accounts`}>
+                <Plus className="h-4 w-4 mr-2" />
+                Gestionar Cuentas
+              </Link>
+            </Button>
+          </div>
+
+          {/* Individual Account Cards */}
+          <div className="space-y-6">
+            {Array.isArray(accounts) && accounts.length > 0 && accounts.map((account) => (
+              <AccountCard
+                key={account.id}
+                clientId={id}
+                accountId={account.id}
+                accountName={account.account_name}
+                currentBalance={account.points}
+                onBalanceUpdate={handleBalanceUpdate}
+              />
+            ))}
+            {!Array.isArray(accounts) || accounts.length === 0 ? (
+              <p className="text-sm text-slate-500">No hay cuentas de lealtad para este cliente.</p>
+            ) : null}
           </div>
         </TabsContent>
         

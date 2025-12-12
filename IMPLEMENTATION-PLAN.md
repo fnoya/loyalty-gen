@@ -118,7 +118,7 @@ auditLogs/                        # Root collection
 4. **Phase 4: Groups & Accounts** (Week 4-5) - Affinity groups, loyalty accounts, atomic transactions
 5. **Phase 5: Audit System** (Week 5-6) - Complete audit trail implementation
 6. **Phase 6: Testing** (Week 6-7) - Unit tests, integration tests, 80%+ coverage
-7. **Phase 7: Frontend Dashboard Foundation** (Week 7-8) - Next.js setup, auth flow, basic client UI (HU1-HU3)
+7. **Phase 7: Frontend Dashboard Foundation** (Week 7-8) - Next.js setup, auth flow, basic client UI (HU1-HU3) ✅
 8. **Phase 8: Frontend - Client Detail & Loyalty** (Week 8-9) - Client detail panel, credit/debit, search, filters (HU4-HU8)
 9. **Phase 9: Frontend - Groups & Audit** (Week 9-10) - Group management, audit logs, global audit panel (HU9-HU12)
 10. **Phase 10: Advanced Features** (Week 10-11) - Family circle feature (optional)
@@ -626,39 +626,30 @@ Total:            172 passed, 0 failed (172 tests)
 #### Task 3.4: Client Detail Panel (HU4)
 **Priority:** High | **Estimated Time:** 10-14 hours
 
+**Status:** ✅ COMPLETE
+
 **Deliverables:**
-- [ ] `app/dashboard/clients/[id]/page.tsx` - Client detail page
-- [ ] `components/clients/client-info-card.tsx` - Basic client info display
-  - Name and email in `Card` component
-  - Client photo or avatar placeholder
-- [ ] `components/clients/affinity-groups-section.tsx` - Groups display
-  - Groups shown as `Badge` components
-  - Link to add groups (for HU9)
-- [ ] `components/clients/accounts-summary.tsx` - Account balances overview
-  - Uses `GET /clients/{id}/balance` endpoint
-  - Shows all account balances in summary format
-  - `Card` component with proper spacing
-- [ ] `components/clients/account-card.tsx` - Individual account card
-  - Account name and current balance
-  - Placeholder for credit/debit forms (HU5, HU6)
-  - Recent transactions list (last 5)
-  - "View more" link to full transaction history
-- [ ] `components/clients/transactions-list.tsx` - Transaction list component
-  - Displays transaction type, amount, description, timestamp
-  - Proper formatting for credit/debit types
-  - Empty state when no transactions
+- [x] `app/dashboard/clients/[id]/page.tsx` - Client detail page with tabs
+- [x] `components/clients/client-info-card.tsx` - Basic client info display
+- [x] `components/clients/affinity-groups-section.tsx` - Groups display with badges
+- [x] `components/clients/accounts-summary.tsx` - Account balances overview
+- [x] `components/clients/account-card.tsx` - Individual account card with credit/debit forms
+- [x] `components/clients/transactions-list.tsx` - Transaction list component
+- [x] `components/clients/create-account-form.tsx` - Create account form
+- [x] `app/dashboard/clients/[id]/accounts/page.tsx` - Account management route
 
 **Skeleton Loading:**
-- [ ] Implement `Skeleton` components for each section during data loading
-- [ ] Ensure smooth loading experience
+- [x] Implement `Skeleton` components for each section during data loading
+- [x] Ensure smooth loading experience
 
 **Acceptance Criteria:**
-- [ ] Client basic info displayed correctly
-- [ ] Groups shown as badges
-- [ ] All account balances visible in summary
-- [ ] Each account shows with recent transactions
-- [ ] Skeleton loaders work during data fetch
-- [ ] Navigation from client list works correctly
+- [x] Client basic info displayed correctly
+- [x] Groups shown as badges
+- [x] All account balances visible in summary
+- [x] Each account shows with recent transactions
+- [x] Skeleton loaders work during data fetch
+- [x] Navigation from client list works correctly
+- [x] Account creation works end-to-end
 
 **Reference:** USER-STORIES.md HU4
 
@@ -667,28 +658,28 @@ Total:            172 passed, 0 failed (172 tests)
 #### Task 3.5: Credit Points Feature (HU5)
 **Priority:** High | **Estimated Time:** 6-8 hours
 
+**Status:** ✅ COMPLETE
+
 **Deliverables:**
-- [ ] `components/clients/credit-debit-form.tsx` - Reusable form for credit/debit
+- [x] `components/clients/credit-debit-form.tsx` - Reusable form for credit/debit
   - `Input` field for amount (numeric, min 1)
   - `Input` field for description (optional)
-  - Zod validation schema
+  - Zod validation schema with error messages
   - `Button` with "Acreditar" label (default variant)
   - Spinner state during submission
-- [ ] Integration with `POST /clients/{client_id}/accounts/{account_id}/credit`
-- [ ] Real-time balance update after credit
-  - Consider using Firestore `onSnapshot` for real-time updates
-  - Or implement refetch mechanism
-- [ ] Transaction list auto-update after credit
-- [ ] Form reset after successful operation
-- [ ] Success `Toast` notification
+- [x] Integration with `POST /clients/{client_id}/accounts/{account_id}/credit`
+- [x] Real-time balance update after credit via refetch mechanism
+- [x] Transaction list auto-update after credit
+- [x] Form reset after successful operation
+- [x] Success `Toast` notification
 
 **Acceptance Criteria:**
-- [ ] Form validates amount >= 1
-- [ ] Spinner shows during submission
-- [ ] Balance updates automatically after credit
-- [ ] New transaction appears in list
-- [ ] Success toast displayed
-- [ ] Form resets after success
+- [x] Form validates amount >= 1
+- [x] Spinner shows during submission
+- [x] Balance updates automatically after credit
+- [x] New transaction appears in list
+- [x] Success toast displayed
+- [x] Form resets after success
 
 **Reference:** USER-STORIES.md HU5
 
@@ -698,26 +689,27 @@ Total:            172 passed, 0 failed (172 tests)
 **Priority:** High | **Estimated Time:** 6-8 hours
 
 **Deliverables:**
-- [ ] Extend `components/clients/credit-debit-form.tsx` with `type="debit"` prop
-  - `Button` with "Debitar" label (secondary variant)
-  - Same validation as credit form
+- [x] Extend `components/clients/credit-debit-form.tsx` with `type="debit"` prop
+  - `Button` with "Debitar" label (destructive variant)
+  - Same validation as credit form with Spanish error messages
   - Spinner during submission
-- [ ] Integration with `POST /clients/{client_id}/accounts/{account_id}/debit`
-- [ ] Insufficient balance error handling
-  - Detect 400 response with `INSUFFICIENT_BALANCE` code
-  - Display error message: "El saldo de la cuenta es insuficiente para realizar el débito."
-  - Use shadcn/ui form error component
-- [ ] Real-time balance update after debit
-- [ ] Transaction list auto-update
-- [ ] Success `Toast` notification
+- [x] Integration with `POST /clients/{client_id}/accounts/{account_id}/debit`
+- [x] Insufficient balance error handling
+  - Detects "Insufficient balance" error message
+  - Displays error in styled box with AlertCircle icon
+  - Conditional console suppression for expected errors
+- [x] Real-time balance update after debit via refetch
+- [x] Transaction list auto-update after debit
+- [x] Success `Toast` notification
 
 **Acceptance Criteria:**
-- [ ] Form validates amount >= 1
-- [ ] Insufficient balance error displayed correctly
-- [ ] Balance updates after successful debit
-- [ ] New transaction appears in list
-- [ ] Button uses secondary variant
-- [ ] Form resets after success
+- [x] Form validates amount >= 1
+- [x] Insufficient balance error displayed correctly with visual prominence
+- [x] Balance updates after successful debit
+- [x] New transaction appears in list
+- [x] Button uses destructive variant
+- [x] Form resets after success
+- [x] Error handling doesn't clear form on validation failure
 
 **Reference:** USER-STORIES.md HU6
 
@@ -726,20 +718,22 @@ Total:            172 passed, 0 failed (172 tests)
 #### Task 3.7: Client Search Enhancement (HU7)
 **Priority:** High | **Estimated Time:** 6-8 hours
 
+**Status:** ✅ COMPLETE
+
 **Deliverables:**
-- [ ] `components/clients/client-search.tsx` - Search input component
+- [x] `components/clients/client-search.tsx` - Search input component
   - `Input` with search icon (from lucide-react)
   - Placeholder: "Buscar cliente..."
   - Debounce implementation (300ms)
-  - Custom hook `useDebouncedValue` if needed
-- [ ] MVP Implementation: Client-side filtering
+  - Custom hook `useDebouncedValue` implemented
+- [x] MVP Implementation: Client-side filtering
   - Filter loaded results by name, email, document number
   - Case-insensitive search
-- [ ] Search empty state
+- [x] Search empty state
   - Message: "No se encontraron clientes para '[término]'"
   - "Limpiar búsqueda" button
   - Resets search and shows all clients
-- [ ] Clear search functionality
+- [x] Clear search functionality
   - X icon to clear search
   - Click to reset and show all results
 

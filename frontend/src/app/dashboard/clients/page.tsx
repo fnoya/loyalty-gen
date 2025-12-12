@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Plus, MoreHorizontal, Search, Users } from "lucide-react";
+import { Plus, MoreHorizontal, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -27,6 +26,7 @@ import { Client } from "@/types/client";
 import { EmptyState } from "@/components/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ClientAvatar } from "@/components/clients/client-avatar";
+import { ClientSearch } from "@/components/clients/client-search";
 import { toast } from "@/components/ui/toast";
 import {
   AlertDialog,
@@ -37,14 +37,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
 export default function ClientsPage() {
   const router = useRouter();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [clientToDelete, setClientToDelete] = useState<string | null>(null);
 
   useEffect(() => {
@@ -54,7 +53,6 @@ export default function ClientsPage() {
   const fetchClients = async () => {
     try {
       setLoading(true);
-      // TODO: Implement search query param when API supports it or filter locally
       const data = await apiRequest("/clients");
       setClients(data.data || []);
     } catch (error) {
@@ -77,10 +75,25 @@ export default function ClientsPage() {
     }
   };
 
-  const filteredClients = clients.filter((client) => {
-    const fullName = `${client.name.firstName} ${client.name.firstLastName}`.toLowerCase();
-    return fullName.includes(search.toLowerCase()) || client.email?.toLowerCase().includes(search.toLowerCase());
-  });
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
+  }, []);
+
+  // Client-side filtering (MVP implementation)
+  const filteredClients = searchQuery
+    ? clients.filter((client) => {
+        const query = searchQuery.toLowerCase();
+        const fullName = `${client.name.firstName} ${client.name.secondName || ""} ${client.name.firstLastName} ${client.name.secondLastName || ""}`.toLowerCase();
+        const email = client.email?.toLowerCase() || "";
+        const documentNumber = client.identity_document?.number.toLowerCase() || "";
+
+        return (
+          fullName.includes(query) ||
+          email.includes(query) ||
+          documentNumber.includes(query)
+        );
+      })
+    : clients;
 
   return (
     <div className="space-y-6">
@@ -94,14 +107,8 @@ export default function ClientsPage() {
       </div>
 
       <div className="flex items-center py-4">
-        <div className="relative w-full max-w-sm">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-500" />
-          <Input
-            placeholder="Search clients..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-8"
-          />
+        <div className="w-full max-w-sm">
+          <ClientSearch onSearch={handleSearch} placeholder="Buscar cliente por nombre, email o documento..." />
         </div>
       </div>
 
@@ -130,10 +137,14 @@ export default function ClientsPage() {
                 <TableCell colSpan={4} className="h-96 text-center">
                   <EmptyState
                     icon={Users}
-                    title="No clients found"
-                    description={search ? "Try adjusting your search terms." : "Get started by creating a new client."}
-                    actionLabel={search ? undefined : "Create New Client"}
-                    actionHref={search ? undefined : "/dashboard/clients/new"}
+                    title={searchQuery ? "No se encontraron clientes" : "Aún no se han creado clientes"}
+                    description={
+                      searchQuery
+                        ? `No se encontraron clientes para "${searchQuery}"`
+                        : "Comience creando un nuevo cliente."
+                    }
+                    actionLabel={searchQuery ? undefined : "Crear Nuevo Cliente"}
+                    actionHref={searchQuery ? undefined : "/dashboard/clients/new"}
                   />
                 </TableCell>
               </TableRow>
