@@ -32,3 +32,20 @@ jest.mock('sonner', () => ({
   Toaster: () => null,
 }));
 
+// Mock @radix-ui/react-select globally to avoid portal rendering issues in tests
+jest.mock("@radix-ui/react-select", () => {
+  const React = require('react');
+  return {
+    Root: ({ children, ...props }) => React.createElement('div', { 'data-testid': 'select-root', ...props }, children),
+    Group: ({ children, ...props }) => React.createElement('div', { 'data-testid': 'select-group', ...props }, children),
+    Value: ({ placeholder }) => React.createElement('span', null, placeholder),
+    Trigger: ({ children, ...props }) => React.createElement('button', { 'data-testid': 'select-trigger', ...props }, children),
+    Content: ({ children, ...props }) => React.createElement('div', { 'data-testid': 'select-content', ...props }, children),
+    Item: ({ children, value, ...props }) => React.createElement('div', { 'data-testid': `select-item-${value}`, ...props }, children),
+    Label: ({ children, ...props }) => React.createElement('label', { 'data-testid': 'select-label', ...props }, children),
+    Separator: (props) => React.createElement('div', { 'data-testid': 'select-separator', ...props }),
+    ScrollUpButton: (props) => React.createElement('div', { 'data-testid': 'select-scroll-up', ...props }),
+    ScrollDownButton: (props) => React.createElement('div', { 'data-testid': 'select-scroll-down', ...props }),
+  };
+});
+

@@ -250,6 +250,91 @@ describe("AccountService", () => {
       expect(result.points).toBe(150);
     });
 
+    it("should update denormalized account_balances in client document atomically", async () => {
+      const clientId = "client123";
+      const accountId = "account123";
+      const creditData = {
+        amount: 100,
+        description: "Purchase reward",
+      };
+
+      const mockAccountData = {
+        account_name: "Main Account",
+        points: 50,
+        familyCircleConfig: null,
+        created_at: { toDate: () => new Date("2025-01-01") },
+        updated_at: { toDate: () => new Date("2025-01-01") },
+      };
+
+      const mockUpdatedAccountData = {
+        ...mockAccountData,
+        points: 150,
+        updated_at: { toDate: () => new Date("2025-01-02") },
+      };
+
+      const mockTransactionDoc = {
+        id: "transaction123",
+        collection: jest.fn(),
+      };
+
+      const mockAccountRef = {
+        collection: jest.fn(() => ({
+          doc: jest.fn(() => mockTransactionDoc),
+        })),
+        get: jest.fn().mockResolvedValue({
+          exists: true,
+          id: accountId,
+          data: () => mockUpdatedAccountData,
+        }),
+      };
+
+      let clientRef: any;
+
+      mockDoc.mockImplementation((id?: string) => {
+        if (id === clientId) {
+          clientRef = {
+            collection: jest.fn(() => ({
+              doc: jest.fn(() => mockAccountRef),
+            })),
+          };
+          return clientRef;
+        }
+        return mockAccountRef;
+      });
+
+      const transactionUpdateMock = jest.fn();
+
+      mockFirestoreInstance.runTransaction.mockImplementation(
+        async (callback: any) => {
+          const transaction = {
+            get: jest.fn().mockResolvedValue({
+              exists: true,
+              id: accountId,
+              data: () => mockAccountData,
+            }),
+            update: transactionUpdateMock,
+            set: jest.fn(),
+          };
+          await callback(transaction);
+        }
+      );
+
+      await accountService.creditPoints(
+        clientId,
+        accountId,
+        creditData,
+        mockActor
+      );
+
+      // Verify transaction.update was called for client document with denormalized balance
+      expect(transactionUpdateMock).toHaveBeenCalledWith(
+        clientRef,
+        expect.objectContaining({
+          [`account_balances.${accountId}`]: 150,
+        })
+      );
+    });
+
     it("should throw error for negative amount", async () => {
       await expect(
         accountService.creditPoints(
@@ -336,6 +421,91 @@ describe("AccountService", () => {
       );
 
       expect(result.points).toBe(70);
+    });
+
+    it("should update denormalized account_balances in client document atomically", async () => {
+      const clientId = "client123";
+      const accountId = "account123";
+      const debitData = {
+        amount: 30,
+        description: "Reward redemption",
+      };
+
+      const mockAccountData = {
+        account_name: "Main Account",
+        points: 100,
+        familyCircleConfig: null,
+        created_at: { toDate: () => new Date("2025-01-01") },
+        updated_at: { toDate: () => new Date("2025-01-01") },
+      };
+
+      const mockUpdatedAccountData = {
+        ...mockAccountData,
+        points: 70,
+        updated_at: { toDate: () => new Date("2025-01-02") },
+      };
+
+      const mockTransactionDoc = {
+        id: "transaction123",
+        collection: jest.fn(),
+      };
+
+      const mockAccountRef = {
+        collection: jest.fn(() => ({
+          doc: jest.fn(() => mockTransactionDoc),
+        })),
+        get: jest.fn().mockResolvedValue({
+          exists: true,
+          id: accountId,
+          data: () => mockUpdatedAccountData,
+        }),
+      };
+
+      let clientRef: any;
+
+      mockDoc.mockImplementation((id?: string) => {
+        if (id === clientId) {
+          clientRef = {
+            collection: jest.fn(() => ({
+              doc: jest.fn(() => mockAccountRef),
+            })),
+          };
+          return clientRef;
+        }
+        return mockAccountRef;
+      });
+
+      const transactionUpdateMock = jest.fn();
+
+      mockFirestoreInstance.runTransaction.mockImplementation(
+        async (callback: any) => {
+          const transaction = {
+            get: jest.fn().mockResolvedValue({
+              exists: true,
+              id: accountId,
+              data: () => mockAccountData,
+            }),
+            update: transactionUpdateMock,
+            set: jest.fn(),
+          };
+          await callback(transaction);
+        }
+      );
+
+      await accountService.debitPoints(
+        clientId,
+        accountId,
+        debitData,
+        mockActor
+      );
+
+      // Verify transaction.update was called for client document with denormalized balance
+      expect(transactionUpdateMock).toHaveBeenCalledWith(
+        clientRef,
+        expect.objectContaining({
+          [`account_balances.${accountId}`]: 70,
+        })
+      );
     });
 
     it("should throw error for insufficient balance", async () => {

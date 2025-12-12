@@ -490,7 +490,82 @@ const tests = [
     assertEquals(data[bonusAccountId], 25, "Bonus account balance correct");
   }),
 
-  test("26. Unauthorized Access - No Token", async () => {
+  test("26. Credit Points - Verify Denormalized Balance Updated Atomically", async () => {
+    const creditUrl = `${CLIENTS_API_BASE}/${testClientId}/accounts/${bonusAccountId}/credit`;
+    const creditData = { amount: 75, description: "Bulk rewards" };
+    
+    // Credit points
+    const creditResponse = await apiRequest(
+      "POST",
+      creditUrl,
+      authToken,
+      creditData,
+    );
+    assertEquals(creditResponse.status, 200, "Credit should succeed");
+    assertEquals(creditResponse.data.points, 100, "Account should have 100 points");
+
+    // Immediately verify denormalized balance in client document
+    const clientUrl = `${CLIENTS_API_BASE}/${testClientId}`;
+    const { status, data } = await apiRequest("GET", clientUrl, authToken);
+    assertEquals(status, 200, "Should return 200");
+    assertEquals(
+      data.account_balances[bonusAccountId],
+      100,
+      "Denormalized balance should be updated to 100",
+    );
+  }),
+
+  test("27. Debit Points - Verify Denormalized Balance Updated Atomically", async () => {
+    const debitUrl = `${CLIENTS_API_BASE}/${testClientId}/accounts/${mainAccountId}/debit`;
+    const debitData = { amount: 50, description: "Member redemption" };
+    
+    // Debit points (should go from 120 to 70)
+    const debitResponse = await apiRequest(
+      "POST",
+      debitUrl,
+      authToken,
+      debitData,
+    );
+    assertEquals(debitResponse.status, 200, "Debit should succeed");
+    assertEquals(debitResponse.data.points, 70, "Account should have 70 points");
+
+    // Immediately verify denormalized balance in client document
+    const clientUrl = `${CLIENTS_API_BASE}/${testClientId}`;
+    const { status, data } = await apiRequest("GET", clientUrl, authToken);
+    assertEquals(status, 200, "Should return 200");
+    assertEquals(
+      data.account_balances[mainAccountId],
+      70,
+      "Denormalized balance should be updated to 70",
+    );
+  }),
+
+  test("28. Verify All Denormalized Balances After Multiple Operations", async () => {
+    const url = `${CLIENTS_API_BASE}/${testClientId}`;
+    const { status, data } = await apiRequest("GET", url, authToken);
+    assertEquals(status, 200, "Should return 200");
+    
+    // Verify all balances match current state
+    assertEquals(data.account_balances[mainAccountId], 70, "Main account: 70");
+    assertEquals(data.account_balances[bonusAccountId], 100, "Bonus account: 100");
+    
+    // Verify both accounts match via balance endpoint
+    const balanceUrl = `${CLIENTS_API_BASE}/${testClientId}/balance`;
+    const balanceResponse = await apiRequest("GET", balanceUrl, authToken);
+    assertEquals(balanceResponse.status, 200, "Should return 200");
+    assertEquals(
+      balanceResponse.data[mainAccountId],
+      data.account_balances[mainAccountId],
+      "Balance endpoint should match denormalized main account",
+    );
+    assertEquals(
+      balanceResponse.data[bonusAccountId],
+      data.account_balances[bonusAccountId],
+      "Balance endpoint should match denormalized bonus account",
+    );
+  }),
+
+  test("29. Unauthorized Access - No Token", async () => {
     const url = `${CLIENTS_API_BASE}/${testClientId}/accounts`;
     const { status, data } = await apiRequest("GET", url, null);
     assertEquals(status, 401, "Should return 401");

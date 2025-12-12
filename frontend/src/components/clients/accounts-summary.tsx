@@ -87,7 +87,7 @@ export function AccountsSummary({ clientId }: AccountsSummaryProps) {
     );
   }
 
-  const totalPoints = Object.values(balances?.balances || {}).reduce((sum, points) => sum + points, 0);
+  const totalPoints = Object.values(balances || {}).reduce((sum, points) => sum + points, 0);
 
   return (
     <Card>
@@ -103,7 +103,7 @@ export function AccountsSummary({ clientId }: AccountsSummaryProps) {
       <CardContent>
         <div className="space-y-3">
           {accounts.map((account) => {
-            const balance = balances?.balances?.[account.id] || 0;
+            const balance = balances?.[account.id] || 0;
             return (
               <div
                 key={account.id}

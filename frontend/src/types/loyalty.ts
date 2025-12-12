@@ -13,13 +13,9 @@ export interface AffinityGroup {
   created_at: string;
 }
 
-export interface AccountBalance {
+export type AllBalancesResponse = {
   [accountId: string]: number;
-}
-
-export interface AllBalancesResponse {
-  balances: AccountBalance;
-}
+};
 
 export interface BalanceResponse {
   account_id: string;
