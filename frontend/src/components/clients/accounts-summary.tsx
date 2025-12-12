@@ -16,9 +16,10 @@ import { AllBalancesResponse, LoyaltyAccount } from "@/types/loyalty";
 
 interface AccountsSummaryProps {
   clientId: string;
+  onAccountClick?: (accountId: string) => void;
 }
 
-export function AccountsSummary({ clientId }: AccountsSummaryProps) {
+export function AccountsSummary({ clientId, onAccountClick }: AccountsSummaryProps) {
   const [balances, setBalances] = useState<AllBalancesResponse | null>(null);
   const [accounts, setAccounts] = useState<LoyaltyAccount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,7 +125,8 @@ export function AccountsSummary({ clientId }: AccountsSummaryProps) {
             return (
               <div
                 key={account.id}
-                className="flex items-center justify-between p-3 rounded-lg border border-slate-200 bg-slate-50"
+                onClick={() => onAccountClick?.(account.id)}
+                className={`flex items-center justify-between p-3 rounded-lg border border-slate-200 bg-slate-50 ${onAccountClick ? "cursor-pointer hover:bg-slate-100 hover:border-slate-300 transition-colors" : ""}`}
               >
                 <div>
                   <p className="font-medium">{account.account_name}</p>

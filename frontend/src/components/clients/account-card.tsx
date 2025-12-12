@@ -29,21 +29,47 @@ export function AccountCard({
   const [balance, setBalance] = useState(initialBalance);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [showAllTransactions, setShowAllTransactions] = useState(false);
 
   const fetchTransactions = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await apiRequest<{ data: Transaction[] }>(
+      const response = await apiRequest<{ data: Transaction[]; paging?: { next_cursor?: string } }>(
         `/clients/${clientId}/accounts/${accountId}/transactions?limit=5`,
       );
       setTransactions(response.data || []);
+      const cursor = response.paging?.next_cursor || null;
+      setNextCursor(cursor);
+      setHasMore(!!cursor);
     } catch (error) {
       console.error("Failed to fetch transactions:", error);
     } finally {
       setLoading(false);
     }
   }, [clientId, accountId]);
+
+  const fetchMoreTransactions = useCallback(async () => {
+    if (!nextCursor) return;
+    try {
+      setLoadingMore(true);
+      setShowAllTransactions(true);
+      const response = await apiRequest<{ data: Transaction[]; paging?: { next_cursor?: string } }>(
+        `/clients/${clientId}/accounts/${accountId}/transactions?limit=20&next_cursor=${encodeURIComponent(nextCursor)}`,
+      );
+      setTransactions((prev) => [...prev, ...(response.data || [])]);
+      const cursor = response.paging?.next_cursor || null;
+      setNextCursor(cursor);
+      setHasMore(!!cursor);
+    } catch (error) {
+      console.error("Failed to fetch more transactions:", error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [clientId, accountId, nextCursor]);
 
   useEffect(() => {
     setBalance(initialBalance);
@@ -109,7 +135,9 @@ export function AccountCard({
 
         {/* Recent Transactions */}
         <div className="space-y-3">
-          <h3 className="font-medium text-sm">Transacciones Recientes</h3>
+          <h3 className="font-medium text-sm">
+            {showAllTransactions ? "Todas las Transacciones" : "Transacciones Recientes"}
+          </h3>
           {loading ? (
             <div className="space-y-3">
               <Skeleton className="h-16 w-full" />
@@ -117,7 +145,17 @@ export function AccountCard({
               <Skeleton className="h-16 w-full" />
             </div>
           ) : (
-            <TransactionsList transactions={transactions} limit={5} />
+            <TransactionsList 
+              transactions={transactions} 
+              limit={showAllTransactions ? undefined : 5}
+              showViewMore={hasMore}
+              onViewMore={fetchMoreTransactions}
+            />
+          )}
+          {loadingMore && (
+            <div className="flex justify-center py-2">
+              <Skeleton className="h-8 w-48" />
+            </div>
           )}
         </div>
       </CardContent>

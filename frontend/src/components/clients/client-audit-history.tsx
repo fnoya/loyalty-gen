@@ -31,17 +31,23 @@ interface ClientAuditHistoryProps {
 export function ClientAuditHistory({ clientId }: ClientAuditHistoryProps) {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
 
   useEffect(() => {
     const fetchLogs = async () => {
       try {
-        // Use the correct endpoint and handle the response structure
-        const response = await apiRequest<{ data: AuditLog[] }>(
-          `/audit-logs?client_id=${clientId}`,
+        setLoading(true);
+        const response = await apiRequest<{ data: AuditLog[]; paging?: { next_cursor?: string } }>(
+          `/audit-logs?client_id=${clientId}&limit=10`,
         );
         setLogs(response.data || []);
+        const cursor = response.paging?.next_cursor || null;
+        setNextCursor(cursor);
+        setHasMore(!!cursor);
       } catch (err) {
         console.error("Failed to fetch client audit logs:", err);
         setError("Failed to load audit history.");
@@ -52,6 +58,24 @@ export function ClientAuditHistory({ clientId }: ClientAuditHistoryProps) {
 
     fetchLogs();
   }, [clientId]);
+
+  const fetchMoreLogs = async () => {
+    if (!nextCursor) return;
+    try {
+      setLoadingMore(true);
+      const response = await apiRequest<{ data: AuditLog[]; paging?: { next_cursor?: string } }>(
+        `/audit-logs?client_id=${clientId}&limit=20&next_cursor=${encodeURIComponent(nextCursor)}`,
+      );
+      setLogs((prev) => [...prev, ...(response.data || [])]);
+      const cursor = response.paging?.next_cursor || null;
+      setNextCursor(cursor);
+      setHasMore(!!cursor);
+    } catch (err) {
+      console.error("Failed to fetch more audit logs:", err);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -78,7 +102,7 @@ export function ClientAuditHistory({ clientId }: ClientAuditHistoryProps) {
         <CardHeader>
           <CardTitle className="text-lg">Audit History</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <Table>
             <TableHeader>
               <TableRow>
@@ -135,6 +159,25 @@ export function ClientAuditHistory({ clientId }: ClientAuditHistoryProps) {
               )}
             </TableBody>
           </Table>
+          {hasMore && (
+            <div className="flex justify-center pt-2">
+              <Button
+                onClick={fetchMoreLogs}
+                disabled={loadingMore}
+                variant="outline"
+                className="w-full"
+              >
+                {loadingMore ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Cargando...
+                  </>
+                ) : (
+                  "Cargar más registros"
+                )}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 

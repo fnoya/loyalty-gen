@@ -47,6 +47,7 @@ export default function ClientDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [balanceRefreshKey, setBalanceRefreshKey] = useState(0);
+  const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
 
   const fetchClientData = useCallback(async () => {
     try {
@@ -87,6 +88,18 @@ export default function ClientDetailPage() {
     }
     // Trigger re-fetch of balance summary
     setBalanceRefreshKey((prev) => prev + 1);
+  };
+
+  const toggleAccountExpanded = (accountId: string) => {
+    setExpandedAccounts((prev) => {
+      const updated = new Set(prev);
+      if (updated.has(accountId)) {
+        updated.delete(accountId);
+      } else {
+        updated.add(accountId);
+      }
+      return updated;
+    });
   };
 
   const handleDelete = async () => {
@@ -303,7 +316,7 @@ export default function ClientDetailPage() {
             className="flex items-start justify-between gap-4"
           >
             <div className="flex-1">
-              <AccountsSummary clientId={id} />
+              <AccountsSummary clientId={id} onAccountClick={toggleAccountExpanded} />
             </div>
             <Button asChild variant="outline" className="mt-1">
               <Link href={`/dashboard/clients/${id}/accounts`}>
@@ -313,25 +326,27 @@ export default function ClientDetailPage() {
             </Button>
           </div>
 
-          {/* Individual Account Cards */}
+          {/* Individual Account Cards - Only render when expanded */}
           <div className="space-y-6">
             {Array.isArray(accounts) &&
               accounts.length > 0 &&
-              accounts.map((account) => (
-                <AccountCard
-                  key={account.id}
-                  clientId={id}
-                  accountId={account.id}
-                  accountName={account.account_name}
-                  currentBalance={account.points}
-                  onBalanceUpdate={handleBalanceUpdate}
-                />
-              ))}
-            {!Array.isArray(accounts) || accounts.length === 0 ? (
+              accounts.map((account) =>
+                expandedAccounts.has(account.id) ? (
+                  <AccountCard
+                    key={account.id}
+                    clientId={id}
+                    accountId={account.id}
+                    accountName={account.account_name}
+                    currentBalance={account.points}
+                    onBalanceUpdate={handleBalanceUpdate}
+                  />
+                ) : null
+              )}
+            {(!Array.isArray(accounts) || accounts.length === 0) && (
               <p className="text-sm text-slate-500">
                 No hay cuentas de lealtad para este cliente.
               </p>
-            ) : null}
+            )}
           </div>
         </TabsContent>
 
