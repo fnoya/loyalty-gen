@@ -1,10 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,19 +22,14 @@ interface AffinityGroupsSectionProps {
   groupIds?: string[];
 }
 
-export function AffinityGroupsSection({ clientId, groupIds = [] }: AffinityGroupsSectionProps) {
+export function AffinityGroupsSection({
+  clientId,
+  groupIds = [],
+}: AffinityGroupsSectionProps) {
   const [groups, setGroups] = useState<AffinityGroup[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (groupIds.length > 0) {
-      fetchGroups();
-    } else {
-      setLoading(false);
-    }
-  }, [groupIds]);
-
-  const fetchGroups = async () => {
+  const fetchGroups = useCallback(async () => {
     try {
       setLoading(true);
       // Fetch all groups and filter by groupIds
@@ -40,7 +41,15 @@ export function AffinityGroupsSection({ clientId, groupIds = [] }: AffinityGroup
     } finally {
       setLoading(false);
     }
-  };
+  }, [groupIds]);
+
+  useEffect(() => {
+    if (groupIds.length > 0) {
+      fetchGroups();
+    } else {
+      setLoading(false);
+    }
+  }, [groupIds, fetchGroups]);
 
   if (loading) {
     return (
@@ -64,7 +73,9 @@ export function AffinityGroupsSection({ clientId, groupIds = [] }: AffinityGroup
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>Grupos de Afinidad</CardTitle>
-            <CardDescription>Grupos a los que pertenece el cliente</CardDescription>
+            <CardDescription>
+              Grupos a los que pertenece el cliente
+            </CardDescription>
           </div>
           <Button variant="outline" size="sm" asChild>
             <Link href={`/dashboard/clients/${clientId}/groups`}>
@@ -76,7 +87,9 @@ export function AffinityGroupsSection({ clientId, groupIds = [] }: AffinityGroup
       </CardHeader>
       <CardContent>
         {groups.length === 0 ? (
-          <p className="text-sm text-slate-500">El cliente no pertenece a ningún grupo de afinidad.</p>
+          <p className="text-sm text-slate-500">
+            El cliente no pertenece a ningún grupo de afinidad.
+          </p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {groups.map((group) => (

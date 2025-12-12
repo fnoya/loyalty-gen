@@ -93,7 +93,7 @@ describe("Auth Middleware", () => {
     // Wait, let's check the code again.
     // Yes, try { ... } catch (error) { ... }
     // But if I throw UnauthorizedError inside try, it catches it.
-    
+
     // Let's simulate verifyIdToken throwing UnauthorizedError (unlikely but possible if I mock it)
     mockReq.headers = { authorization: "Bearer token" };
     const error = new UnauthorizedError("Custom error");

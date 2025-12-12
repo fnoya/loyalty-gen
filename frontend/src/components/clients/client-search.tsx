@@ -12,7 +12,11 @@ interface ClientSearchProps {
   debounceMs?: number;
 }
 
-export function ClientSearch({ onSearch, placeholder = "Buscar cliente...", debounceMs = 300 }: ClientSearchProps) {
+export function ClientSearch({
+  onSearch,
+  placeholder = "Buscar cliente...",
+  debounceMs = 300,
+}: ClientSearchProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
 

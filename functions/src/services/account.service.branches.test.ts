@@ -7,7 +7,7 @@ jest.mock("firebase-admin/firestore", () => {
     collection: jest.fn(),
     runTransaction: jest.fn(),
   };
-  
+
   return {
     getFirestore: jest.fn(() => mockFirestore),
     FieldValue: {
@@ -86,16 +86,19 @@ describe("AccountService Branch Coverage", () => {
       // Mock client exists
       mockGet.mockResolvedValueOnce({ exists: true });
       // Mock account exists
-      mockGet.mockResolvedValueOnce({ 
-        exists: true, 
+      mockGet.mockResolvedValueOnce({
+        exists: true,
         id: accountId,
         data: () => ({
-          account_name: "Test", points: 0, created_at: new Date(), updated_at: new Date()
-        })
+          account_name: "Test",
+          points: 0,
+          created_at: new Date(),
+          updated_at: new Date(),
+        }),
       });
       // Mock cursor doc exists
       mockGet.mockResolvedValueOnce({ exists: true });
-      
+
       // Mock transactions list
       const mockTransactions = [
         {
@@ -104,17 +107,22 @@ describe("AccountService Branch Coverage", () => {
             transaction_type: "credit",
             amount: 100,
             description: "Test",
-            timestamp: { toDate: () => new Date() }
-          })
-        }
+            timestamp: { toDate: () => new Date() },
+          }),
+        },
       ];
-      
+
       mockGet.mockResolvedValueOnce({
         docs: mockTransactions,
-        empty: false
+        empty: false,
       });
 
-      const result = await accountService.listTransactions(clientId, accountId, 10, nextCursor);
+      const result = await accountService.listTransactions(
+        clientId,
+        accountId,
+        10,
+        nextCursor
+      );
 
       expect(mockStartAfter).toHaveBeenCalled();
       expect(result.transactions).toHaveLength(1);
@@ -128,23 +136,31 @@ describe("AccountService Branch Coverage", () => {
       // Mock client exists
       mockGet.mockResolvedValueOnce({ exists: true });
       // Mock account exists
-      mockGet.mockResolvedValueOnce({ 
-        exists: true, 
+      mockGet.mockResolvedValueOnce({
+        exists: true,
         id: accountId,
         data: () => ({
-          account_name: "Test", points: 0, created_at: new Date(), updated_at: new Date()
-        })
+          account_name: "Test",
+          points: 0,
+          created_at: new Date(),
+          updated_at: new Date(),
+        }),
       });
       // Mock cursor doc DOES NOT exist
       mockGet.mockResolvedValueOnce({ exists: false });
-      
+
       // Mock transactions list (should still be called, but without startAfter)
       mockGet.mockResolvedValueOnce({
         docs: [],
-        empty: true
+        empty: true,
       });
 
-      await accountService.listTransactions(clientId, accountId, 10, nextCursor);
+      await accountService.listTransactions(
+        clientId,
+        accountId,
+        10,
+        nextCursor
+      );
 
       expect(mockStartAfter).not.toHaveBeenCalled();
     });
@@ -157,12 +173,15 @@ describe("AccountService Branch Coverage", () => {
       // Mock client exists
       mockGet.mockResolvedValueOnce({ exists: true });
       // Mock account exists
-      mockGet.mockResolvedValueOnce({ 
-        exists: true, 
+      mockGet.mockResolvedValueOnce({
+        exists: true,
         id: accountId,
         data: () => ({
-          account_name: "Test", points: 0, created_at: new Date(), updated_at: new Date()
-        })
+          account_name: "Test",
+          points: 0,
+          created_at: new Date(),
+          updated_at: new Date(),
+        }),
       });
 
       // Mock transactions list with limit + 1 items
@@ -172,33 +191,37 @@ describe("AccountService Branch Coverage", () => {
           data: () => ({
             transaction_type: "credit",
             amount: 100,
-            timestamp: new Date() // Test raw Date handling too
-          })
+            timestamp: new Date(), // Test raw Date handling too
+          }),
         },
         {
           id: "tx2",
           data: () => ({
             transaction_type: "credit",
             amount: 200,
-            timestamp: new Date()
-          })
+            timestamp: new Date(),
+          }),
         },
         {
           id: "tx3", // This one should be cut off and used for cursor
           data: () => ({
             transaction_type: "credit",
             amount: 300,
-            timestamp: new Date()
-          })
-        }
+            timestamp: new Date(),
+          }),
+        },
       ];
-      
+
       mockGet.mockResolvedValueOnce({
         docs: mockTransactions,
-        empty: false
+        empty: false,
       });
 
-      const result = await accountService.listTransactions(clientId, accountId, limit);
+      const result = await accountService.listTransactions(
+        clientId,
+        accountId,
+        limit
+      );
 
       expect(result.transactions).toHaveLength(2);
       expect(result.nextCursor).toBe("tx2");
@@ -221,14 +244,14 @@ describe("AccountService Branch Coverage", () => {
             points: 0,
             // Missing familyCircleConfig
             created_at: new Date(), // Raw Date
-            updated_at: new Date()  // Raw Date
-          })
-        }
+            updated_at: new Date(), // Raw Date
+          }),
+        },
       ];
 
       mockGet.mockResolvedValueOnce({
         docs: mockAccounts,
-        forEach: (cb: any) => mockAccounts.forEach(cb)
+        forEach: (cb: any) => mockAccounts.forEach(cb),
       });
 
       const result = await accountService.listAccounts(clientId);
@@ -252,8 +275,8 @@ describe("AccountService Branch Coverage", () => {
           points: 0,
           // Missing familyCircleConfig
           created_at: new Date(),
-          updated_at: new Date()
-        })
+          updated_at: new Date(),
+        }),
       });
 
       const result = await accountService.getAccount(clientId, accountId);
@@ -267,17 +290,19 @@ describe("AccountService Branch Coverage", () => {
       const request = { amount: 100 }; // Missing description
 
       // Mock transaction run
-      mockFirestoreInstance.runTransaction.mockImplementation(async (cb: any) => {
-        const transaction = {
-          get: jest.fn().mockResolvedValue({
-            exists: true,
-            data: () => ({ points: 0 })
-          }),
-          update: jest.fn(),
-          set: jest.fn(),
-        };
-        await cb(transaction);
-      });
+      mockFirestoreInstance.runTransaction.mockImplementation(
+        async (cb: any) => {
+          const transaction = {
+            get: jest.fn().mockResolvedValue({
+              exists: true,
+              data: () => ({ points: 0 }),
+            }),
+            update: jest.fn(),
+            set: jest.fn(),
+          };
+          await cb(transaction);
+        }
+      );
 
       // Mock account fetch after transaction
       mockDoc.mockReturnValue({
@@ -289,13 +314,18 @@ describe("AccountService Branch Coverage", () => {
             points: 100,
             familyCircleConfig: null,
             created_at: new Date(),
-            updated_at: new Date()
-          })
+            updated_at: new Date(),
+          }),
         }),
-        collection: mockCollection // For pointTransactions
+        collection: mockCollection, // For pointTransactions
       });
 
-      const result = await accountService.creditPoints(clientId, accountId, request as any, mockActor);
+      const result = await accountService.creditPoints(
+        clientId,
+        accountId,
+        request as any,
+        mockActor
+      );
       expect(result.points).toBe(100);
     });
 
@@ -305,17 +335,19 @@ describe("AccountService Branch Coverage", () => {
       const request = { amount: 50 }; // Missing description
 
       // Mock transaction run
-      mockFirestoreInstance.runTransaction.mockImplementation(async (cb: any) => {
-        const transaction = {
-          get: jest.fn().mockResolvedValue({
-            exists: true,
-            data: () => ({ points: 100 })
-          }),
-          update: jest.fn(),
-          set: jest.fn(),
-        };
-        await cb(transaction);
-      });
+      mockFirestoreInstance.runTransaction.mockImplementation(
+        async (cb: any) => {
+          const transaction = {
+            get: jest.fn().mockResolvedValue({
+              exists: true,
+              data: () => ({ points: 100 }),
+            }),
+            update: jest.fn(),
+            set: jest.fn(),
+          };
+          await cb(transaction);
+        }
+      );
 
       // Mock account fetch after transaction
       mockDoc.mockReturnValue({
@@ -327,13 +359,18 @@ describe("AccountService Branch Coverage", () => {
             points: 50,
             familyCircleConfig: null,
             created_at: new Date(),
-            updated_at: new Date()
-          })
+            updated_at: new Date(),
+          }),
         }),
-        collection: mockCollection
+        collection: mockCollection,
       });
 
-      const result = await accountService.debitPoints(clientId, accountId, request as any, mockActor);
+      const result = await accountService.debitPoints(
+        clientId,
+        accountId,
+        request as any,
+        mockActor
+      );
       expect(result.points).toBe(50);
     });
   });

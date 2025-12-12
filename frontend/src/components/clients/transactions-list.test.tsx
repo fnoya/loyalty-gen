@@ -8,7 +8,7 @@ jest.mock("lucide-react", () => ({
 }));
 
 jest.mock("date-fns", () => ({
-  format: (date: Date, _format: string) => date.toISOString(),
+  format: (date: Date) => date.toISOString(),
 }));
 
 jest.mock("date-fns/locale", () => ({
@@ -45,12 +45,14 @@ describe("TransactionsList", () => {
 
     expect(screen.getByText("No hay transacciones")).toBeInTheDocument();
     expect(
-      screen.getByText("Las transacciones aparecerán aquí cuando se realicen.")
+      screen.getByText("Las transacciones aparecerán aquí cuando se realicen."),
     ).toBeInTheDocument();
   });
 
   it("displays all transactions", () => {
-    render(<TransactionsList transactions={mockTransactions} loading={false} />);
+    render(
+      <TransactionsList transactions={mockTransactions} loading={false} />,
+    );
 
     expect(screen.getByText("Crédito")).toBeInTheDocument();
     expect(screen.getByText("Débito")).toBeInTheDocument();
@@ -67,7 +69,11 @@ describe("TransactionsList", () => {
     }));
 
     render(
-      <TransactionsList transactions={manyTransactions} loading={false} limit={5} />
+      <TransactionsList
+        transactions={manyTransactions}
+        loading={false}
+        limit={5}
+      />,
     );
 
     // Should display only 5 transactions
@@ -88,11 +94,11 @@ describe("TransactionsList", () => {
         limit={5}
         showViewMore={true}
         onViewMore={jest.fn()}
-      />
+      />,
     );
 
     expect(
-      screen.getByText(/Ver más transacciones \(5 adicionales\)/i)
+      screen.getByText(/Ver más transacciones \(5 adicionales\)/i),
     ).toBeInTheDocument();
   });
 });

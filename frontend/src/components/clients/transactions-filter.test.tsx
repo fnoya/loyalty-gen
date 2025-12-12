@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TransactionsFilter } from "./transactions-filter";
@@ -8,18 +9,99 @@ jest.mock("lucide-react", () => ({
 
 // Mock the select component wrapper
 jest.mock("@/components/ui/select", () => {
-  const React = require('react');
+  const React = require("react");
   return {
-    Select: ({ children, ...props }: { children: React.ReactNode; [key: string]: unknown }) => React.createElement('div', { 'data-testid': 'select-root', ...props }, children),
-    SelectGroup: ({ children, ...props }: { children: React.ReactNode; [key: string]: unknown }) => React.createElement('div', { 'data-testid': 'select-group', ...props }, children),
-    SelectValue: ({ placeholder }: { placeholder?: string }) => React.createElement('span', null, placeholder),
-    SelectTrigger: ({ children, ...props }: { children: React.ReactNode; [key: string]: unknown }) => React.createElement('button', { 'data-testid': 'select-trigger', role: 'combobox', ...props }, children),
-    SelectContent: ({ children, ...props }: { children: React.ReactNode; [key: string]: unknown }) => React.createElement('div', { 'data-testid': 'select-content', ...props }, children),
-    SelectItem: ({ children, value, ...props }: { children: React.ReactNode; value: string; [key: string]: unknown }) => React.createElement('div', { 'data-testid': `select-item-${value}`, ...props }, children),
-    SelectLabel: ({ children, ...props }: { children: React.ReactNode; [key: string]: unknown }) => React.createElement('label', { 'data-testid': 'select-label', ...props }, children),
-    SelectSeparator: (props: { [key: string]: unknown }) => React.createElement('div', { 'data-testid': 'select-separator', ...props }),
-    SelectScrollUpButton: (props: { [key: string]: unknown }) => React.createElement('div', { 'data-testid': 'select-scroll-up', ...props }),
-    SelectScrollDownButton: (props: { [key: string]: unknown }) => React.createElement('div', { 'data-testid': 'select-scroll-down', ...props }),
+    Select: ({
+      children,
+      ...props
+    }: {
+      children: React.ReactNode;
+      [key: string]: unknown;
+    }) =>
+      React.createElement(
+        "div",
+        { "data-testid": "select-root", ...props },
+        children,
+      ),
+    SelectGroup: ({
+      children,
+      ...props
+    }: {
+      children: React.ReactNode;
+      [key: string]: unknown;
+    }) =>
+      React.createElement(
+        "div",
+        { "data-testid": "select-group", ...props },
+        children,
+      ),
+    SelectValue: ({ placeholder }: { placeholder?: string }) =>
+      React.createElement("span", null, placeholder),
+    SelectTrigger: ({
+      children,
+      ...props
+    }: {
+      children: React.ReactNode;
+      [key: string]: unknown;
+    }) =>
+      React.createElement(
+        "button",
+        { "data-testid": "select-trigger", role: "combobox", ...props },
+        children,
+      ),
+    SelectContent: ({
+      children,
+      ...props
+    }: {
+      children: React.ReactNode;
+      [key: string]: unknown;
+    }) =>
+      React.createElement(
+        "div",
+        { "data-testid": "select-content", ...props },
+        children,
+      ),
+    SelectItem: ({
+      children,
+      value,
+      ...props
+    }: {
+      children: React.ReactNode;
+      value: string;
+      [key: string]: unknown;
+    }) =>
+      React.createElement(
+        "div",
+        { "data-testid": `select-item-${value}`, ...props },
+        children,
+      ),
+    SelectLabel: ({
+      children,
+      ...props
+    }: {
+      children: React.ReactNode;
+      [key: string]: unknown;
+    }) =>
+      React.createElement(
+        "label",
+        { "data-testid": "select-label", ...props },
+        children,
+      ),
+    SelectSeparator: (props: { [key: string]: unknown }) =>
+      React.createElement("div", {
+        "data-testid": "select-separator",
+        ...props,
+      }),
+    SelectScrollUpButton: (props: { [key: string]: unknown }) =>
+      React.createElement("div", {
+        "data-testid": "select-scroll-up",
+        ...props,
+      }),
+    SelectScrollDownButton: (props: { [key: string]: unknown }) =>
+      React.createElement("div", {
+        "data-testid": "select-scroll-down",
+        ...props,
+      }),
   };
 });
 
@@ -47,7 +129,7 @@ describe("TransactionsFilter", () => {
           startDate: "2024-01-01",
         });
       },
-      { timeout: 600 }
+      { timeout: 600 },
     );
   });
 
@@ -66,7 +148,7 @@ describe("TransactionsFilter", () => {
           endDate: "2024-01-31",
         });
       },
-      { timeout: 600 }
+      { timeout: 600 },
     );
   });
 
@@ -134,7 +216,7 @@ describe("TransactionsFilter", () => {
 
     // Should not call immediately
     expect(mockOnFilterChange).not.toHaveBeenCalledWith(
-      expect.objectContaining({ startDate: "2024-01-01" })
+      expect.objectContaining({ startDate: "2024-01-01" }),
     );
 
     // Wait for debounce (500ms)
@@ -144,7 +226,7 @@ describe("TransactionsFilter", () => {
           startDate: "2024-01-01",
         });
       },
-      { timeout: 600 }
+      { timeout: 600 },
     );
   });
 
@@ -167,7 +249,7 @@ describe("TransactionsFilter", () => {
           endDate: "2024-01-31",
         });
       },
-      { timeout: 600 }
+      { timeout: 600 },
     );
   });
 });

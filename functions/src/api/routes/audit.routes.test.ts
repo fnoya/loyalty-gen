@@ -79,13 +79,11 @@ describe("Audit Routes", () => {
       const mockResult = { data: [], paging: { has_more: false } };
       auditServiceInstance.listAuditLogs.mockResolvedValue(mockResult);
 
-      const response = await request(app)
-        .get("/v1/audit-logs")
-        .query({
-          action: "CREATE",
-          resource_type: "client",
-          limit: "10",
-        });
+      const response = await request(app).get("/v1/audit-logs").query({
+        action: "CREATE",
+        resource_type: "client",
+        limit: "10",
+      });
 
       expect(response.status).toBe(200);
       expect(auditServiceInstance.listAuditLogs).toHaveBeenCalledWith(
@@ -101,15 +99,13 @@ describe("Audit Routes", () => {
       const mockResult = { data: [], paging: { has_more: false } };
       auditServiceInstance.listAuditLogs.mockResolvedValue(mockResult);
 
-      const response = await request(app)
-        .get("/v1/audit-logs")
-        .query({
-          client_id: "c1",
-          account_id: "a1",
-          start_date: "2023-01-01",
-          end_date: "2023-01-02",
-          next_cursor: "cursor123"
-        });
+      const response = await request(app).get("/v1/audit-logs").query({
+        client_id: "c1",
+        account_id: "a1",
+        start_date: "2023-01-01",
+        end_date: "2023-01-02",
+        next_cursor: "cursor123",
+      });
 
       expect(response.status).toBe(200);
       expect(auditServiceInstance.listAuditLogs).toHaveBeenCalledWith(
@@ -118,7 +114,7 @@ describe("Audit Routes", () => {
           account_id: "a1",
           start_date: "2023-01-01",
           end_date: "2023-01-02",
-          next_cursor: "cursor123"
+          next_cursor: "cursor123",
         })
       );
     });
@@ -145,8 +141,9 @@ describe("Audit Routes", () => {
       const mockResult = { data: [], paging: { has_more: false } };
       auditServiceInstance.getClientAuditLogs.mockResolvedValue(mockResult);
 
-      const response = await request(app)
-        .get("/v1/audit-logs/clients/c1/audit-logs");
+      const response = await request(app).get(
+        "/v1/audit-logs/clients/c1/audit-logs"
+      );
 
       expect(response.status).toBe(200);
       expect(auditServiceInstance.getClientAuditLogs).toHaveBeenCalledWith(
@@ -168,10 +165,13 @@ describe("Audit Routes", () => {
   describe("GET /v1/audit-logs/clients/:clientId/loyalty-accounts/:accountId/audit-logs", () => {
     it("should get account audit logs", async () => {
       const mockResult = { data: [], paging: { has_more: false } };
-      (auditServiceInstance.getAccountAuditLogs as jest.Mock).mockResolvedValue(mockResult);
+      (auditServiceInstance.getAccountAuditLogs as jest.Mock).mockResolvedValue(
+        mockResult
+      );
 
-      const response = await request(app)
-        .get("/v1/audit-logs/clients/c1/loyalty-accounts/a1/audit-logs");
+      const response = await request(app).get(
+        "/v1/audit-logs/clients/c1/loyalty-accounts/a1/audit-logs"
+      );
 
       expect(response.status).toBe(200);
       expect(auditServiceInstance.getAccountAuditLogs).toHaveBeenCalledWith(

@@ -27,7 +27,10 @@ interface CreateAccountFormProps {
   onSuccess?: () => void;
 }
 
-export function CreateAccountForm({ clientId, onSuccess }: CreateAccountFormProps) {
+export function CreateAccountForm({
+  clientId,
+  onSuccess,
+}: CreateAccountFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
@@ -53,9 +56,16 @@ export function CreateAccountForm({ clientId, onSuccess }: CreateAccountFormProp
       toast.success("Cuenta de lealtad creada exitosamente");
       reset();
       onSuccess?.();
-    } catch (err: any) {
-      console.error("Failed to create account:", err);
-      toast.error(err.message || "Error al crear la cuenta de lealtad");
+    } catch (err: unknown) {
+      console.error(
+        "Failed to create account:",
+        err instanceof Error ? err.message : String(err),
+      );
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Error al crear la cuenta de lealtad",
+      );
     } finally {
       setIsSubmitting(false);
     }

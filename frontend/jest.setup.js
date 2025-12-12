@@ -33,7 +33,9 @@ jest.mock('sonner', () => ({
 }));
 
 // Mock @radix-ui/react-select globally to avoid portal rendering issues in tests
+ 
 jest.mock("@radix-ui/react-select", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const React = require('react');
   return {
     Root: ({ children, ...props }) => React.createElement('div', { 'data-testid': 'select-root', ...props }, children),

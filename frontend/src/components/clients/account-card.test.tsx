@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { render, screen, waitFor } from "@testing-library/react";
 import { AccountCard } from "./account-card";
 import { apiRequest } from "@/lib/api";
@@ -55,7 +56,7 @@ describe("AccountCard", () => {
         accountId="acc1"
         accountName="Main Rewards"
         currentBalance={1000}
-      />
+      />,
     );
 
     expect(screen.getByText("Main Rewards")).toBeInTheDocument();
@@ -72,7 +73,7 @@ describe("AccountCard", () => {
         accountId="acc1"
         accountName="Main Rewards"
         currentBalance={1000}
-      />
+      />,
     );
 
     expect(screen.getByText("Acreditar Puntos")).toBeInTheDocument();
@@ -90,12 +91,12 @@ describe("AccountCard", () => {
         accountId="acc1"
         accountName="Main Rewards"
         currentBalance={1000}
-      />
+      />,
     );
 
     await waitFor(() => {
       expect(apiRequest).toHaveBeenCalledWith(
-        "/clients/client1/accounts/acc1/transactions?limit=5"
+        "/clients/client1/accounts/acc1/transactions?limit=5",
       );
       expect(screen.getByText("1 transactions")).toBeInTheDocument();
     });
@@ -112,7 +113,7 @@ describe("AccountCard", () => {
         accountName="Main Rewards"
         currentBalance={1000}
         onBalanceUpdate={mockOnBalanceUpdate}
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -135,7 +136,7 @@ describe("AccountCard", () => {
         accountId="acc1"
         accountName="Main Rewards"
         currentBalance={1000}
-      />
+      />,
     );
 
     await waitFor(() => {

@@ -7,8 +7,9 @@ interface ClientAvatarProps {
 }
 
 export function ClientAvatar({ client, className }: ClientAvatarProps) {
-  const initials = `${client.name.firstName[0]}${client.name.firstLastName[0]}`.toUpperCase();
-  
+  const initials =
+    `${client.name.firstName[0]}${client.name.firstLastName[0]}`.toUpperCase();
+
   // Generate a consistent background color based on the initials
   const colors = [
     "bg-red-100 text-red-700",
@@ -27,13 +28,17 @@ export function ClientAvatar({ client, className }: ClientAvatarProps) {
     "bg-pink-100 text-pink-700",
     "bg-rose-100 text-rose-700",
   ];
-  
-  const colorIndex = (initials.charCodeAt(0) + initials.charCodeAt(1)) % colors.length;
+
+  const colorIndex =
+    (initials.charCodeAt(0) + initials.charCodeAt(1)) % colors.length;
   const colorClass = colors[colorIndex];
 
   return (
     <Avatar className={className}>
-      <AvatarImage src={client.photoUrl || undefined} alt={`${client.name.firstName} ${client.name.firstLastName}`} />
+      <AvatarImage
+        src={client.photoUrl || undefined}
+        alt={`${client.name.firstName} ${client.name.firstLastName}`}
+      />
       <AvatarFallback className={colorClass}>{initials}</AvatarFallback>
     </Avatar>
   );

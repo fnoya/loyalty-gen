@@ -8,7 +8,7 @@ jest.mock("firebase-admin", () => {
     collection: jest.fn(),
     runTransaction: jest.fn(),
   };
-  
+
   return {
     firestore: jest.fn(() => mockFirestore),
     initializeApp: jest.fn(),

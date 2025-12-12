@@ -36,13 +36,19 @@ export function TransactionsList({
     return (
       <div className="flex flex-col items-center justify-center py-8 text-center">
         <Clock className="h-12 w-12 text-slate-300 mb-3" />
-        <p className="text-sm font-medium text-slate-600">No hay transacciones</p>
-        <p className="text-xs text-slate-500 mt-1">Las transacciones aparecerán aquí cuando se realicen.</p>
+        <p className="text-sm font-medium text-slate-600">
+          No hay transacciones
+        </p>
+        <p className="text-xs text-slate-500 mt-1">
+          Las transacciones aparecerán aquí cuando se realicen.
+        </p>
       </div>
     );
   }
 
-  const displayTransactions = limit ? transactions.slice(0, limit) : transactions;
+  const displayTransactions = limit
+    ? transactions.slice(0, limit)
+    : transactions;
 
   return (
     <div className="space-y-2">
@@ -70,10 +76,14 @@ export function TransactionsList({
                   </p>
                 </div>
                 {transaction.description && (
-                  <p className="text-sm text-slate-600 mt-0.5">{transaction.description}</p>
+                  <p className="text-sm text-slate-600 mt-0.5">
+                    {transaction.description}
+                  </p>
                 )}
                 <p className="text-xs text-slate-500 mt-1">
-                  {format(new Date(transaction.timestamp), "PPp", { locale: es })}
+                  {format(new Date(transaction.timestamp), "PPp", {
+                    locale: es,
+                  })}
                 </p>
               </div>
             </div>

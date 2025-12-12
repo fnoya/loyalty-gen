@@ -1,3 +1,4 @@
+/* eslint-disable react/display-name */
 import { render, screen, waitFor } from "@testing-library/react";
 import { AffinityGroupsSection } from "./affinity-groups-section";
 import { apiRequest } from "@/lib/api";
@@ -18,8 +19,18 @@ jest.mock("next/link", () => {
 
 describe("AffinityGroupsSection", () => {
   const mockGroups = [
-    { id: "g1", name: "Gold Members", description: "Premium customers", created_at: "2024-01-01" },
-    { id: "g2", name: "Silver Members", description: "Regular customers", created_at: "2024-01-02" },
+    {
+      id: "g1",
+      name: "Gold Members",
+      description: "Premium customers",
+      created_at: "2024-01-01",
+    },
+    {
+      id: "g2",
+      name: "Silver Members",
+      description: "Regular customers",
+      created_at: "2024-01-02",
+    },
   ];
 
   beforeEach(() => {
@@ -28,10 +39,12 @@ describe("AffinityGroupsSection", () => {
 
   it("renders skeleton while loading", () => {
     (apiRequest as jest.Mock).mockImplementation(
-      () => new Promise(() => {}) // Never resolves
+      () => new Promise(() => {}), // Never resolves
     );
 
-    render(<AffinityGroupsSection clientId="client1" groupIds={["g1", "g2"]} />);
+    render(
+      <AffinityGroupsSection clientId="client1" groupIds={["g1", "g2"]} />,
+    );
 
     expect(screen.getByText("Grupos de Afinidad")).toBeInTheDocument();
     expect(screen.getAllByTestId("skeleton")).toHaveLength(2);
@@ -40,7 +53,9 @@ describe("AffinityGroupsSection", () => {
   it("displays groups as badges", async () => {
     (apiRequest as jest.Mock).mockResolvedValue(mockGroups);
 
-    render(<AffinityGroupsSection clientId="client1" groupIds={["g1", "g2"]} />);
+    render(
+      <AffinityGroupsSection clientId="client1" groupIds={["g1", "g2"]} />,
+    );
 
     await waitFor(() => {
       expect(screen.getByText("Gold Members")).toBeInTheDocument();
@@ -55,7 +70,7 @@ describe("AffinityGroupsSection", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("El cliente no pertenece a ningún grupo de afinidad.")
+        screen.getByText("El cliente no pertenece a ningún grupo de afinidad."),
       ).toBeInTheDocument();
     });
   });

@@ -56,7 +56,9 @@ describe("Group Routes", () => {
           created_at: "2024-01-02T00:00:00.000Z",
         },
       ];
-      (groupService.instance.listGroups as jest.Mock).mockResolvedValue(mockGroups);
+      (groupService.instance.listGroups as jest.Mock).mockResolvedValue(
+        mockGroups
+      );
 
       const res = await request(app).get("/v1/groups");
 
@@ -83,7 +85,9 @@ describe("Group Routes", () => {
         description: "Test group",
         created_at: "2024-01-03T00:00:00.000Z",
       };
-      (groupService.instance.createGroup as jest.Mock).mockResolvedValue(mockGroup);
+      (groupService.instance.createGroup as jest.Mock).mockResolvedValue(
+        mockGroup
+      );
 
       const res = await request(app).post("/v1/groups").send({
         name: "New Group",
@@ -127,7 +131,9 @@ describe("Group Routes", () => {
         description: "",
         created_at: new Date("2024-01-04T00:00:00Z"),
       };
-      (groupService.instance.createGroup as jest.Mock).mockResolvedValue(mockGroup);
+      (groupService.instance.createGroup as jest.Mock).mockResolvedValue(
+        mockGroup
+      );
 
       const res = await request(app).post("/v1/groups").send({
         name: "New Group",
@@ -146,9 +152,9 @@ describe("Group Routes", () => {
 
   describe("POST /v1/groups/:groupId/clients/:clientId", () => {
     it("should assign a client to a group", async () => {
-      (groupService.instance.assignClientToGroup as jest.Mock).mockResolvedValue(
-        undefined
-      );
+      (
+        groupService.instance.assignClientToGroup as jest.Mock
+      ).mockResolvedValue(undefined);
 
       const res = await request(app).post(
         "/v1/groups/group-123/clients/client-456"
@@ -164,9 +170,9 @@ describe("Group Routes", () => {
     });
 
     it("should handle group not found", async () => {
-      (groupService.instance.assignClientToGroup as jest.Mock).mockRejectedValue(
-        new NotFoundError("Group", "invalid-group")
-      );
+      (
+        groupService.instance.assignClientToGroup as jest.Mock
+      ).mockRejectedValue(new NotFoundError("Group", "invalid-group"));
 
       const res = await request(app).post(
         "/v1/groups/invalid-group/clients/client-456"
@@ -176,9 +182,9 @@ describe("Group Routes", () => {
     });
 
     it("should handle client not found", async () => {
-      (groupService.instance.assignClientToGroup as jest.Mock).mockRejectedValue(
-        new NotFoundError("Client", "invalid-client")
-      );
+      (
+        groupService.instance.assignClientToGroup as jest.Mock
+      ).mockRejectedValue(new NotFoundError("Client", "invalid-client"));
 
       const res = await request(app).post(
         "/v1/groups/group-123/clients/invalid-client"
@@ -188,7 +194,9 @@ describe("Group Routes", () => {
     });
 
     it("should handle already assigned client", async () => {
-      (groupService.instance.assignClientToGroup as jest.Mock).mockRejectedValue(
+      (
+        groupService.instance.assignClientToGroup as jest.Mock
+      ).mockRejectedValue(
         new AppError("Client already in group", 400, "VALIDATION_FAILED")
       );
 
@@ -202,9 +210,9 @@ describe("Group Routes", () => {
 
   describe("DELETE /v1/groups/:groupId/clients/:clientId", () => {
     it("should remove a client from a group", async () => {
-      (groupService.instance.removeClientFromGroup as jest.Mock).mockResolvedValue(
-        undefined
-      );
+      (
+        groupService.instance.removeClientFromGroup as jest.Mock
+      ).mockResolvedValue(undefined);
 
       const res = await request(app).delete(
         "/v1/groups/group-123/clients/client-456"
@@ -220,9 +228,9 @@ describe("Group Routes", () => {
     });
 
     it("should handle group not found", async () => {
-      (groupService.instance.removeClientFromGroup as jest.Mock).mockRejectedValue(
-        new NotFoundError("Group", "invalid-group")
-      );
+      (
+        groupService.instance.removeClientFromGroup as jest.Mock
+      ).mockRejectedValue(new NotFoundError("Group", "invalid-group"));
 
       const res = await request(app).delete(
         "/v1/groups/invalid-group/clients/client-456"
@@ -232,9 +240,9 @@ describe("Group Routes", () => {
     });
 
     it("should handle client not found", async () => {
-      (groupService.instance.removeClientFromGroup as jest.Mock).mockRejectedValue(
-        new NotFoundError("Client", "invalid-client")
-      );
+      (
+        groupService.instance.removeClientFromGroup as jest.Mock
+      ).mockRejectedValue(new NotFoundError("Client", "invalid-client"));
 
       const res = await request(app).delete(
         "/v1/groups/group-123/clients/invalid-client"
@@ -244,7 +252,9 @@ describe("Group Routes", () => {
     });
 
     it("should handle client not in group", async () => {
-      (groupService.instance.removeClientFromGroup as jest.Mock).mockRejectedValue(
+      (
+        groupService.instance.removeClientFromGroup as jest.Mock
+      ).mockRejectedValue(
         new AppError("Client not in group", 400, "VALIDATION_FAILED")
       );
 

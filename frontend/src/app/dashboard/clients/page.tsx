@@ -83,9 +83,11 @@ export default function ClientsPage() {
   const filteredClients = searchQuery
     ? clients.filter((client) => {
         const query = searchQuery.toLowerCase();
-        const fullName = `${client.name.firstName} ${client.name.secondName || ""} ${client.name.firstLastName} ${client.name.secondLastName || ""}`.toLowerCase();
+        const fullName =
+          `${client.name.firstName} ${client.name.secondName || ""} ${client.name.firstLastName} ${client.name.secondLastName || ""}`.toLowerCase();
         const email = client.email?.toLowerCase() || "";
-        const documentNumber = client.identity_document?.number.toLowerCase() || "";
+        const documentNumber =
+          client.identity_document?.number.toLowerCase() || "";
 
         return (
           fullName.includes(query) ||
@@ -108,7 +110,10 @@ export default function ClientsPage() {
 
       <div className="flex items-center py-4">
         <div className="w-full max-w-sm">
-          <ClientSearch onSearch={handleSearch} placeholder="Buscar cliente por nombre, email o documento..." />
+          <ClientSearch
+            onSearch={handleSearch}
+            placeholder="Buscar cliente por nombre, email o documento..."
+          />
         </div>
       </div>
 
@@ -126,10 +131,19 @@ export default function ClientsPage() {
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell><Skeleton className="h-10 w-10 rounded-full inline-block mr-2" /><Skeleton className="h-4 w-32 inline-block" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-48" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                  <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+                  <TableCell>
+                    <Skeleton className="h-10 w-10 rounded-full inline-block mr-2" />
+                    <Skeleton className="h-4 w-32 inline-block" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-48" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Skeleton className="h-8 w-8 ml-auto" />
+                  </TableCell>
                 </TableRow>
               ))
             ) : filteredClients.length === 0 ? (
@@ -137,21 +151,29 @@ export default function ClientsPage() {
                 <TableCell colSpan={4} className="h-96 text-center">
                   <EmptyState
                     icon={Users}
-                    title={searchQuery ? "No se encontraron clientes" : "Aún no se han creado clientes"}
+                    title={
+                      searchQuery
+                        ? "No se encontraron clientes"
+                        : "Aún no se han creado clientes"
+                    }
                     description={
                       searchQuery
                         ? `No se encontraron clientes para "${searchQuery}"`
                         : "Comience creando un nuevo cliente."
                     }
-                    actionLabel={searchQuery ? undefined : "Crear Nuevo Cliente"}
-                    actionHref={searchQuery ? undefined : "/dashboard/clients/new"}
+                    actionLabel={
+                      searchQuery ? undefined : "Crear Nuevo Cliente"
+                    }
+                    actionHref={
+                      searchQuery ? undefined : "/dashboard/clients/new"
+                    }
                   />
                 </TableCell>
               </TableRow>
             ) : (
               filteredClients.map((client) => (
-                <TableRow 
-                  key={client.id} 
+                <TableRow
+                  key={client.id}
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() => router.push(`/dashboard/clients/${client.id}`)}
                 >
@@ -165,7 +187,10 @@ export default function ClientsPage() {
                       ? `${client.identity_document.type === "cedula_identidad" ? "CI" : "Passport"} ${client.identity_document.number}`
                       : "-"}
                   </TableCell>
-                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                  <TableCell
+                    className="text-right"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">
@@ -176,13 +201,17 @@ export default function ClientsPage() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuItem asChild>
-                          <Link href={`/dashboard/clients/${client.id}`}>View details</Link>
+                          <Link href={`/dashboard/clients/${client.id}`}>
+                            View details
+                          </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                          <Link href={`/dashboard/clients/${client.id}/edit`}>Edit</Link>
+                          <Link href={`/dashboard/clients/${client.id}/edit`}>
+                            Edit
+                          </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           className="text-red-600 focus:text-red-600"
                           onSelect={() => setClientToDelete(client.id)}
                         >
@@ -198,17 +227,24 @@ export default function ClientsPage() {
         </Table>
       </div>
 
-      <AlertDialog open={!!clientToDelete} onOpenChange={(open) => !open && setClientToDelete(null)}>
+      <AlertDialog
+        open={!!clientToDelete}
+        onOpenChange={(open) => !open && setClientToDelete(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar cliente?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción es irreversible. Se eliminarán todos los datos del cliente, incluyendo sus cuentas de lealtad y transacciones.
+              Esta acción es irreversible. Se eliminarán todos los datos del
+              cliente, incluyendo sus cuentas de lealtad y transacciones.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
               Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>

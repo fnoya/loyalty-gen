@@ -28,15 +28,14 @@ export function EmptyState({
       {description && (
         <p className="text-sm text-slate-500 max-w-sm mb-6">{description}</p>
       )}
-      {actionLabel && (
-        actionHref ? (
+      {actionLabel &&
+        (actionHref ? (
           <Button asChild>
             <Link href={actionHref}>{actionLabel}</Link>
           </Button>
         ) : onAction ? (
           <Button onClick={onAction}>{actionLabel}</Button>
-        ) : null
-      )}
+        ) : null)}
     </div>
   );
 }

@@ -47,17 +47,17 @@ describe("PhotoService", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     const mockStorage = {
       bucket: jest.fn(() => mockBucket),
     };
-    
+
     const mockFirestore = {
       collection: mockCollection,
     };
-    
+
     photoService = new PhotoService(mockStorage as any, mockFirestore as any);
-    
+
     // Set emulator environment
     process.env.FIREBASE_STORAGE_EMULATOR_HOST = "localhost:9199";
   });
@@ -140,7 +140,11 @@ describe("PhotoService", () => {
       });
 
       await expect(
-        photoService.uploadPhoto("nonexistent", Buffer.from("data"), "image/jpeg")
+        photoService.uploadPhoto(
+          "nonexistent",
+          Buffer.from("data"),
+          "image/jpeg"
+        )
       ).rejects.toThrow(NotFoundError);
     });
 

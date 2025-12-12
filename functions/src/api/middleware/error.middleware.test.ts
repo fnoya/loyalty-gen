@@ -49,7 +49,8 @@ describe("Error Middleware", () => {
       expect(mockResponse.json).toHaveBeenCalledWith({
         error: {
           code: "VALIDATION_FAILED",
-          message: "Errores de validación: name: Expected string, received number",
+          message:
+            "Errores de validación: name: Expected string, received number",
         },
       });
     });

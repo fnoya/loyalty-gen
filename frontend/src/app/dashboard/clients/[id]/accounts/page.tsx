@@ -5,7 +5,13 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { CreateAccountForm } from "@/components/clients/create-account-form";
 
 export default function ClientAccountsPage() {
@@ -32,14 +38,12 @@ export default function ClientAccountsPage() {
         <CardHeader>
           <CardTitle>Crear Cuenta</CardTitle>
           <CardDescription>
-            Proporcione los detalles para crear una nueva cuenta de lealtad para este cliente.
+            Proporcione los detalles para crear una nueva cuenta de lealtad para
+            este cliente.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <CreateAccountForm
-            clientId={id}
-            onSuccess={handleAccountCreated}
-          />
+          <CreateAccountForm clientId={id} onSuccess={handleAccountCreated} />
         </CardContent>
       </Card>
     </div>

@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Wallet, TrendingUp, TrendingDown } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { apiRequest } from "@/lib/api";
@@ -32,19 +31,11 @@ export function AccountCard({
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  useEffect(() => {
-    setBalance(initialBalance);
-  }, [initialBalance]);
-
-  useEffect(() => {
-    fetchTransactions();
-  }, [clientId, accountId, refreshKey]);
-
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
     try {
       setLoading(true);
       const response = await apiRequest<{ data: Transaction[] }>(
-        `/clients/${clientId}/accounts/${accountId}/transactions?limit=5`
+        `/clients/${clientId}/accounts/${accountId}/transactions?limit=5`,
       );
       setTransactions(response.data || []);
     } catch (error) {
@@ -52,7 +43,15 @@ export function AccountCard({
     } finally {
       setLoading(false);
     }
-  };
+  }, [clientId, accountId]);
+
+  useEffect(() => {
+    setBalance(initialBalance);
+  }, [initialBalance]);
+
+  useEffect(() => {
+    fetchTransactions();
+  }, [fetchTransactions, refreshKey]);
 
   const handleTransactionSuccess = () => {
     // Trigger refetch of transactions
@@ -70,7 +69,9 @@ export function AccountCard({
             {accountName}
           </CardTitle>
           <div className="text-right">
-            <p className="text-3xl font-bold text-blue-600">{balance.toLocaleString()}</p>
+            <p className="text-3xl font-bold text-blue-600">
+              {balance.toLocaleString()}
+            </p>
             <p className="text-xs text-slate-500">puntos disponibles</p>
           </div>
         </div>

@@ -4,7 +4,13 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, Users } from "lucide-react";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 export default function ClientGroupsPage() {
@@ -28,7 +34,8 @@ export default function ClientGroupsPage() {
             <Users className="h-5 w-5" /> Grupos del Cliente
           </CardTitle>
           <CardDescription>
-            Esta página será implementada en HU9. Por ahora es un marcador de posición para las pruebas.
+            Esta página será implementada en HU9. Por ahora es un marcador de
+            posición para las pruebas.
           </CardDescription>
         </CardHeader>
         <CardContent>

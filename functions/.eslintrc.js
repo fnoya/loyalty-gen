@@ -20,6 +20,9 @@ module.exports = {
   ignorePatterns: [
     "/lib/**/*", // Ignore built files.
     "/node_modules/**/*",
+    "/coverage/**/*",
+    "create_admin.js",
+    "create_admin_retry.js",
     ".eslintrc.js",
     "jest.config.js",
     "**/*.test.ts",

@@ -1,9 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Wallet } from "lucide-react";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiRequest } from "@/lib/api";
 import { AllBalancesResponse, LoyaltyAccount } from "@/types/loyalty";
@@ -18,11 +24,7 @@ export function AccountsSummary({ clientId }: AccountsSummaryProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchData();
-  }, [clientId]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -35,14 +37,21 @@ export function AccountsSummary({ clientId }: AccountsSummaryProps) {
 
       setBalances(balancesData);
       setAccounts(accountsData);
-    } catch (err: any) {
-      console.error("Failed to fetch accounts data:", err);
+    } catch (err: unknown) {
+      console.error(
+        "Failed to fetch accounts data:",
+        err instanceof Error ? err.message : String(err),
+      );
       // Always show Spanish-friendly error message per UI-UX-GUIDELINES
       setError("Error al cargar los datos de las cuentas");
     } finally {
       setLoading(false);
     }
-  };
+  }, [clientId]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   if (loading) {
     return (
@@ -78,16 +87,23 @@ export function AccountsSummary({ clientId }: AccountsSummaryProps) {
       <Card>
         <CardHeader>
           <CardTitle>Resumen de Cuentas de Lealtad</CardTitle>
-          <CardDescription>No hay cuentas de lealtad para este cliente</CardDescription>
+          <CardDescription>
+            No hay cuentas de lealtad para este cliente
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-slate-500">El cliente aún no tiene cuentas de lealtad.</p>
+          <p className="text-sm text-slate-500">
+            El cliente aún no tiene cuentas de lealtad.
+          </p>
         </CardContent>
       </Card>
     );
   }
 
-  const totalPoints = Object.values(balances || {}).reduce((sum, points) => sum + points, 0);
+  const totalPoints = Object.values(balances || {}).reduce(
+    (sum, points) => sum + points,
+    0,
+  );
 
   return (
     <Card>
@@ -97,7 +113,8 @@ export function AccountsSummary({ clientId }: AccountsSummaryProps) {
           Resumen de Cuentas de Lealtad
         </CardTitle>
         <CardDescription>
-          {accounts.length} {accounts.length === 1 ? "cuenta" : "cuentas"} · {totalPoints.toLocaleString()} puntos totales
+          {accounts.length} {accounts.length === 1 ? "cuenta" : "cuentas"} ·{" "}
+          {totalPoints.toLocaleString()} puntos totales
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -114,7 +131,9 @@ export function AccountsSummary({ clientId }: AccountsSummaryProps) {
                   <p className="text-xs text-slate-500">ID: {account.id}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-blue-600">{balance.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {balance.toLocaleString()}
+                  </p>
                   <p className="text-xs text-slate-500">puntos</p>
                 </div>
               </div>

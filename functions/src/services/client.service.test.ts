@@ -1,9 +1,6 @@
 import { ClientService } from "./client.service";
 import { AuditService } from "./audit.service";
-import {
-  NotFoundError,
-  AppError,
-} from "../core/errors";
+import { NotFoundError, AppError } from "../core/errors";
 
 // Mock firebase-admin/firestore
 jest.mock("firebase-admin/firestore", () => {
@@ -11,7 +8,7 @@ jest.mock("firebase-admin/firestore", () => {
     collection: jest.fn(),
     runTransaction: jest.fn(),
   };
-  
+
   return {
     getFirestore: jest.fn(() => mockFirestore),
     FieldValue: {
@@ -66,11 +63,11 @@ describe("ClientService", () => {
       limit: jest.fn().mockReturnThis(),
       get: mockGet,
     };
-    
+
     mockWhere.mockReturnValue(mockQuery);
     mockOrderBy.mockReturnValue(mockQuery);
     mockLimit.mockReturnValue(mockQuery);
-    
+
     mockFirestoreInstance.collection.mockReturnValue({
       doc: mockDoc,
       where: mockWhere,
@@ -168,22 +165,24 @@ describe("ClientService", () => {
       mockLimit.mockReturnThis();
       mockGet.mockResolvedValue({
         empty: false,
-        docs: [{
-          id: "existing-client",
-          data: () => ({
-            name: { firstName: "Existing", firstLastName: "User" },
-            email: "existing@example.com",
-            phones: [],
-            addresses: [],
-            extra_data: {},
-            affinityGroupIds: [],
-            account_balances: {},
-            photoUrl: null,
-            identity_document: null,
-            created_at: { toDate: () => new Date() },
-            updated_at: { toDate: () => new Date() },
-          }),
-        }],
+        docs: [
+          {
+            id: "existing-client",
+            data: () => ({
+              name: { firstName: "Existing", firstLastName: "User" },
+              email: "existing@example.com",
+              phones: [],
+              addresses: [],
+              extra_data: {},
+              affinityGroupIds: [],
+              account_balances: {},
+              photoUrl: null,
+              identity_document: null,
+              created_at: { toDate: () => new Date() },
+              updated_at: { toDate: () => new Date() },
+            }),
+          },
+        ],
       });
 
       await expect(
@@ -210,7 +209,7 @@ describe("ClientService", () => {
       // Mock email check (empty)
       mockWhere.mockReturnThis();
       mockLimit.mockReturnThis();
-      
+
       // First call: email check -> empty
       mockGet.mockResolvedValueOnce({
         empty: true,
@@ -220,22 +219,27 @@ describe("ClientService", () => {
       // Second call: identity document check -> exists
       mockGet.mockResolvedValueOnce({
         empty: false,
-        docs: [{
-          id: "existing-client",
-          data: () => ({
-            name: { firstName: "Existing", firstLastName: "User" },
-            email: "other@example.com",
-            identity_document: { type: "cedula_identidad", number: "12345678" },
-            phones: [],
-            addresses: [],
-            extra_data: {},
-            affinityGroupIds: [],
-            account_balances: {},
-            photoUrl: null,
-            created_at: { toDate: () => new Date() },
-            updated_at: { toDate: () => new Date() },
-          }),
-        }],
+        docs: [
+          {
+            id: "existing-client",
+            data: () => ({
+              name: { firstName: "Existing", firstLastName: "User" },
+              email: "other@example.com",
+              identity_document: {
+                type: "cedula_identidad",
+                number: "12345678",
+              },
+              phones: [],
+              addresses: [],
+              extra_data: {},
+              affinityGroupIds: [],
+              account_balances: {},
+              photoUrl: null,
+              created_at: { toDate: () => new Date() },
+              updated_at: { toDate: () => new Date() },
+            }),
+          },
+        ],
       });
 
       await expect(
@@ -529,21 +533,21 @@ describe("ClientService", () => {
 
       // Mock searchByNumber calls
       // It calls searchByField (identity_document_lower.number) and searchByArrayField (phone_numbers)
-      
+
       // We need to mock the sequence of calls
       // 1. searchByField -> returns mockDocs
       // 2. searchByArrayField -> returns []
-      
+
       mockWhere.mockReturnThis();
       mockOrderBy.mockReturnThis();
       mockLimit.mockReturnThis();
-      
+
       // First call for identity document
       mockGet.mockResolvedValueOnce({
         docs: mockDocs,
         empty: false,
       });
-      
+
       // Second call for phone numbers (array search fetches all/limit)
       mockGet.mockResolvedValueOnce({
         docs: [],
@@ -579,11 +583,11 @@ describe("ClientService", () => {
       // Mock searchByName multi-word calls
       // 1. searchByField (firstName) -> returns mockDocs
       // 2. searchByField (lastName) -> returns mockDocs
-      
+
       mockWhere.mockReturnThis();
       mockOrderBy.mockReturnThis();
       mockLimit.mockReturnThis();
-      
+
       mockGet.mockResolvedValue({
         docs: mockDocs,
         empty: false,

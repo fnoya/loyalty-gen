@@ -8,7 +8,7 @@ jest.mock("firebase-admin", () => {
     collection: jest.fn(),
     runTransaction: jest.fn(),
   };
-  
+
   return {
     firestore: jest.fn(() => mockFirestore),
     initializeApp: jest.fn(),
@@ -60,7 +60,9 @@ describe("AccountService", () => {
       set: jest.fn().mockResolvedValue(undefined),
       update: jest.fn().mockResolvedValue(undefined),
       collection: jest.fn(() => ({
-        doc: jest.fn((docId?: string) => createMockDocRef(docId || "account123")),
+        doc: jest.fn((docId?: string) =>
+          createMockDocRef(docId || "account123")
+        ),
         get: jest.fn().mockResolvedValue({
           docs: [],
           empty: true,
@@ -168,7 +170,11 @@ describe("AccountService", () => {
       });
 
       await expect(
-        accountService.createAccount("nonexistent", { account_name: "Test" }, mockActor)
+        accountService.createAccount(
+          "nonexistent",
+          { account_name: "Test" },
+          mockActor
+        )
       ).rejects.toThrow(NotFoundError);
     });
   });
@@ -557,7 +563,10 @@ describe("AccountService", () => {
   describe("getAccountBalance", () => {
     it("should return account balance", async () => {
       // The beforeEach already sets up proper mocks
-      const result = await accountService.getAccountBalance("client123", "account123");
+      const result = await accountService.getAccountBalance(
+        "client123",
+        "account123"
+      );
 
       expect(result.points).toBe(100); // from the default mock
     });
@@ -634,7 +643,7 @@ describe("AccountService", () => {
       });
 
       const result = await accountService.listAccounts("client123");
-      
+
       expect(result).toHaveLength(2);
       expect(result[0]!.account_name).toBe("Main");
       expect(result[1]!.account_name).toBe("Bonus");

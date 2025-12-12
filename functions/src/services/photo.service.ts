@@ -167,9 +167,9 @@ export class PhotoService {
       // Extract path from URL
       // URL format: https://storage.googleapis.com/bucket-name/path/to/file
       // or emulator: http://localhost:9199/v0/b/bucket-name/o/path%2Fto%2Ffile
-      
+
       let filePath: string;
-      
+
       if (photoUrl.includes("/o/")) {
         // Emulator or API URL
         const parts = photoUrl.split("/o/");
@@ -182,7 +182,7 @@ export class PhotoService {
         // This is a simplification, robust parsing would be better
         // But for this project, we assume standard format
         // console.log("Standard URL format not supported for deletion yet");
-        return; 
+        return;
       }
 
       const file = this.bucket.file(filePath);

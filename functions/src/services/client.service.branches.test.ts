@@ -7,7 +7,7 @@ jest.mock("firebase-admin/firestore", () => {
     collection: jest.fn(),
     runTransaction: jest.fn(),
   };
-  
+
   return {
     getFirestore: jest.fn(() => mockFirestore),
     FieldValue: {
@@ -101,7 +101,9 @@ describe("ClientService Branch Coverage", () => {
           type: "cedula_identidad" as const,
           number: "12345678",
         },
-        phones: [{ type: "mobile" as const, number: "1234567890", isPrimary: true }],
+        phones: [
+          { type: "mobile" as const, number: "1234567890", isPrimary: true },
+        ],
         addresses: [],
         extra_data: {},
       };
@@ -134,21 +136,23 @@ describe("ClientService Branch Coverage", () => {
               number: "12345678",
             },
             phone_numbers: ["1234567890"],
-          })
-        })
+          }),
+        }),
       });
 
       await clientService.createClient(clientData, mockActor);
 
-      expect(mockSet).toHaveBeenCalledWith(expect.objectContaining({
-        name_lower: expect.objectContaining({
-          secondName: "paul",
-          secondLastName: "smith",
-        }),
-        email_lower: "john@example.com",
-        identity_document_lower: expect.anything(),
-        phone_numbers: ["1234567890"],
-      }));
+      expect(mockSet).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name_lower: expect.objectContaining({
+            secondName: "paul",
+            secondLastName: "smith",
+          }),
+          email_lower: "john@example.com",
+          identity_document_lower: expect.anything(),
+          phone_numbers: ["1234567890"],
+        })
+      );
     });
 
     it("should handle minimal data with missing optional fields", async () => {
@@ -177,21 +181,23 @@ describe("ClientService Branch Coverage", () => {
             ...clientData,
             created_at: new Date(),
             updated_at: new Date(),
-          })
-        })
+          }),
+        }),
       });
 
       await clientService.createClient(clientData, mockActor);
 
-      expect(mockSet).toHaveBeenCalledWith(expect.objectContaining({
-        name_lower: expect.objectContaining({
-          secondName: null,
-          secondLastName: null,
-        }),
-        email_lower: "john@example.com",
-        identity_document_lower: null,
-        phone_numbers: [],
-      }));
+      expect(mockSet).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name_lower: expect.objectContaining({
+            secondName: null,
+            secondLastName: null,
+          }),
+          email_lower: "john@example.com",
+          identity_document_lower: null,
+          phone_numbers: [],
+        })
+      );
     });
   });
 
@@ -211,7 +217,7 @@ describe("ClientService Branch Coverage", () => {
         data: () => ({
           name: { firstName: "John", firstLastName: "Doe" },
           created_at: new Date(),
-        })
+        }),
       });
 
       // Mock updated client fetch
@@ -221,22 +227,28 @@ describe("ClientService Branch Coverage", () => {
         data: () => ({
           name: { firstName: "Jane", firstLastName: "Smith" },
           created_at: new Date(),
-        })
+        }),
       });
 
       await clientService.updateClient("client123", updateData, mockActor);
 
-      expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({
-        name_lower: expect.anything(),
-      }));
-      expect(mockUpdate).not.toHaveBeenCalledWith(expect.objectContaining({
-        phone_numbers: expect.anything(),
-      }));
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name_lower: expect.anything(),
+        })
+      );
+      expect(mockUpdate).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          phone_numbers: expect.anything(),
+        })
+      );
     });
 
     it("should handle partial updates (only phones)", async () => {
       const updateData = {
-        phones: [{ type: "mobile" as const, number: "9876543210", isPrimary: true }],
+        phones: [
+          { type: "mobile" as const, number: "9876543210", isPrimary: true },
+        ],
       };
 
       // Mock existing client
@@ -246,7 +258,7 @@ describe("ClientService Branch Coverage", () => {
         data: () => ({
           name: { firstName: "John", firstLastName: "Doe" },
           created_at: new Date(),
-        })
+        }),
       });
 
       // Mock updated client fetch
@@ -257,54 +269,76 @@ describe("ClientService Branch Coverage", () => {
           name: { firstName: "John", firstLastName: "Doe" },
           phones: [{ type: "mobile", number: "9876543210" }],
           created_at: new Date(),
-        })
+        }),
       });
 
       await clientService.updateClient("client123", updateData, mockActor);
 
-      expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({
-        phone_numbers: ["9876543210"],
-      }));
-      expect(mockUpdate).not.toHaveBeenCalledWith(expect.objectContaining({
-        name_lower: expect.anything(),
-      }));
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          phone_numbers: ["9876543210"],
+        })
+      );
+      expect(mockUpdate).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          name_lower: expect.anything(),
+        })
+      );
     });
   });
 
   describe("searchClients branches", () => {
     it("should handle number search (digits only)", async () => {
       const query = "123";
-      
+
       // Mock searchByNumber results
       // searchByField calls where twice
       // searchByArrayField calls limit().get()
-      
+
       mockGet.mockResolvedValue({ docs: [], empty: true });
 
       await clientService.searchClients(query);
 
       // Check if number search was triggered
-      expect(mockWhere).toHaveBeenCalledWith("identity_document_lower.number", ">=", "123");
+      expect(mockWhere).toHaveBeenCalledWith(
+        "identity_document_lower.number",
+        ">=",
+        "123"
+      );
     });
 
     it("should handle name search (letters only)", async () => {
       const query = "John";
-      
+
       mockGet.mockResolvedValue({ docs: [], empty: true });
 
       await clientService.searchClients(query);
 
       // Check if name search was triggered (firstName)
-      expect(mockWhere).toHaveBeenCalledWith("name_lower.firstName", ">=", "john");
+      expect(mockWhere).toHaveBeenCalledWith(
+        "name_lower.firstName",
+        ">=",
+        "john"
+      );
     });
 
     it("should handle multi-word name search with intersection", async () => {
       const query = "John Doe";
-      
+
       // Mock firstName results
-      const johnDocs = [{ id: "c1", data: () => ({ name: { firstName: "John", firstLastName: "Doe" } }) }];
+      const johnDocs = [
+        {
+          id: "c1",
+          data: () => ({ name: { firstName: "John", firstLastName: "Doe" } }),
+        },
+      ];
       // Mock lastName results
-      const doeDocs = [{ id: "c1", data: () => ({ name: { firstName: "John", firstLastName: "Doe" } }) }];
+      const doeDocs = [
+        {
+          id: "c1",
+          data: () => ({ name: { firstName: "John", firstLastName: "Doe" } }),
+        },
+      ];
 
       // Mock searchByField calls
       mockGet
@@ -319,11 +353,21 @@ describe("ClientService Branch Coverage", () => {
 
     it("should handle multi-word name search without intersection", async () => {
       const query = "John Doe";
-      
+
       // Mock firstName results
-      const johnDocs = [{ id: "c1", data: () => ({ name: { firstName: "John", firstLastName: "Smith" } }) }];
+      const johnDocs = [
+        {
+          id: "c1",
+          data: () => ({ name: { firstName: "John", firstLastName: "Smith" } }),
+        },
+      ];
       // Mock lastName results
-      const doeDocs = [{ id: "c2", data: () => ({ name: { firstName: "Jane", firstLastName: "Doe" } }) }];
+      const doeDocs = [
+        {
+          id: "c2",
+          data: () => ({ name: { firstName: "Jane", firstLastName: "Doe" } }),
+        },
+      ];
 
       // Mock searchByField calls
       mockGet
@@ -333,8 +377,8 @@ describe("ClientService Branch Coverage", () => {
       const result = await clientService.searchClients(query);
 
       expect(result).toHaveLength(2);
-      expect(result.map(c => c.id)).toContain("c1");
-      expect(result.map(c => c.id)).toContain("c2");
+      expect(result.map((c) => c.id)).toContain("c1");
+      expect(result.map((c) => c.id)).toContain("c2");
     });
   });
 
@@ -349,7 +393,7 @@ describe("ClientService Branch Coverage", () => {
           created_at: new Date(),
           updated_at: new Date(),
           // All optional fields missing
-        })
+        }),
       });
 
       const result = await clientService.getClient("client123");

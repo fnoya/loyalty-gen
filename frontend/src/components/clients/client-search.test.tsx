@@ -32,7 +32,7 @@ describe("ClientSearch", () => {
       () => {
         expect(mockOnSearch).toHaveBeenCalledWith("John");
       },
-      { timeout: 400 }
+      { timeout: 400 },
     );
   });
 
@@ -92,7 +92,7 @@ describe("ClientSearch", () => {
         const lastCall = calls[calls.length - 1][0];
         expect(lastCall).toBe("John");
       },
-      { timeout: 400 }
+      { timeout: 400 },
     );
   });
 });

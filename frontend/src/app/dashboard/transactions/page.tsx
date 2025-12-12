@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { apiRequest } from '@/lib/api';
-import { AuditLog } from '@/types/audit';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { apiRequest } from "@/lib/api";
+import { AuditLog } from "@/types/audit";
 import {
   Table,
   TableBody,
@@ -11,14 +11,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { format } from 'date-fns';
-import { Loader2, Eye, ArrowRight, Receipt } from 'lucide-react';
-import { EmptyState } from '@/components/empty-state';
-import { Skeleton } from '@/components/ui/skeleton';
+} from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { format } from "date-fns";
+import { ArrowRight, Receipt } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function TransactionListPage() {
   const router = useRouter();
@@ -30,11 +30,13 @@ export default function TransactionListPage() {
     const fetchTransactions = async () => {
       try {
         // We use audit logs with resource_type=transaction to get a global list of transactions
-        const response = await apiRequest<{ data: AuditLog[] }>('/audit-logs?resource_type=transaction');
+        const response = await apiRequest<{ data: AuditLog[] }>(
+          "/audit-logs?resource_type=transaction",
+        );
         setTransactions(response.data);
       } catch (err) {
-        console.error('Failed to fetch transactions:', err);
-        setError('Failed to load transactions.');
+        console.error("Failed to fetch transactions:", err);
+        setError("Failed to load transactions.");
       } finally {
         setLoading(false);
       }
@@ -105,7 +107,10 @@ export default function TransactionListPage() {
             <TableBody>
               {transactions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell
+                    colSpan={6}
+                    className="text-center py-8 text-muted-foreground"
+                  >
                     <EmptyState
                       icon={Receipt}
                       title="No transactions found"
@@ -115,41 +120,51 @@ export default function TransactionListPage() {
                 </TableRow>
               ) : (
                 transactions.map((log) => {
-                  const isCredit = log.action === 'POINTS_CREDITED';
-                  const amount = log.changes?.after 
-                    ? Math.abs((log.changes.after as any).points - (log.changes.before as any).points)
+                  const isCredit = log.action === "POINTS_CREDITED";
+                  const amount = log.changes?.after
+                    ? Math.abs(
+                        (log.changes.after as Record<string, number>).points -
+                          (log.changes.before as Record<string, number>).points,
+                      )
                     : 0;
 
                   return (
                     <TableRow key={log.id}>
                       <TableCell className="whitespace-nowrap">
-                        {format(new Date(log.timestamp), 'MMM d, yyyy HH:mm')}
+                        {format(new Date(log.timestamp), "MMM d, yyyy HH:mm")}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={isCredit ? 'default' : 'secondary'}>
-                          {isCredit ? 'CREDIT' : 'DEBIT'}
+                        <Badge variant={isCredit ? "default" : "secondary"}>
+                          {isCredit ? "CREDIT" : "DEBIT"}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Button 
-                          variant="link" 
+                        <Button
+                          variant="link"
                           className="p-0 h-auto"
-                          onClick={() => router.push(`/dashboard/clients/${log.client_id}`)}
+                          onClick={() =>
+                            router.push(`/dashboard/clients/${log.client_id}`)
+                          }
                         >
                           {log.client_id?.substring(0, 8)}...
                         </Button>
                       </TableCell>
                       <TableCell className="font-medium">
-                        {isCredit ? '+' : '-'}{amount} pts
+                        {isCredit ? "+" : "-"}
+                        {amount} pts
                       </TableCell>
                       <TableCell className="max-w-[200px] truncate text-muted-foreground">
-                        {log.metadata.description || '-'}
+                        {log.metadata.description || "-"}
                       </TableCell>
                       <TableCell>
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => router.push(`/dashboard/transactions/${log.transaction_id}`)}
+                          onClick={() =>
+                            router.push(
+                              `/dashboard/transactions/${log.transaction_id}`,
+                            )
+                          }
                         >
                           <ArrowRight className="h-4 w-4" />
                         </Button>

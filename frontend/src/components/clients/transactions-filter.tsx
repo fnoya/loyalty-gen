@@ -25,10 +25,14 @@ interface TransactionsFilterProps {
   onFilterChange: (filters: TransactionFilters) => void;
 }
 
-export function TransactionsFilter({ onFilterChange }: TransactionsFilterProps) {
+export function TransactionsFilter({
+  onFilterChange,
+}: TransactionsFilterProps) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [transactionType, setTransactionType] = useState<"credit" | "debit" | "all">("all");
+  const [transactionType, setTransactionType] = useState<
+    "credit" | "debit" | "all"
+  >("all");
 
   // Debounce date changes
   const debouncedStartDate = useDebouncedValue(startDate, 500);
@@ -97,7 +101,12 @@ export function TransactionsFilter({ onFilterChange }: TransactionsFilterProps) 
 
         <div className="space-y-2">
           <Label htmlFor="transaction-type">Tipo de Transacción</Label>
-          <Select value={transactionType} onValueChange={(value) => setTransactionType(value as any)}>
+          <Select
+            value={transactionType}
+            onValueChange={(value) =>
+              setTransactionType(value as "all" | "credit" | "debit")
+            }
+          >
             <SelectTrigger id="transaction-type">
               <SelectValue placeholder="Seleccionar tipo" />
             </SelectTrigger>

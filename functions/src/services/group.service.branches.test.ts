@@ -8,7 +8,7 @@ jest.mock("firebase-admin/firestore", () => {
     collection: jest.fn(),
     runTransaction: jest.fn(),
   };
-  
+
   return {
     getFirestore: jest.fn(() => mockFirestore),
     FieldValue: {
@@ -92,9 +92,9 @@ describe("GroupService Branch Coverage", () => {
           data: () => ({
             name: "Test Group",
             // Missing description in data
-            created_at: new Date()
-          })
-        })
+            created_at: new Date(),
+          }),
+        }),
       });
 
       const result = await groupService.createGroup(request as any, mockActor);
@@ -109,14 +109,14 @@ describe("GroupService Branch Coverage", () => {
           data: () => ({
             name: "Test Group",
             // Missing description
-            created_at: new Date()
-          })
-        }
+            created_at: new Date(),
+          }),
+        },
       ];
 
       mockGet.mockResolvedValueOnce({
         docs: mockGroups,
-        forEach: (cb: any) => mockGroups.forEach(cb)
+        forEach: (cb: any) => mockGroups.forEach(cb),
       });
 
       const result = await groupService.listGroups();
@@ -134,9 +134,9 @@ describe("GroupService Branch Coverage", () => {
           data: () => ({
             name: "Test Group",
             // Missing description
-            created_at: new Date()
-          })
-        })
+            created_at: new Date(),
+          }),
+        }),
       });
 
       const result = await groupService.getGroup(groupId);
@@ -152,21 +152,23 @@ describe("GroupService Branch Coverage", () => {
 
       // Mock group exists
       mockGet.mockResolvedValueOnce({ exists: true });
-      
+
       // Mock client exists but has no affinityGroupIds
-      mockGet.mockResolvedValueOnce({ 
-        exists: true, 
+      mockGet.mockResolvedValueOnce({
+        exists: true,
         data: () => ({
           name: "Test Client",
           // affinityGroupIds is undefined
-        })
+        }),
       });
 
       await groupService.assignClientToGroup(groupId, clientId, mockActor);
 
-      expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({
-        affinityGroupIds: expect.anything()
-      }));
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          affinityGroupIds: expect.anything(),
+        })
+      );
     });
 
     it("should handle client with undefined affinityGroupIds in removeClientFromGroup", async () => {
@@ -175,19 +177,20 @@ describe("GroupService Branch Coverage", () => {
 
       // Mock group exists
       mockGet.mockResolvedValueOnce({ exists: true });
-      
+
       // Mock client exists but has no affinityGroupIds
-      mockGet.mockResolvedValueOnce({ 
-        exists: true, 
+      mockGet.mockResolvedValueOnce({
+        exists: true,
         data: () => ({
           name: "Test Client",
           // affinityGroupIds is undefined
-        })
+        }),
       });
 
       // Should throw because client is not in group (empty list)
-      await expect(groupService.removeClientFromGroup(groupId, clientId, mockActor))
-        .rejects.toThrow(ValidationError);
+      await expect(
+        groupService.removeClientFromGroup(groupId, clientId, mockActor)
+      ).rejects.toThrow(ValidationError);
     });
   });
 });

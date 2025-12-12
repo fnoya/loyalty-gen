@@ -70,7 +70,11 @@ router.post(
     try {
       const { groupId, clientId } = req.params;
       const actor = getActor(req);
-      await groupService.instance.assignClientToGroup(groupId!, clientId!, actor);
+      await groupService.instance.assignClientToGroup(
+        groupId!,
+        clientId!,
+        actor
+      );
       res.status(200).json({
         message: `Client '${clientId}' assigned to group '${groupId}'`,
       });
@@ -92,7 +96,11 @@ router.delete(
     try {
       const { groupId, clientId } = req.params;
       const actor = getActor(req);
-      await groupService.instance.removeClientFromGroup(groupId!, clientId!, actor);
+      await groupService.instance.removeClientFromGroup(
+        groupId!,
+        clientId!,
+        actor
+      );
       res.status(200).json({
         message: `Client '${clientId}' removed from group '${groupId}'`,
       });

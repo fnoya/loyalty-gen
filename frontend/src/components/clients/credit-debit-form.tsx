@@ -26,7 +26,12 @@ interface CreditDebitFormProps {
   onSuccess?: () => void;
 }
 
-export function CreditDebitForm({ clientId, accountId, type, onSuccess }: CreditDebitFormProps) {
+export function CreditDebitForm({
+  clientId,
+  accountId,
+  type,
+  onSuccess,
+}: CreditDebitFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
@@ -53,18 +58,28 @@ export function CreditDebitForm({ clientId, accountId, type, onSuccess }: Credit
       });
 
       const successMessage =
-        type === "credit" ? "Puntos acreditados exitosamente" : "Puntos debitados exitosamente";
+        type === "credit"
+          ? "Puntos acreditados exitosamente"
+          : "Puntos debitados exitosamente";
       toast.success(successMessage);
 
       reset();
       onSuccess?.();
-    } catch (err: any) {
-      const errorMessage = err.message || `Error al ${type === "credit" ? "acreditar" : "debitar"} puntos`;
-      
+    } catch (err: unknown) {
+      const errorMessage =
+        (err instanceof Error ? err.message : null) ||
+        `Error al ${type === "credit" ? "acreditar" : "debitar"} puntos`;
+
       // Handle insufficient balance error - check both code and message
-      if (type === "debit" && (err.code === "INSUFFICIENT_BALANCE" || errorMessage.includes("Insufficient balance"))) {
+      if (
+        type === "debit" &&
+        (err.code === "INSUFFICIENT_BALANCE" ||
+          errorMessage.includes("Insufficient balance"))
+      ) {
         // Don't log insufficient balance as an error - it's a handled, expected case
-        setApiError("El saldo de la cuenta es insuficiente para realizar el débito.");
+        setApiError(
+          "El saldo de la cuenta es insuficiente para realizar el débito.",
+        );
       } else {
         console.error(`Failed to ${type} points:`, err);
         setApiError(errorMessage);
@@ -81,7 +96,9 @@ export function CreditDebitForm({ clientId, accountId, type, onSuccess }: Credit
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor={`${type}-amount-${accountId}`}>Cantidad de Puntos *</Label>
+        <Label htmlFor={`${type}-amount-${accountId}`}>
+          Cantidad de Puntos *
+        </Label>
         <Input
           id={`${type}-amount-${accountId}`}
           type="number"
@@ -90,11 +107,15 @@ export function CreditDebitForm({ clientId, accountId, type, onSuccess }: Credit
           {...register("amount", { valueAsNumber: true })}
           disabled={isSubmitting}
         />
-        {errors.amount && <p className="text-sm text-red-500">{errors.amount.message}</p>}
+        {errors.amount && (
+          <p className="text-sm text-red-500">{errors.amount.message}</p>
+        )}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor={`${type}-description-${accountId}`}>Descripción (opcional)</Label>
+        <Label htmlFor={`${type}-description-${accountId}`}>
+          Descripción (opcional)
+        </Label>
         <Input
           id={`${type}-description-${accountId}`}
           type="text"
@@ -102,7 +123,9 @@ export function CreditDebitForm({ clientId, accountId, type, onSuccess }: Credit
           {...register("description")}
           disabled={isSubmitting}
         />
-        {errors.description && <p className="text-sm text-red-500">{errors.description.message}</p>}
+        {errors.description && (
+          <p className="text-sm text-red-500">{errors.description.message}</p>
+        )}
       </div>
 
       {apiError && (
@@ -115,7 +138,12 @@ export function CreditDebitForm({ clientId, accountId, type, onSuccess }: Credit
         </div>
       )}
 
-      <Button type="submit" variant={buttonVariant} disabled={isSubmitting} className="w-full">
+      <Button
+        type="submit"
+        variant={buttonVariant}
+        disabled={isSubmitting}
+        className="w-full"
+      >
         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         {buttonLabel}
       </Button>
