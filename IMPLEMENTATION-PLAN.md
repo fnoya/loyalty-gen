@@ -756,7 +756,7 @@ Total:            172 passed, 0 failed (172 tests)
 **Priority:** Medium | **Estimated Time:** 8-10 hours
 
 **Deliverables:**
-- [ ] `components/clients/transactions-filter.tsx` - Filter controls
+- [x] `components/clients/transactions-filter.tsx` - Filter controls
   - `DateRangePicker` from shadcn/ui (using react-day-picker)
   - `Select` for transaction type with options:
     - "Todas" (null)
@@ -764,20 +764,20 @@ Total:            172 passed, 0 failed (172 tests)
     - "Débito" (debit)
   - "Limpiar filtros" button
   - Horizontal layout for filter controls
-- [ ] Integration with `GET /clients/{client_id}/accounts/{account_id}/transactions`
+- [x] Integration with `GET /clients/{client_id}/accounts/{account_id}/transactions`
   - Pass date range and type query parameters
-- [ ] Debounce on date selection (500ms)
-- [ ] Filter application updates transaction list
-- [ ] Clear filters resets to initial state
-- [ ] Loading state while fetching filtered results
+- [x] Debounce on date selection (500ms)
+- [x] Filter application updates transaction list
+- [x] Clear filters resets to initial state
+- [x] Loading state while fetching filtered results
 
 **Acceptance Criteria:**
-- [ ] DateRangePicker functions correctly
-- [ ] Type Select has all options
-- [ ] Filters update transaction list
-- [ ] "Limpiar filtros" button resets all controls
-- [ ] 500ms debounce works on date picker
-- [ ] Loading state shown during filter application
+- [x] DateRangePicker functions correctly
+- [x] Type Select has all options
+- [x] Filters update transaction list
+- [x] "Limpiar filtros" button resets all controls
+- [x] 500ms debounce works on date picker
+- [x] Loading state shown during filter application
 
 **Reference:** USER-STORIES.md HU8
 

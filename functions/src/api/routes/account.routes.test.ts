@@ -324,6 +324,9 @@ describe("Account Routes", () => {
         "client-123",
         "account-123",
         10,
+        undefined,
+        undefined,
+        undefined,
         undefined
       );
     });
@@ -345,6 +348,9 @@ describe("Account Routes", () => {
         "client-123",
         "account-123",
         50,
+        undefined,
+        undefined,
+        undefined,
         undefined
       );
     });

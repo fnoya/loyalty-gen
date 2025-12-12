@@ -10,6 +10,7 @@ import { apiRequest } from "@/lib/api";
 import { Transaction } from "@/types/transaction";
 import { TransactionsList } from "./transactions-list";
 import { CreditDebitForm } from "./credit-debit-form";
+import { TransactionsFilter, type TransactionFilters } from "./transactions-filter";
 
 interface AccountCardProps {
   clientId: string;
@@ -34,12 +35,37 @@ export function AccountCard({
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [showAllTransactions, setShowAllTransactions] = useState(false);
+  const [filters, setFilters] = useState<TransactionFilters>({});
+
+  const buildTransactionsUrl = useCallback((limit: number, cursor?: string | null) => {
+    const params = new URLSearchParams();
+    params.set("limit", limit.toString());
+
+    if (filters.startDate) {
+      params.set("start_date", filters.startDate.toISOString());
+    }
+    if (filters.endDate) {
+      params.set("end_date", filters.endDate.toISOString());
+    }
+    if (filters.type) {
+      params.set("transaction_type", filters.type);
+    }
+    if (cursor) {
+      params.set("next_cursor", cursor);
+    }
+
+    return `/clients/${clientId}/accounts/${accountId}/transactions?${params.toString()}`;
+  }, [clientId, accountId, filters]);
 
   const fetchTransactions = useCallback(async () => {
     try {
       setLoading(true);
+      setShowAllTransactions(false);
+      setNextCursor(null);
+      setHasMore(false);
+      const url = buildTransactionsUrl(5);
       const response = await apiRequest<{ data: Transaction[]; paging?: { next_cursor?: string } }>(
-        `/clients/${clientId}/accounts/${accountId}/transactions?limit=5`,
+        url,
       );
       setTransactions(response.data || []);
       const cursor = response.paging?.next_cursor || null;
@@ -50,15 +76,16 @@ export function AccountCard({
     } finally {
       setLoading(false);
     }
-  }, [clientId, accountId]);
+  }, [buildTransactionsUrl]);
 
   const fetchMoreTransactions = useCallback(async () => {
     if (!nextCursor) return;
     try {
       setLoadingMore(true);
       setShowAllTransactions(true);
+      const url = buildTransactionsUrl(20, nextCursor);
       const response = await apiRequest<{ data: Transaction[]; paging?: { next_cursor?: string } }>(
-        `/clients/${clientId}/accounts/${accountId}/transactions?limit=20&next_cursor=${encodeURIComponent(nextCursor)}`,
+        url,
       );
       setTransactions((prev) => [...prev, ...(response.data || [])]);
       const cursor = response.paging?.next_cursor || null;
@@ -69,7 +96,7 @@ export function AccountCard({
     } finally {
       setLoadingMore(false);
     }
-  }, [clientId, accountId, nextCursor]);
+  }, [nextCursor, buildTransactionsUrl]);
 
   useEffect(() => {
     setBalance(initialBalance);
@@ -78,6 +105,52 @@ export function AccountCard({
   useEffect(() => {
     fetchTransactions();
   }, [fetchTransactions, refreshKey]);
+
+  // Handle filter changes - fetch with new filters
+  useEffect(() => {
+    // Build URL with current filters (fetch limit+1 to detect if more results exist)
+    const params = new URLSearchParams();
+    params.set("limit", "6"); // Fetch one extra to detect if more results exist
+    
+    if (filters.startDate) {
+      params.set("start_date", filters.startDate.toISOString());
+    }
+    if (filters.endDate) {
+      params.set("end_date", filters.endDate.toISOString());
+    }
+    if (filters.type) {
+      params.set("transaction_type", filters.type);
+    }
+
+    const fetchFilteredTransactions = async () => {
+      try {
+        setLoading(true);
+        setShowAllTransactions(false);
+        setNextCursor(null);
+        setHasMore(false);
+        const url = `/clients/${clientId}/accounts/${accountId}/transactions?${params.toString()}`;
+        const response = await apiRequest<{ data: Transaction[]; paging?: { next_cursor?: string } }>(
+          url,
+        );
+        // Slice to 5 items for display, but keep nextCursor if there are 6+ items
+        const allData = response.data || [];
+        const displayData = allData.slice(0, 5);
+        setTransactions(displayData);
+        
+        // Determine if there are more results
+        const hasMoreResults = allData.length > 5;
+        const cursor = response.paging?.next_cursor || (hasMoreResults ? allData[4]?.id : null);
+        setNextCursor(cursor);
+        setHasMore(!!cursor);
+      } catch (error) {
+        console.error("Failed to fetch transactions with filters:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFilteredTransactions();
+  }, [filters.startDate, filters.endDate, filters.type, clientId, accountId]);
 
   const handleTransactionSuccess = () => {
     // Trigger refetch of transactions
@@ -132,6 +205,11 @@ export function AccountCard({
         </div>
 
         <Separator />
+
+        {/* Transaction Filter */}
+        <TransactionsFilter
+          onFilterChange={setFilters}
+        />
 
         {/* Recent Transactions */}
         <div className="space-y-3">

@@ -425,19 +425,38 @@ export class AccountService {
     clientId: string,
     accountId: string,
     limit: number = 50,
-    nextCursor?: string
+    nextCursor?: string,
+    startDate?: Date,
+    endDate?: Date,
+    transactionType?: "credit" | "debit"
   ): Promise<{ transactions: Transaction[]; nextCursor: string | null }> {
     // Verify account exists
     await this.getAccount(clientId, accountId);
 
-    let query = this.firestore
+    let query: FirebaseFirestore.Query = this.firestore
       .collection("clients")
       .doc(clientId)
       .collection("loyaltyAccounts")
       .doc(accountId)
       .collection("pointTransactions")
-      .orderBy("timestamp", "desc")
-      .limit(limit + 1);
+      .orderBy("timestamp", "desc");
+
+    // Apply date filters
+    if (startDate) {
+      query = query.where("timestamp", ">=", startDate);
+    }
+
+    if (endDate) {
+      query = query.where("timestamp", "<=", endDate);
+    }
+
+    // Apply transaction type filter
+    if (transactionType) {
+      query = query.where("transaction_type", "==", transactionType);
+    }
+
+    // Add limit + 1 for pagination detection
+    query = query.limit(limit + 1);
 
     if (nextCursor) {
       const cursorDoc = await this.firestore

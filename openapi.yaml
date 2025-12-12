@@ -677,6 +677,8 @@ paths:
     get:
       tags: [Loyalty Accounts]
       summary: Listar Transacciones de una Cuenta
+      description: |
+        Obtiene una lista paginada de transacciones con soporte para filtrado por tipo y rango de fechas.
       parameters:
         - $ref: '#/components/parameters/ClientId'
         - $ref: '#/components/parameters/AccountId'
@@ -685,10 +687,30 @@ paths:
           schema:
             type: integer
             default: 50
+            minimum: 1
+            maximum: 100
         - name: next_cursor
           in: query
           schema:
             type: string
+        - name: start_date
+          in: query
+          description: Fecha de inicio en formato ISO 8601 (inclusive).
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          description: Fecha de fin en formato ISO 8601 (inclusive).
+          schema:
+            type: string
+            format: date-time
+        - name: transaction_type
+          in: query
+          description: Filtrar por tipo de transacción. Si no se proporciona, devuelve todas.
+          schema:
+            type: string
+            enum: [credit, debit]
       responses:
         '200':
           description: Una lista paginada de transacciones.

@@ -16,9 +16,9 @@ import {
 import { useDebouncedValue } from "./client-search";
 
 export interface TransactionFilters {
-  startDate?: string;
-  endDate?: string;
-  transactionType?: "credit" | "debit" | null;
+  startDate?: Date;
+  endDate?: Date;
+  type?: "credit" | "debit" | null;
 }
 
 interface TransactionsFilterProps {
@@ -42,15 +42,15 @@ export function TransactionsFilter({
     const filters: TransactionFilters = {};
 
     if (debouncedStartDate) {
-      filters.startDate = debouncedStartDate;
+      filters.startDate = new Date(debouncedStartDate);
     }
 
     if (debouncedEndDate) {
-      filters.endDate = debouncedEndDate;
+      filters.endDate = new Date(debouncedEndDate);
     }
 
     if (transactionType !== "all") {
-      filters.transactionType = transactionType as "credit" | "debit";
+      filters.type = transactionType as "credit" | "debit";
     }
 
     onFilterChange(filters);

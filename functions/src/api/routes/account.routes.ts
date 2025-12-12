@@ -122,7 +122,7 @@ router.post(
 
 /**
  * @route GET /api/v1/clients/:clientId/accounts/:accountId/transactions
- * @desc List transactions for a loyalty account with pagination
+ * @desc List transactions for a loyalty account with pagination and filtering
  * @access Protected
  */
 router.get(
@@ -134,9 +134,41 @@ router.get(
       const limitParam = req.query.limit as string | undefined;
       const limit = limitParam ? parseInt(limitParam) : 50;
       const nextCursor = req.query.next_cursor as string | undefined;
+      const startDate = req.query.start_date as string | undefined;
+      const endDate = req.query.end_date as string | undefined;
+      const transactionType = req.query.transaction_type as string | undefined;
 
       if (limit < 1 || limit > 100) {
         throw new ValidationError("Limit must be between 1 and 100");
+      }
+
+      // Validate date filters
+      let startDateObj: Date | undefined;
+      let endDateObj: Date | undefined;
+
+      if (startDate) {
+        startDateObj = new Date(startDate);
+        if (isNaN(startDateObj.getTime())) {
+          throw new ValidationError("start_date must be a valid ISO 8601 date");
+        }
+      }
+
+      if (endDate) {
+        endDateObj = new Date(endDate);
+        if (isNaN(endDateObj.getTime())) {
+          throw new ValidationError("end_date must be a valid ISO 8601 date");
+        }
+      }
+
+      if (startDateObj && endDateObj && startDateObj > endDateObj) {
+        throw new ValidationError("start_date must be before end_date");
+      }
+
+      // Validate transaction type
+      if (transactionType && !["credit", "debit"].includes(transactionType)) {
+        throw new ValidationError(
+          "transaction_type must be 'credit' or 'debit'"
+        );
       }
 
       const { transactions, nextCursor: newCursor } =
@@ -144,7 +176,10 @@ router.get(
           clientId!,
           accountId!,
           limit,
-          nextCursor
+          nextCursor,
+          startDateObj,
+          endDateObj,
+          transactionType as "credit" | "debit" | undefined
         );
 
       res.status(200).json({

@@ -29,6 +29,71 @@ jest.mock("./credit-debit-form", () => ({
   ),
 }));
 
+jest.mock("./transactions-filter", () => ({
+  TransactionsFilter: ({ onFilterChange }: any) => (
+    <div data-testid="transactions-filter" />
+  ),
+}));
+
+jest.mock("@/components/ui/select", () => {
+  const React = require("react");
+  return {
+    Select: ({ children, ...props }: any) =>
+      React.createElement(
+        "div",
+        { "data-testid": "select-root", ...props },
+        children,
+      ),
+    SelectGroup: ({ children, ...props }: any) =>
+      React.createElement(
+        "div",
+        { "data-testid": "select-group", ...props },
+        children,
+      ),
+    SelectValue: ({ placeholder }: any) =>
+      React.createElement("span", null, placeholder),
+    SelectTrigger: ({ children, ...props }: any) =>
+      React.createElement(
+        "button",
+        { "data-testid": "select-trigger", role: "combobox", ...props },
+        children,
+      ),
+    SelectContent: ({ children, ...props }: any) =>
+      React.createElement(
+        "div",
+        { "data-testid": "select-content", ...props },
+        children,
+      ),
+    SelectItem: ({ children, value, ...props }: any) =>
+      React.createElement(
+        "div",
+        { "data-testid": `select-item-${value}`, ...props },
+        children,
+      ),
+    SelectLabel: ({ children, ...props }: any) =>
+      React.createElement(
+        "label",
+        { "data-testid": "select-label", ...props },
+        children,
+      ),
+    SelectSeparator: (props: any) =>
+      React.createElement("div", {
+        "data-testid": "select-separator",
+        ...props,
+      }),
+    SelectScrollUpButton: (props: any) =>
+      React.createElement("div", {
+        "data-testid": "select-scroll-up",
+        ...props,
+      }),
+    SelectScrollDownButton: (props: any) =>
+      React.createElement("div", {
+        "data-testid": "select-scroll-down",
+        ...props,
+      }),
+  };
+});
+
 describe("AccountCard", () => {
   const mockTransactions = {
     data: [

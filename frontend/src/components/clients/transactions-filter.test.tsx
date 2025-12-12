@@ -13,6 +13,8 @@ jest.mock("@/components/ui/select", () => {
   return {
     Select: ({
       children,
+      onValueChange,
+      value,
       ...props
     }: {
       children: React.ReactNode;
@@ -125,9 +127,11 @@ describe("TransactionsFilter", () => {
 
     await waitFor(
       () => {
-        expect(mockOnFilterChange).toHaveBeenCalledWith({
-          startDate: "2024-01-01",
-        });
+        expect(mockOnFilterChange).toHaveBeenCalledWith(
+          expect.objectContaining({
+            startDate: expect.any(Date),
+          })
+        );
       },
       { timeout: 600 },
     );
@@ -144,9 +148,11 @@ describe("TransactionsFilter", () => {
 
     await waitFor(
       () => {
-        expect(mockOnFilterChange).toHaveBeenCalledWith({
-          endDate: "2024-01-31",
-        });
+        expect(mockOnFilterChange).toHaveBeenCalledWith(
+          expect.objectContaining({
+            endDate: expect.any(Date),
+          })
+        );
       },
       { timeout: 600 },
     );
@@ -210,21 +216,24 @@ describe("TransactionsFilter", () => {
 
     render(<TransactionsFilter onFilterChange={mockOnFilterChange} />);
 
+    // Clear the initial mount call
+    mockOnFilterChange.mockClear();
+
     const startDateInput = screen.getByLabelText("Fecha Inicio");
 
     await user.type(startDateInput, "2024-01-01");
 
-    // Should not call immediately
-    expect(mockOnFilterChange).not.toHaveBeenCalledWith(
-      expect.objectContaining({ startDate: "2024-01-01" }),
-    );
+    // Should not call immediately (after clearing initial mount)
+    expect(mockOnFilterChange).not.toHaveBeenCalled();
 
     // Wait for debounce (500ms)
     await waitFor(
       () => {
-        expect(mockOnFilterChange).toHaveBeenCalledWith({
-          startDate: "2024-01-01",
-        });
+        expect(mockOnFilterChange).toHaveBeenCalledWith(
+          expect.objectContaining({
+            startDate: expect.any(Date),
+          })
+        );
       },
       { timeout: 600 },
     );
@@ -244,10 +253,12 @@ describe("TransactionsFilter", () => {
 
     await waitFor(
       () => {
-        expect(mockOnFilterChange).toHaveBeenCalledWith({
-          startDate: "2024-01-01",
-          endDate: "2024-01-31",
-        });
+        expect(mockOnFilterChange).toHaveBeenCalledWith(
+          expect.objectContaining({
+            startDate: expect.any(Date),
+            endDate: expect.any(Date),
+          })
+        );
       },
       { timeout: 600 },
     );

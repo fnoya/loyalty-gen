@@ -111,9 +111,15 @@ else
 fi
 echo
 
+echo "🔎 Testing Transaction Filtering API..."
+node tests/integration/test-transaction-filtering.mjs 2>&1 | tee /tmp/tx-filter-test-output.txt || true
+TX_FILTER_TESTS_PASSED=$(grep -oE "Test Results:.*[0-9]+ passed" /tmp/tx-filter-test-output.txt | grep -oE "[0-9]+ passed" | head -1 | grep -oE "[0-9]+" || echo "0")
+TX_FILTER_TESTS_FAILED=$(grep -oE "Test Results:.*[0-9]+ failed" /tmp/tx-filter-test-output.txt | grep -oE "[0-9]+ failed" | head -1 | grep -oE "[0-9]+" || echo "0")
+echo
+
 # Calculate totals
-INTEGRATION_TESTS_PASSED=$((CLIENT_TESTS_PASSED + GROUP_TESTS_PASSED + ACCOUNT_TESTS_PASSED + AUDIT_TESTS_PASSED))
-INTEGRATION_TESTS_FAILED=$((CLIENT_TESTS_FAILED + GROUP_TESTS_FAILED + ACCOUNT_TESTS_FAILED + AUDIT_TESTS_FAILED))
+INTEGRATION_TESTS_PASSED=$((CLIENT_TESTS_PASSED + GROUP_TESTS_PASSED + ACCOUNT_TESTS_PASSED + AUDIT_TESTS_PASSED + TX_FILTER_TESTS_PASSED))
+INTEGRATION_TESTS_FAILED=$((CLIENT_TESTS_FAILED + GROUP_TESTS_FAILED + ACCOUNT_TESTS_FAILED + AUDIT_TESTS_FAILED + TX_FILTER_TESTS_FAILED))
 INTEGRATION_TESTS_TOTAL=$((INTEGRATION_TESTS_PASSED + INTEGRATION_TESTS_FAILED))
 TOTAL_TESTS_PASSED=$((UNIT_TESTS_PASSED + FRONTEND_TESTS_PASSED + INTEGRATION_TESTS_PASSED))
 TOTAL_TESTS_FAILED=$((UNIT_TESTS_FAILED + FRONTEND_TESTS_FAILED + INTEGRATION_TESTS_FAILED))
@@ -134,7 +140,7 @@ printf "║                       %s %-53s ║\n" "$STATUS_ICON" "$STATUS_TEXT"
 echo "╠════════════════════════════════════════════════════════════════════════════════╣"
 printf "║  %-77s ║\n" "Backend Tests:     $UNIT_TESTS_PASSED passed, $UNIT_TESTS_FAILED failed"
 printf "║  %-77s ║\n" "Frontend Tests:    $FRONTEND_TESTS_PASSED passed, $FRONTEND_TESTS_FAILED failed"
-printf "║  %-76s ║\n" "Integration Tests: $INTEGRATION_TESTS_PASSED passed, $INTEGRATION_TESTS_FAILED failed ($CLIENT_TESTS_PASSED clients + $GROUP_TESTS_PASSED groups + $ACCOUNT_TESTS_PASSED accounts + $AUDIT_TESTS_PASSED audit)"
+printf "║  %-76s ║\n" "Integration Tests: $INTEGRATION_TESTS_PASSED passed, $INTEGRATION_TESTS_FAILED failed ($CLIENT_TESTS_PASSED clients + $GROUP_TESTS_PASSED groups + $ACCOUNT_TESTS_PASSED accounts + $AUDIT_TESTS_PASSED audit + $TX_FILTER_TESTS_PASSED filtering)"
 printf "║  %-77s ║\n" "Total:            $TOTAL_TESTS_PASSED passed, $TOTAL_TESTS_FAILED failed ($TOTAL_TESTS tests)"
 echo "╚════════════════════════════════════════════════════════════════════════════════╝"
 

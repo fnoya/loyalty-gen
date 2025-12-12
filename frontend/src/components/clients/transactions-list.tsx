@@ -52,6 +52,7 @@ export function TransactionsList({
 
   // Check if there are more transactions beyond the display limit
   const hasMoreTransactions = limit && transactions.length > limit;
+  const additionalCount = hasMoreTransactions ? transactions.length - limit : 0;
 
   return (
     <div className="space-y-2">
@@ -101,12 +102,12 @@ export function TransactionsList({
         );
       })}
 
-      {showViewMore && onViewMore && (
+      {showViewMore && onViewMore && hasMoreTransactions && (
         <button
           onClick={onViewMore}
           className="w-full py-2 text-sm text-blue-600 hover:text-blue-700 font-medium mt-2"
         >
-          Ver más transacciones
+          Ver más transacciones ({additionalCount} adicionales)
         </button>
       )}
     </div>
