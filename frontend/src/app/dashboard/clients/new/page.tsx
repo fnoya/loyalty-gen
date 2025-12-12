@@ -231,7 +231,7 @@ export default function NewClientPage() {
               <Label>Type</Label>
               <Select
                 onValueChange={(value: string) =>
-                  form.setValue("identity_document.type", value)
+                  form.setValue("identity_document.type", value as "cedula_identidad" | "pasaporte")
                 }
                 defaultValue={form.getValues("identity_document.type")}
               >
@@ -286,7 +286,7 @@ export default function NewClientPage() {
                     <Label>Type</Label>
                     <Select
                       onValueChange={(value: string) =>
-                        form.setValue(`phones.${index}.type`, value)
+                        form.setValue(`phones.${index}.type`, value as "mobile" | "home" | "work" | "other")
                       }
                       defaultValue={field.type}
                     >

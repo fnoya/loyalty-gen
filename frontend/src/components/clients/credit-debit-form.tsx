@@ -73,7 +73,10 @@ export function CreditDebitForm({
       // Handle insufficient balance error - check both code and message
       if (
         type === "debit" &&
-        (err.code === "INSUFFICIENT_BALANCE" ||
+        ((typeof err === "object" &&
+          err !== null &&
+          "code" in err &&
+          err.code === "INSUFFICIENT_BALANCE") ||
           errorMessage.includes("Insufficient balance"))
       ) {
         // Don't log insufficient balance as an error - it's a handled, expected case
