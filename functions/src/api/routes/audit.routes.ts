@@ -36,9 +36,9 @@ router.get(
       if (req.query.client_id) query.client_id = req.query.client_id as string;
       if (req.query.account_id)
         query.account_id = req.query.account_id as string;
-      if (req.query.start_date)
-        query.start_date = req.query.start_date as string;
-      if (req.query.end_date) query.end_date = req.query.end_date as string;
+      if (req.query.from_date)
+        query.start_date = req.query.from_date as string;
+      if (req.query.to_date) query.end_date = req.query.to_date as string;
       if (req.query.next_cursor)
         query.next_cursor = req.query.next_cursor as string;
 
@@ -105,12 +105,12 @@ router.get(
 );
 
 /**
- * @route GET /api/v1/clients/:clientId/loyalty-accounts/:accountId/audit-logs
+ * @route GET /api/v1/clients/:clientId/accounts/:accountId/audit-logs
  * @desc Get audit logs for a specific loyalty account
  * @access Protected
  */
 router.get(
-  "/clients/:clientId/loyalty-accounts/:accountId/audit-logs",
+  "/clients/:clientId/accounts/:accountId/audit-logs",
   authenticate,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {

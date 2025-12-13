@@ -9,10 +9,10 @@ import { AuditFilters, type AuditFilterState } from "@/components/audit/audit-fi
 export default function AuditLogsPage() {
   const [filters, setFilters] = useState<AuditFilterState>({
     action: "",
-    clientId: "",
-    accountId: "",
-    dateFrom: "",
-    dateTo: "",
+    client_id: "",
+    account_id: "",
+    from_date: "",
+    to_date: "",
   });
 
   return (
@@ -33,10 +33,10 @@ export default function AuditLogsPage() {
             endpoint="/audit-logs"
             query={{
               action: filters.action || undefined,
-              clientId: filters.clientId || undefined,
-              accountId: filters.accountId || undefined,
-              from_date: filters.dateFrom ? new Date(filters.dateFrom).toISOString() : undefined,
-              to_date: filters.dateTo ? new Date(filters.dateTo).toISOString() : undefined,
+              client_id: filters.client_id || undefined,
+              account_id: filters.account_id || undefined,
+              from_date: filters.from_date ? new Date(filters.from_date).toISOString() : undefined,
+              to_date: filters.to_date ? new Date(filters.to_date).toISOString() : undefined,
             }}
             pageSize={20}
             emptyMessage="No se encontraron registros de auditoría con los filtros aplicados."
