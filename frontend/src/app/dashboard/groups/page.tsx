@@ -121,12 +121,7 @@ export default function GroupsManagementPage() {
                 <div className="flex items-center justify-between text-xs text-slate-600">
                   <span>ID: {group.id}</span>
                   <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      asChild
-                      className="gap-1"
-                    >
+                    <Button variant="ghost" size="sm" asChild className="gap-1">
                       <Link href={`/dashboard/groups/${group.id}`}>
                         <Settings className="h-4 w-4" />
                         Configurar
@@ -156,8 +151,9 @@ export default function GroupsManagementPage() {
                         <AlertDialogHeader>
                           <AlertDialogTitle>¿Eliminar grupo?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Esta acción eliminará el grupo "{group.name}" permanentemente.
-                            Se removerán todas las asociaciones de clientes.
+                            Esta acción eliminará el grupo "{group.name}"
+                            permanentemente. Se removerán todas las asociaciones
+                            de clientes.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

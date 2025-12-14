@@ -55,7 +55,9 @@ export default function ClientDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [balanceRefreshKey, setBalanceRefreshKey] = useState(0);
-  const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
+  const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(
+    new Set(),
+  );
   const [auditActionFilter, setAuditActionFilter] = useState<string>("");
 
   const fetchClientData = useCallback(async () => {
@@ -325,7 +327,10 @@ export default function ClientDetailPage() {
             className="flex items-start justify-between gap-4"
           >
             <div className="flex-1">
-              <AccountsSummary clientId={id} onAccountClick={toggleAccountExpanded} />
+              <AccountsSummary
+                clientId={id}
+                onAccountClick={toggleAccountExpanded}
+              />
             </div>
             <Button asChild variant="outline" className="mt-1">
               <Link href={`/dashboard/clients/${id}/accounts`}>
@@ -349,7 +354,7 @@ export default function ClientDetailPage() {
                     currentBalance={account.points}
                     onBalanceUpdate={handleBalanceUpdate}
                   />
-                ) : null
+                ) : null,
               )}
             {(!Array.isArray(accounts) || accounts.length === 0) && (
               <p className="text-sm text-slate-500">
@@ -365,7 +370,9 @@ export default function ClientDetailPage() {
               <h3 className="text-lg font-semibold">Historial de Auditoría</h3>
               <Select
                 value={auditActionFilter}
-                onValueChange={(val) => setAuditActionFilter(val === "all" ? "" : val)}
+                onValueChange={(val) =>
+                  setAuditActionFilter(val === "all" ? "" : val)
+                }
               >
                 <SelectTrigger className="w-64">
                   <SelectValue placeholder="Filtrar por acción" />

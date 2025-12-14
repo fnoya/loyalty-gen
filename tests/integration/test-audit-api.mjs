@@ -154,7 +154,7 @@ async function testAuditSystem() {
 
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    const accountAuditResponse = await makeRequest('GET', `/clients/${testClientId}/loyalty-accounts/${testAccountId}/audit-logs`);
+    const accountAuditResponse = await makeRequest('GET', `/clients/${testClientId}/accounts/${testAccountId}/audit-logs`);
     
     if (accountAuditResponse.status !== 200) {
       throw new Error(`Failed to fetch account audit logs: ${JSON.stringify(accountAuditResponse.data)}`);
@@ -184,7 +184,7 @@ async function testAuditSystem() {
 
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    const creditAuditResponse = await makeRequest('GET', `/clients/${testClientId}/loyalty-accounts/${testAccountId}/audit-logs`);
+    const creditAuditResponse = await makeRequest('GET', `/clients/${testClientId}/accounts/${testAccountId}/audit-logs`);
     const creditAuditLogs = creditAuditResponse.data.data;
     const creditLog = creditAuditLogs.find(log => log.action === 'POINTS_CREDITED');
     
@@ -211,7 +211,7 @@ async function testAuditSystem() {
 
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    const debitAuditResponse = await makeRequest('GET', `/clients/${testClientId}/loyalty-accounts/${testAccountId}/audit-logs`);
+    const debitAuditResponse = await makeRequest('GET', `/clients/${testClientId}/accounts/${testAccountId}/audit-logs`);
     const debitAuditLogs = debitAuditResponse.data.data;
     const debitLog = debitAuditLogs.find(log => log.action === 'POINTS_DEBITED');
     

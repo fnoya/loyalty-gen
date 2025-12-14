@@ -911,41 +911,41 @@ Total:            172 passed, 0 failed (172 tests)
   - "Auditoría" menu item
   - Navigates to `/dashboard/audit`
   - Appropriate icon (Shield, FileSearch, or similar)
-- [ ] `components/audit/audit-filters.tsx` - Advanced filter component
+- [x] `components/audit/audit-filters.tsx` - Advanced filter component
   - `DateRangePicker` for date range filtering
   - `Select` for action type (all possible actions)
   - `Input` for client ID search
   - `Input` for account ID search
   - "Limpiar filtros" button
   - Horizontal or grid layout for filters
-- [ ] Global audit table
+- [x] Global audit table
   - Columns: Date, Action, Resource, Actor, Related Client
   - Sortable by date
   - Integration with `GET /audit-logs` endpoint
   - Cursor-based pagination
   - "Load more" button or infinite scroll
-- [ ] Audit detail dialog
+- [x] Audit detail dialog
   - Click on row opens dialog
   - Shows complete audit record details
   - Reuses `audit-log-dialog.tsx`
-- [ ] Filter debounce (500ms)
+- [x] Filter debounce (500ms)
   - Applied after any filter change
   - Shows loading state during filter application
-- [ ] Loading and empty states
+- [x] Loading and empty states
   - `Skeleton` during initial load
   - Empty state if no logs match filters
   - Clear message when filters return no results
 
 **Acceptance Criteria:**
-- [ ] Global audit page accessible from sidebar
-- [ ] Table displays all audit logs with correct columns
-- [ ] All filters work correctly (date, action, client, account)
-- [ ] 500ms debounce on filters
-- [ ] "Limpiar filtros" resets all controls
-- [ ] Pagination works correctly
-- [ ] Click on row opens detail dialog
-- [ ] Loading states work properly
-- [ ] Empty states display appropriately
+- [x] Global audit page accessible from sidebar
+- [x] Table displays all audit logs with correct columns
+- [x] All filters work correctly (date, action, client, account)
+- [x] 500ms debounce on filters
+- [x] "Limpiar filtros" resets all controls
+- [x] Pagination works correctly
+- [x] Click on row opens detail dialog
+- [x] Loading states work properly
+- [x] Empty states display appropriately
 
 **Reference:** USER-STORIES.md HU12
 
@@ -1194,7 +1194,7 @@ Total:            172 passed, 0 failed (172 tests)
 
 ### Endpoints
 - **Format:** `/api/v1/{resource}` (kebab-case, plural)
-- **Examples:** `/api/v1/clients`, `/api/v1/loyalty-accounts`
+- **Examples:** `/api/v1/clients`, `/api/v1/accounts`
 
 ### Request Body (JSON)
 - **Field naming:** camelCase

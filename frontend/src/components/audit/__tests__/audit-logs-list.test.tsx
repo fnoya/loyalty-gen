@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 
-import { AuditLogsList } from "./audit-logs-list";
+import { AuditLogsList } from "../audit-logs-list";
 import { apiRequest } from "@/lib/api";
 
 jest.mock("@/lib/api", () => ({

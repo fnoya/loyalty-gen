@@ -2,10 +2,19 @@ import { render, screen } from "@testing-library/react";
 import GroupsManagementPage from "../page";
 import * as apiModule from "@/lib/api";
 
+// Mock Firebase before anything else
+jest.mock("@/lib/firebase", () => ({
+  auth: { currentUser: null },
+  db: {},
+  storage: {},
+}));
+
 // Mock the dependencies
 jest.mock("@/lib/api");
 jest.mock("@/components/ui/button", () => ({
-  Button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+  Button: ({ children, ...props }: any) => (
+    <button {...props}>{children}</button>
+  ),
 }));
 jest.mock("@/components/ui/card", () => ({
   Card: ({ children }: any) => <div>{children}</div>,

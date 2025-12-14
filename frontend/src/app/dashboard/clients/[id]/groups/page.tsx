@@ -46,7 +46,9 @@ export default function ClientGroupsPage() {
   }, [id, fetchClient]);
 
   const handleGroupsChange = (groupIds: string[]) => {
-    setClient((prev) => (prev ? { ...prev, affinityGroupIds: groupIds } : prev));
+    setClient((prev) =>
+      prev ? { ...prev, affinityGroupIds: groupIds } : prev,
+    );
   };
 
   return (
@@ -89,7 +91,10 @@ export default function ClientGroupsPage() {
           ) : client ? (
             <div className="space-y-4">
               <div className="text-sm text-slate-600">
-                Cliente: <span className="font-semibold">{client.name.firstName} {client.name.firstLastName}</span>
+                Cliente:{" "}
+                <span className="font-semibold">
+                  {client.name.firstName} {client.name.firstLastName}
+                </span>
               </div>
               <GroupAssignment
                 clientId={id}

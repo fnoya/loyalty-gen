@@ -2,7 +2,10 @@ import { Router, Request, Response, NextFunction } from "express";
 import { AuditService } from "../../services/audit.service";
 import { authenticate } from "../middleware/auth.middleware";
 import { ValidationError } from "../../core/errors";
-import { AuditLogQuery } from "../../schemas/audit.schema";
+import {
+  AuditLogQuery,
+  AuditAction,
+} from "../../schemas/audit.schema";
 import * as admin from "firebase-admin";
 
 const router = Router();
@@ -36,8 +39,7 @@ router.get(
       if (req.query.client_id) query.client_id = req.query.client_id as string;
       if (req.query.account_id)
         query.account_id = req.query.account_id as string;
-      if (req.query.from_date)
-        query.start_date = req.query.from_date as string;
+      if (req.query.from_date) query.start_date = req.query.from_date as string;
       if (req.query.to_date) query.end_date = req.query.to_date as string;
       if (req.query.next_cursor)
         query.next_cursor = req.query.next_cursor as string;
@@ -89,7 +91,7 @@ router.get(
       };
 
       if (action) {
-        query.action = action as any;
+        query.action = action as AuditAction;
       }
 
       const result = await getAuditService().listAuditLogs(query);
@@ -131,7 +133,7 @@ router.get(
       };
 
       if (action) {
-        query.action = action as any;
+        query.action = action as AuditAction;
       }
 
       const result = await getAuditService().listAuditLogs(query);

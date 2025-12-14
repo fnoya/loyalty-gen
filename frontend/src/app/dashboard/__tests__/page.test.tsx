@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import DashboardPage from "./page";
+import DashboardPage from "../page";
 
 describe("DashboardPage", () => {
   it("renders the dashboard overview", () => {

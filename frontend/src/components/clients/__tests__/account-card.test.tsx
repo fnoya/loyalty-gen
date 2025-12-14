@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { render, screen, waitFor } from "@testing-library/react";
-import { AccountCard } from "./account-card";
+import { AccountCard } from "../account-card";
 import { apiRequest } from "@/lib/api";
 
 jest.mock("@/lib/api", () => ({
@@ -13,7 +13,7 @@ jest.mock("lucide-react", () => ({
   TrendingDown: () => <span data-testid="icon-trending-down" />,
 }));
 
-jest.mock("./transactions-list", () => ({
+jest.mock("../transactions-list", () => ({
   TransactionsList: ({ transactions, loading }: any) => (
     <div data-testid="transactions-list">
       {loading ? "Loading..." : `${transactions.length} transactions`}
@@ -21,7 +21,7 @@ jest.mock("./transactions-list", () => ({
   ),
 }));
 
-jest.mock("./credit-debit-form", () => ({
+jest.mock("../credit-debit-form", () => ({
   CreditDebitForm: ({ type, onSuccess }: any) => (
     <div data-testid={`${type}-form`}>
       <button onClick={onSuccess}>{type} form</button>
@@ -29,7 +29,7 @@ jest.mock("./credit-debit-form", () => ({
   ),
 }));
 
-jest.mock("./transactions-filter", () => ({
+jest.mock("../transactions-filter", () => ({
   TransactionsFilter: ({ onFilterChange }: any) => (
     <div data-testid="transactions-filter" />
   ),

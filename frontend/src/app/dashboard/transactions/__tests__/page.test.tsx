@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
-import TransactionListPage from "./page";
+import TransactionListPage from "../page";
 import { apiRequest } from "@/lib/api";
 import { useRouter } from "next/navigation";
 

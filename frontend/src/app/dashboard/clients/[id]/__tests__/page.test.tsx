@@ -1,8 +1,15 @@
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import ClientDetailPage from "./page";
+import ClientDetailPage from "../page";
 import { apiRequest } from "@/lib/api";
 import { useParams, useRouter } from "next/navigation";
+
+// Mock firebase to prevent initialization errors
+jest.mock("@/lib/firebase", () => ({
+  auth: { currentUser: null },
+  db: {},
+  storage: {},
+}));
 
 // Mock dependencies
 jest.mock("@/lib/api", () => ({
@@ -14,6 +21,13 @@ jest.mock("next/navigation", () => ({
   useRouter: jest.fn(),
 }));
 
+// Mock Link
+jest.mock("next/link", () => {
+  return ({ children, href }: { children: React.ReactNode; href: string }) => (
+    <a href={href}>{children}</a>
+  );
+});
+
 // Mock Lucide icons
 jest.mock("lucide-react", () => ({
   ArrowLeft: () => <span data-testid="icon-arrow-left" />,
@@ -24,6 +38,79 @@ jest.mock("lucide-react", () => ({
   Mail: () => <span data-testid="icon-mail" />,
   CreditCard: () => <span data-testid="icon-credit-card" />,
   Plus: () => <span data-testid="icon-plus" />,
+}));
+
+// Mock toast
+jest.mock("@/components/ui/toast", () => ({
+  toast: {
+    success: jest.fn(),
+    error: jest.fn(),
+  },
+}));
+
+// Mock AlertDialog
+jest.mock("@/components/ui/alert-dialog", () => ({
+  AlertDialog: ({ children }: any) => <div>{children}</div>,
+  AlertDialogAction: ({ children, onClick, ...props }: any) => (
+    <button onClick={onClick} {...props}>
+      {children}
+    </button>
+  ),
+  AlertDialogCancel: ({ children, ...props }: any) => (
+    <button {...props}>{children}</button>
+  ),
+  AlertDialogContent: ({ children }: any) => <div>{children}</div>,
+  AlertDialogDescription: ({ children }: any) => <div>{children}</div>,
+  AlertDialogFooter: ({ children }: any) => <div>{children}</div>,
+  AlertDialogHeader: ({ children }: any) => <div>{children}</div>,
+  AlertDialogTitle: ({ children }: any) => <div>{children}</div>,
+  AlertDialogTrigger: ({ children }: any) => <div>{children}</div>,
+}));
+
+// Mock Tabs
+jest.mock("@/components/ui/tabs", () => ({
+  Tabs: ({ children, defaultValue }: any) => (
+    <div data-testid="tabs" data-default={defaultValue}>
+      {children}
+    </div>
+  ),
+  TabsList: ({ children }: any) => <div role="tablist">{children}</div>,
+  TabsTrigger: ({ children, value, onClick }: any) => (
+    <button role="tab" data-value={value} onClick={onClick}>
+      {children}
+    </button>
+  ),
+  TabsContent: ({ children, value }: any) => (
+    <div data-testid={`tab-content-${value}`}>{children}</div>
+  ),
+}));
+
+// Mock UI components that might be used
+jest.mock("@/components/ui/button", () => ({
+  Button: ({ children, ...props }: any) => (
+    <button {...props}>{children}</button>
+  ),
+}));
+
+jest.mock("@/components/ui/card", () => ({
+  Card: ({ children }: any) => <div>{children}</div>,
+  CardContent: ({ children }: any) => <div>{children}</div>,
+  CardHeader: ({ children }: any) => <div>{children}</div>,
+  CardTitle: ({ children }: any) => <div>{children}</div>,
+}));
+
+jest.mock("@/components/ui/select", () => ({
+  Select: ({ children, onValueChange, defaultValue }: any) => (
+    <div data-testid="select" data-value={defaultValue}>
+      {children}
+    </div>
+  ),
+  SelectContent: ({ children }: any) => <div>{children}</div>,
+  SelectItem: ({ children, value }: any) => (
+    <option value={value}>{children}</option>
+  ),
+  SelectTrigger: ({ children }: any) => <button>{children}</button>,
+  SelectValue: ({ placeholder }: any) => <span>{placeholder}</span>,
 }));
 
 // Mock audit components
@@ -72,10 +159,6 @@ jest.mock("@/components/clients/account-card", () => ({
   AccountCard: () => <div data-testid="account-card">Account Card</div>,
 }));
 
-// Mock Tabs component to avoid Radix UI complexity in tests if needed
-// But usually Radix Tabs work fine with JSDOM if ResizeObserver is mocked.
-// Let's try without mocking Tabs first, but if it fails, we'll mock it.
-
 describe("ClientDetailPage", () => {
   const mockPush = jest.fn();
   const mockClient = {
@@ -98,6 +181,7 @@ describe("ClientDetailPage", () => {
   };
 
   beforeEach(() => {
+    jest.clearAllMocks();
     (useParams as jest.Mock).mockReturnValue({ id: "123" });
     (useRouter as jest.Mock).mockReturnValue({
       push: mockPush,
@@ -120,22 +204,30 @@ describe("ClientDetailPage", () => {
   });
 
   it("handles delete action", async () => {
+    // Mock GET request for initial load
+    (apiRequest as jest.Mock).mockResolvedValueOnce(mockClient);
+    // Mock DELETE request
+    (apiRequest as jest.Mock).mockResolvedValueOnce({ success: true });
+
     render(<ClientDetailPage />);
 
     await waitFor(() => {
       expect(screen.getByText("John Adams")).toBeInTheDocument();
     });
 
-    // Click delete button
-    fireEvent.click(screen.getByText("Eliminar"));
+    // Find and click the delete button (first "Eliminar" in the page)
+    const deleteButtons = screen.getAllByRole("button", { name: /eliminar/i });
+    fireEvent.click(deleteButtons[0]);
 
-    // Confirm delete in dialog
-    // Note: Radix UI Dialog might render in a portal, so we need to check if it's in the document
-    // But testing-library usually finds it if it's in the body.
-    const confirmButton = await screen.findByText("Eliminar", {
-      selector: "button.bg-red-600",
+    // Wait for dialog to appear and click confirm
+    await waitFor(() => {
+      // The second "Eliminar" button should be the confirm button in the dialog
+      const confirmButtons = screen.getAllByRole("button", {
+        name: /eliminar/i,
+      });
+      expect(confirmButtons.length).toBeGreaterThan(1);
+      fireEvent.click(confirmButtons[confirmButtons.length - 1]);
     });
-    fireEvent.click(confirmButton);
 
     await waitFor(() => {
       expect(apiRequest).toHaveBeenCalledWith(
@@ -156,8 +248,10 @@ describe("ClientDetailPage", () => {
       expect(screen.getByText("John Adams")).toBeInTheDocument();
     });
 
-    // Click Audit History tab (look for Spanish text)
-    const auditTab = screen.getByText("Historial de Auditoría");
+    // Click Audit History tab
+    const auditTab = screen.getByRole("tab", {
+      name: /historial de auditoría/i,
+    });
     await user.click(auditTab);
 
     // Check that audit logs list component is rendered

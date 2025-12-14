@@ -1,6 +1,6 @@
 /* eslint-disable react/display-name */
 import { render, screen, waitFor } from "@testing-library/react";
-import { AffinityGroupsSection } from "./affinity-groups-section";
+import { AffinityGroupsSection } from "../affinity-groups-section";
 import { apiRequest } from "@/lib/api";
 
 jest.mock("@/lib/api", () => ({

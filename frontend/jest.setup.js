@@ -51,7 +51,25 @@ jest.mock("@radix-ui/react-select", () => {
   };
 });
 
-// Mock fetch globally for tests that load Firebase/API modules
+// Mock fetch and Response globally for tests that load Firebase/API modules
+global.Response = class Response {
+  constructor(body, init) {
+    this.body = body;
+    this.status = init?.status || 200;
+    this.ok = this.status >= 200 && this.status < 300;
+    this.statusText = init?.statusText || '';
+    this.headers = new Map(Object.entries(init?.headers || {}));
+  }
+  
+  json() {
+    return Promise.resolve(JSON.parse(this.body || '{}'));
+  }
+  
+  text() {
+    return Promise.resolve(this.body || '');
+  }
+};
+
 global.fetch = jest.fn(() =>
   Promise.resolve({
     ok: true,

@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { ClientSearch } from "./client-search";
+import { ClientSearch } from "../client-search";
 
 jest.mock("lucide-react", () => ({
   Search: () => <span data-testid="icon-search" />,

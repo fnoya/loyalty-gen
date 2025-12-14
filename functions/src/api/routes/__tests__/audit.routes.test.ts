@@ -102,8 +102,8 @@ describe("Audit Routes", () => {
       const response = await request(app).get("/v1/audit-logs").query({
         client_id: "c1",
         account_id: "a1",
-        start_date: "2023-01-01",
-        end_date: "2023-01-02",
+        from_date: "2023-01-01",
+        to_date: "2023-01-02",
         next_cursor: "cursor123",
       });
 
@@ -139,17 +139,18 @@ describe("Audit Routes", () => {
   describe("GET /v1/audit-logs/clients/:clientId/audit-logs", () => {
     it("should get client audit logs", async () => {
       const mockResult = { data: [], paging: { has_more: false } };
-      auditServiceInstance.getClientAuditLogs.mockResolvedValue(mockResult);
+      auditServiceInstance.listAuditLogs.mockResolvedValue(mockResult);
 
       const response = await request(app).get(
         "/v1/audit-logs/clients/c1/audit-logs"
       );
 
       expect(response.status).toBe(200);
-      expect(auditServiceInstance.getClientAuditLogs).toHaveBeenCalledWith(
-        "c1",
-        30,
-        undefined
+      expect(auditServiceInstance.listAuditLogs).toHaveBeenCalledWith(
+        expect.objectContaining({
+          client_id: "c1",
+          limit: 30,
+        })
       );
     });
 
@@ -162,28 +163,29 @@ describe("Audit Routes", () => {
     });
   });
 
-  describe("GET /v1/audit-logs/clients/:clientId/loyalty-accounts/:accountId/audit-logs", () => {
+  describe("GET /v1/audit-logs/clients/:clientId/accounts/:accountId/audit-logs", () => {
     it("should get account audit logs", async () => {
       const mockResult = { data: [], paging: { has_more: false } };
-      (auditServiceInstance.getAccountAuditLogs as jest.Mock).mockResolvedValue(
+      (auditServiceInstance.listAuditLogs as jest.Mock).mockResolvedValue(
         mockResult
       );
 
       const response = await request(app).get(
-        "/v1/audit-logs/clients/c1/loyalty-accounts/a1/audit-logs"
+        "/v1/audit-logs/clients/c1/accounts/a1/audit-logs"
       );
 
       expect(response.status).toBe(200);
-      expect(auditServiceInstance.getAccountAuditLogs).toHaveBeenCalledWith(
-        "a1",
-        30,
-        undefined
+      expect(auditServiceInstance.listAuditLogs).toHaveBeenCalledWith(
+        expect.objectContaining({
+          account_id: "a1",
+          limit: 30,
+        })
       );
     });
 
     it("should handle invalid limit for account logs", async () => {
       const response = await request(app)
-        .get("/v1/audit-logs/clients/c1/loyalty-accounts/a1/audit-logs")
+        .get("/v1/audit-logs/clients/c1/accounts/a1/audit-logs")
         .query({ limit: "101" });
 
       expect(response.status).not.toBe(200);

@@ -1,5 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
-import { AccountsSummary } from "./accounts-summary";
+import { AccountsSummary } from "../accounts-summary";
 import { apiRequest } from "@/lib/api";
 
 jest.mock("@/lib/api", () => ({

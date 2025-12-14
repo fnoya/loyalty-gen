@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { TransactionsFilter } from "./transactions-filter";
+import { TransactionsFilter } from "../transactions-filter";
 
 jest.mock("lucide-react", () => ({
   X: () => <span data-testid="icon-x" />,

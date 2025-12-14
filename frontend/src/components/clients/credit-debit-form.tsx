@@ -13,7 +13,10 @@ import { apiRequest } from "@/lib/api";
 import { toast } from "@/components/ui/toast";
 
 const creditDebitSchema = z.object({
-  amount: z.coerce.number().min(1, "La cantidad debe ser al menos 1 punto"),
+  amount: z.coerce
+    .number()
+    .int("La cantidad debe ser un número entero")
+    .min(1, "La cantidad debe ser al menos 1 punto"),
   description: z.string().optional(),
 });
 

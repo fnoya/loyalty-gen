@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-require-imports */
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import NewClientPage from "./page";
+import NewClientPage from "../page";
 import { apiRequest } from "@/lib/api";
 import { useRouter } from "next/navigation";
 

@@ -195,6 +195,30 @@ describe("Account Routes", () => {
       expect(res.status).toBe(400);
     });
 
+    it("should handle validation errors for fractional amount", async () => {
+      const res = await request(app)
+        .post("/v1/clients/client-123/accounts/account-123/credit")
+        .send({
+          amount: 10.5,
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBeDefined();
+      expect(res.body.error.message).toContain("integer");
+    });
+
+    it("should handle validation errors for small fractional amount", async () => {
+      const res = await request(app)
+        .post("/v1/clients/client-123/accounts/account-123/credit")
+        .send({
+          amount: 0.3,
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBeDefined();
+      expect(res.body.error.message).toContain("integer");
+    });
+
     it("should handle account not found", async () => {
       (accountService.instance.creditPoints as jest.Mock).mockRejectedValue(
         new NotFoundError("LoyaltyAccount", "invalid-account")
@@ -268,6 +292,28 @@ describe("Account Routes", () => {
         .post("/v1/clients/client-123/accounts/account-123/debit")
         .send({
           amount: -10,
+        });
+
+      expect(res.status).toBe(400);
+    });
+
+    it("should handle validation errors for fractional amount", async () => {
+      const res = await request(app)
+        .post("/v1/clients/client-123/accounts/account-123/debit")
+        .send({
+          amount: 50.75,
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBeDefined();
+      expect(res.body.error.message).toContain("integer");
+    });
+
+    it("should handle validation errors for zero amount", async () => {
+      const res = await request(app)
+        .post("/v1/clients/client-123/accounts/account-123/debit")
+        .send({
+          amount: 0,
         });
 
       expect(res.status).toBe(400);

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import TransactionDetailPage from "../page";
 import { apiRequest } from "@/lib/api";
 import { useRouter, useParams } from "next/navigation";
 
@@ -15,6 +16,42 @@ jest.mock("@/lib/api");
 jest.mock("next/navigation", () => ({
   useRouter: jest.fn(),
   useParams: jest.fn(),
+}));
+
+// Mock Link
+jest.mock("next/link", () => {
+  return ({ children, href }: { children: React.ReactNode; href: string }) => (
+    <a href={href}>{children}</a>
+  );
+});
+
+// Mock Lucide icons
+jest.mock("lucide-react", () => ({
+  ArrowLeft: () => <span data-testid="icon-arrow-left" />,
+  Loader2: () => <span data-testid="icon-loader" className="animate-spin" />,
+  Calendar: () => <span data-testid="icon-calendar" />,
+  User: () => <span data-testid="icon-user" />,
+  CreditCard: () => <span data-testid="icon-credit-card" />,
+  FileText: () => <span data-testid="icon-file-text" />,
+}));
+
+// Mock UI components
+jest.mock("@/components/ui/button", () => ({
+  Button: ({ children, ...props }: any) => (
+    <button {...props}>{children}</button>
+  ),
+}));
+
+jest.mock("@/components/ui/card", () => ({
+  Card: ({ children }: any) => <div>{children}</div>,
+  CardContent: ({ children }: any) => <div>{children}</div>,
+  CardHeader: ({ children }: any) => <div>{children}</div>,
+  CardTitle: ({ children }: any) => <div>{children}</div>,
+  CardDescription: ({ children }: any) => <div>{children}</div>,
+}));
+
+jest.mock("@/components/ui/badge", () => ({
+  Badge: ({ children, ...props }: any) => <span {...props}>{children}</span>,
 }));
 
 // Mock UI components to avoid Radix/Pointer events issues
@@ -40,8 +77,6 @@ jest.mock("@/components/transactions/transaction-audit-history", () => ({
     <div data-testid="transaction-audit-history">Audit History Component</div>
   ),
 }));
-
-import TransactionDetailPage from "./page";
 
 describe("TransactionDetailPage", () => {
   const mockRouter = { push: jest.fn() };

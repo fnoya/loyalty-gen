@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { TransactionsList } from "./transactions-list";
+import { TransactionsList } from "../transactions-list";
 
 jest.mock("@/lib/api", () => ({
   apiRequest: jest.fn(),

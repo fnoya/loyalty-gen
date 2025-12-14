@@ -37,7 +37,7 @@ LoyaltyGen is an API-First customer loyalty platform that provides a RESTful API
 
 ### API Conventions
 
-- **Endpoints:** Use `kebab-case`, plural resource names (e.g., `/api/v1/clients`, `/api/v1/loyalty-accounts`)
+- **Endpoints:** Use `kebab-case`, plural resource names (e.g., `/api/v1/clients`, `/api/v1/accounts`)
 - **JSON fields:** Use `camelCase` (e.g., `clientId`, `accountName`, `createdAt`)
 - **Query parameters:** Use `snake_case` (e.g., `page_size`, `next_cursor`)
 - **Versioning:** URL-based versioning (e.g., `/api/v1/...`)

@@ -60,7 +60,7 @@ All existing services now create audit logs for their operations:
    - Retrieve all audit logs for a specific client
    - Supports pagination
 
-3. **GET /api/v1/clients/:clientId/loyalty-accounts/:accountId/audit-logs**
+3. **GET /api/v1/clients/:clientId/accounts/:accountId/audit-logs**
    - Retrieve all audit logs for a specific loyalty account
    - Supports pagination
 

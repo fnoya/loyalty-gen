@@ -106,7 +106,7 @@ curl -X GET "http://localhost:5001/loyalty-gen/us-central1/api/api/v1/clients/ab
 
 ### 3. Get Account Audit Logs
 
-**GET** `/api/v1/clients/:clientId/loyalty-accounts/:accountId/audit-logs`
+**GET** `/api/v1/clients/:clientId/accounts/:accountId/audit-logs`
 
 Retrieve all audit logs for a specific loyalty account.
 
@@ -120,7 +120,7 @@ Retrieve all audit logs for a specific loyalty account.
 
 **Example Request:**
 ```bash
-curl -X GET "http://localhost:5001/loyalty-gen/us-central1/api/api/v1/clients/abc123/loyalty-accounts/xyz789/audit-logs" \
+curl -X GET "http://localhost:5001/loyalty-gen/us-central1/api/api/v1/clients/abc123/accounts/xyz789/audit-logs" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
@@ -192,7 +192,7 @@ GET /api/v1/audit-logs?start_date=2025-01-01T00:00:00Z&end_date=2025-01-31T23:59
 
 Get all transactions for a specific account:
 ```bash
-GET /api/v1/clients/abc123/loyalty-accounts/xyz789/audit-logs
+GET /api/v1/clients/abc123/accounts/xyz789/audit-logs
 ```
 
 ### 6. User Activity
@@ -334,7 +334,7 @@ do {
 ```javascript
 // Get all transactions for an account
 const response = await fetch(
-  `${API_BASE}/clients/${clientId}/loyalty-accounts/${accountId}/audit-logs`,
+  `${API_BASE}/clients/${clientId}/accounts/${accountId}/audit-logs`,
   {
     headers: { Authorization: `Bearer ${token}` }
   }

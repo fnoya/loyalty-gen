@@ -13,7 +13,7 @@ Este documento establece las convenciones y estándares de diseño que deben seg
 -   **Rutas (Endpoints):**
     -   Usar `kebab-case` (minúsculas y guiones).
     -   Los recursos deben nombrarse en plural.
-    -   **Ejemplos:** `/api/v1/clients`, `/api/v1/loyalty-accounts`
+    -   **Ejemplos:** `/api/v1/clients`, `/api/v1/accounts`
 
 -   **Campos JSON (Request/Response Bodies):**
     -   Usar `camelCase`.
