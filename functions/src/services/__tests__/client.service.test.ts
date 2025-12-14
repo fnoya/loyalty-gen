@@ -465,6 +465,101 @@ describe("ClientService", () => {
       expect(result.clients).toHaveLength(1);
       expect(result.clients[0]!.id).toBe("client1");
     });
+
+    it("should list clients with cursor pagination", async () => {
+      const mockCursorDoc = {
+        exists: true,
+        id: "cursor-client",
+        data: () => ({
+          name: { firstName: "Cursor", firstLastName: "Client" },
+          created_at: { toDate: () => new Date("2025-01-01") },
+          updated_at: { toDate: () => new Date("2025-01-01") },
+        }),
+      };
+
+      const mockDocs = [
+        {
+          id: "client2",
+          data: () => ({
+            name: { firstName: "Next", firstLastName: "Client" },
+            email: "next@example.com",
+            phones: [],
+            addresses: [],
+            extra_data: {},
+            affinityGroupIds: [],
+            account_balances: {},
+            photoUrl: null,
+            identity_document: null,
+            created_at: { toDate: () => new Date("2025-01-02") },
+            updated_at: { toDate: () => new Date("2025-01-02") },
+          }),
+        },
+      ];
+
+      // Mock cursor doc fetch
+      mockDoc.mockReturnValue({
+        get: jest.fn().mockResolvedValue(mockCursorDoc),
+      });
+
+      // Setup startAfter chain
+      const mockQueryWithStartAfter = {
+        get: jest.fn().mockResolvedValue({
+          docs: mockDocs,
+          empty: false,
+        }),
+      };
+
+      mockOrderBy.mockReturnThis();
+      mockLimit.mockReturnValue({
+        startAfter: jest.fn().mockReturnValue(mockQueryWithStartAfter),
+      });
+
+      const result = await clientService.listClients(10, "cursor-client");
+
+      expect(result.clients).toHaveLength(1);
+      expect(result.clients[0]!.id).toBe("client2");
+    });
+
+    it("should handle non-existent cursor gracefully", async () => {
+      const mockCursorDoc = {
+        exists: false,
+      };
+
+      const mockDocs = [
+        {
+          id: "client1",
+          data: () => ({
+            name: { firstName: "John", firstLastName: "Doe" },
+            email: "john@example.com",
+            phones: [],
+            addresses: [],
+            extra_data: {},
+            affinityGroupIds: [],
+            account_balances: {},
+            photoUrl: null,
+            identity_document: null,
+            created_at: { toDate: () => new Date("2025-01-01") },
+            updated_at: { toDate: () => new Date("2025-01-01") },
+          }),
+        },
+      ];
+
+      // Mock cursor doc fetch (non-existent)
+      mockDoc.mockReturnValue({
+        get: jest.fn().mockResolvedValue(mockCursorDoc),
+      });
+
+      mockOrderBy.mockReturnThis();
+      mockLimit.mockReturnThis();
+      mockGet.mockResolvedValue({
+        docs: mockDocs,
+        empty: false,
+      });
+
+      const result = await clientService.listClients(10, "invalid-cursor");
+
+      expect(result.clients).toHaveLength(1);
+    });
   });
 
   describe("searchClients", () => {

@@ -139,6 +139,44 @@ describe("GroupService", () => {
     });
   });
 
+  describe("getGroup", () => {
+    it("should get a specific group by ID", async () => {
+      const groupId = "group123";
+
+      mockDoc.mockReturnValue({
+        get: jest.fn().mockResolvedValue({
+          exists: true,
+          id: groupId,
+          data: () => ({
+            name: "VIP Customers",
+            description: "High value customers",
+            created_at: { toDate: () => new Date("2025-01-01") },
+          }),
+        }),
+      });
+
+      const result = await groupService.getGroup(groupId);
+
+      expect(result.id).toBe(groupId);
+      expect(result.name).toBe("VIP Customers");
+      expect(result.description).toBe("High value customers");
+    });
+
+    it("should throw NotFoundError if group does not exist", async () => {
+      const groupId = "nonexistent";
+
+      mockDoc.mockReturnValue({
+        get: jest.fn().mockResolvedValue({
+          exists: false,
+        }),
+      });
+
+      await expect(groupService.getGroup(groupId)).rejects.toThrow(
+        NotFoundError
+      );
+    });
+  });
+
   describe("assignClientToGroup", () => {
     it("should assign client to affinity group", async () => {
       const clientId = "client123";
@@ -161,6 +199,19 @@ describe("GroupService", () => {
           action: "CLIENT_ADDED_TO_GROUP",
         })
       );
+    });
+
+    it("should throw NotFoundError if group does not exist", async () => {
+      mockDoc.mockImplementation((id: string) => ({
+        get: jest.fn().mockResolvedValue({
+          exists: id !== "group123",
+        }),
+        update: jest.fn(),
+      }));
+
+      await expect(
+        groupService.assignClientToGroup("group123", "client123", mockActor)
+      ).rejects.toThrow(NotFoundError);
     });
 
     it("should throw NotFoundError if client does not exist", async () => {
@@ -223,6 +274,19 @@ describe("GroupService", () => {
       );
     });
 
+    it("should throw NotFoundError if group does not exist", async () => {
+      mockDoc.mockImplementation((id: string) => ({
+        get: jest.fn().mockResolvedValue({
+          exists: id !== "group123",
+        }),
+        update: jest.fn(),
+      }));
+
+      await expect(
+        groupService.removeClientFromGroup("group123", "client123", mockActor)
+      ).rejects.toThrow(NotFoundError);
+    });
+
     it("should throw NotFoundError if client does not exist", async () => {
       mockDoc.mockImplementation((id: string) => ({
         get: jest.fn().mockResolvedValue({
@@ -250,6 +314,19 @@ describe("GroupService", () => {
       await expect(
         groupService.removeClientFromGroup("group123", "client123", mockActor)
       ).rejects.toThrow(AppError);
+    });
+  });
+
+  describe("groupService singleton", () => {
+    it("should return the same instance on multiple calls", () => {
+      // Import the singleton
+      const { groupService: singleton } = require("../group.service");
+
+      const instance1 = singleton.instance;
+      const instance2 = singleton.instance;
+
+      expect(instance1).toBe(instance2);
+      expect(instance1).toBeInstanceOf(GroupService);
     });
   });
 });

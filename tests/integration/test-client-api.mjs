@@ -395,6 +395,118 @@ const tests = [
     assertTrue(Array.isArray(data.data), "Should return data array");
   }),
 
+  test("11a. Search Clients with Mixed Query (letters and digits)", async () => {
+    // Create a test client with identity document for mixed search
+    const timestamp = Date.now();
+    const testClientData = {
+      name: {
+        firstName: "Mixed",
+        firstLastName: "Search",
+      },
+      email: `mixed-search-${timestamp}@test.com`,
+      identity_document: {
+        type: "cedula_identidad",
+        number: `id${timestamp.toString().slice(-6)}`,
+      },
+      phones: [{ type: "mobile", number: `555${timestamp.toString().slice(-7)}`, isPrimary: true }],
+      addresses: [],
+      extra_data: {},
+    };
+
+    const { status: createStatus, data: createData } = await apiRequest(
+      "POST",
+      "",
+      authToken,
+      testClientData,
+    );
+
+    if (createStatus !== 201) {
+      throw new Error(
+        `Failed to create test client: ${createStatus} - ${JSON.stringify(createData)}`,
+      );
+    }
+
+    const createdMixedClientId =
+      createData?.data?.id ||
+      createData?.id;
+    assertTrue(createdMixedClientId, "Should have created client ID");
+
+    // Test 1: Search by name "Mixed" - should find the created client
+    const { status: searchStatus1, data: searchData1 } = await apiRequest(
+      "GET",
+      "/search?q=mixed",
+      authToken,
+    );
+    if (searchStatus1 !== 200) {
+      throw new Error(
+        `Expected 200, got ${searchStatus1}: ${JSON.stringify(searchData1)}`,
+      );
+    }
+    assertTrue(
+      Array.isArray(searchData1.data),
+      "Name search should return array",
+    );
+    assertTrue(
+      searchData1.data.length > 0,
+      "Name search should return at least one result",
+    );
+    assertTrue(
+      searchData1.data.some((c) => c.id === createdMixedClientId),
+      `Should find created client by name "Mixed". Results: ${JSON.stringify(searchData1.data.map((c) => ({ id: c.id, name: c.name })))}`,
+    );
+
+    // Test 2: Search by special characters (should handle gracefully - no results expected)
+    const { status: searchStatus2, data: searchData2 } = await apiRequest(
+      "GET",
+      "/search?q=!!!",
+      authToken,
+    );
+    if (searchStatus2 !== 200) {
+      throw new Error(
+        `Expected 200, got ${searchStatus2}: ${JSON.stringify(searchData2)}`,
+      );
+    }
+    assertTrue(
+      Array.isArray(searchData2.data),
+      "Special character search should return array",
+    );
+
+    // Test 3: Search by identity document number - should find the created client
+    const { status: searchStatus3, data: searchData3 } = await apiRequest(
+      "GET",
+      "/search?q=12345",
+      authToken,
+    );
+    if (searchStatus3 !== 200) {
+      throw new Error(
+        `Expected 200, got ${searchStatus3}: ${JSON.stringify(searchData3)}`,
+      );
+    }
+    assertTrue(
+      Array.isArray(searchData3.data),
+      "Identity document number search should return array",
+    );
+    assertTrue(
+      searchData3.data.length > 0,
+      "Identity document search should return at least one result when searching for last 5 digits",
+    );
+
+    // Test 4: Verify the created client can be found by its name
+    const { status: searchByNameStatus, data: searchByNameData } =
+      await apiRequest("GET", "/search?q=Search", authToken);
+    if (searchByNameStatus !== 200) {
+      throw new Error(
+        `Expected 200, got ${searchByNameStatus}: ${JSON.stringify(searchByNameData)}`,
+      );
+    }
+    assertTrue(
+      searchByNameData.data.some(
+        (c) => c.id === createdMixedClientId,
+      ),
+      "Should find created client by name",
+    );
+  }),
+
   test("12. Delete Client", async () => {
     const { status } = await apiRequest(
       "DELETE",
