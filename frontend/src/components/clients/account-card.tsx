@@ -22,11 +22,6 @@ interface AccountCardProps {
   onBalanceUpdate?: () => void;
 }
 
-type Account = {
-  id: string;
-  client_id: string;
-};
-
 export function AccountCard({
   clientId,
   accountId,

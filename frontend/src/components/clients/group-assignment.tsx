@@ -171,7 +171,7 @@ export function GroupAssignment({ clientId, initialGroupIds, onChange }: GroupAs
                         <AlertDialogHeader>
                           <AlertDialogTitle>¿Remover del grupo?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Esta acción removerá a este cliente del grupo "{group.name}".
+                            Esta acción removerá a este cliente del grupo &quot;{group.name}&quot;.
                             El cambio es inmediato y no se podrá deshacer.
                           </AlertDialogDescription>
                         </AlertDialogHeader>

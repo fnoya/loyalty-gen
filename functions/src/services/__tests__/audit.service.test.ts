@@ -321,6 +321,184 @@ describe("AuditService", () => {
 
       expect(mockWhere).toHaveBeenCalledWith("client_id", "==", "client123");
     });
+
+    it("should apply date filters and cursor pagination when cursor exists", async () => {
+      const cursorSnapshot = { exists: true };
+      const cursorDocRef = { get: jest.fn().mockResolvedValue(cursorSnapshot) };
+
+      const mockQuery = {
+        where: mockWhere,
+        orderBy: mockOrderBy,
+        limit: mockLimit,
+        startAfter: mockStartAfter,
+        get: mockGet,
+      };
+
+      mockOrderBy.mockReturnValue(mockQuery);
+      mockWhere.mockReturnValue(mockQuery);
+      mockLimit.mockReturnValue(mockQuery);
+      mockStartAfter.mockReturnValue(mockQuery);
+
+      mockDoc.mockImplementation((id?: string) => {
+        if (id === "cursor-doc") return cursorDocRef as any;
+        return { get: jest.fn() } as any;
+      });
+
+      (mockFirestore.collection as jest.Mock).mockReturnValue({
+        doc: mockDoc,
+        where: mockWhere,
+        orderBy: mockOrderBy,
+      });
+
+      const mockDocs = [
+        {
+          id: "audit1",
+          data: () => ({
+            action: "CLIENT_CREATED",
+            resource_type: "client",
+            resource_id: "client1",
+            client_id: "client1",
+            account_id: null,
+            group_id: null,
+            transaction_id: null,
+            actor: mockActor,
+            changes: { before: null, after: { name: "Test" } },
+            metadata: {},
+            timestamp: { toDate: () => new Date("2025-01-01T00:00:00Z") },
+          }),
+        },
+      ];
+
+      mockGet.mockResolvedValue({
+        docs: mockDocs,
+        forEach: (cb: any) => mockDocs.forEach(cb),
+      });
+
+      const result = await auditService.listAuditLogs({
+        limit: 1,
+        start_date: "2025-01-01T00:00:00.000Z",
+        end_date: "2025-01-02T00:00:00.000Z",
+        next_cursor: "cursor-doc",
+      });
+
+      expect(mockWhere).toHaveBeenCalledWith(
+        "timestamp",
+        ">=",
+        new Date("2025-01-01")
+      );
+      expect(mockWhere).toHaveBeenCalledWith(
+        "timestamp",
+        "<=",
+        new Date("2025-01-02")
+      );
+      expect(cursorDocRef.get).toHaveBeenCalledTimes(1);
+      expect(mockStartAfter).toHaveBeenCalledWith(cursorSnapshot);
+      expect(result.paging.next_cursor).toBe("audit1");
+    });
+
+    it("should skip startAfter when cursor doc is missing", async () => {
+      mockDoc.mockReturnValue({ get: jest.fn().mockResolvedValue({ exists: false }) });
+
+      const mockQuery = {
+        where: mockWhere,
+        orderBy: mockOrderBy,
+        limit: mockLimit,
+        startAfter: mockStartAfter,
+        get: mockGet,
+      };
+
+      mockOrderBy.mockReturnValue(mockQuery);
+      mockWhere.mockReturnValue(mockQuery);
+      mockLimit.mockReturnValue(mockQuery);
+      mockStartAfter.mockReturnValue(mockQuery);
+
+      (mockFirestore.collection as jest.Mock).mockReturnValue({
+        doc: mockDoc,
+        where: mockWhere,
+        orderBy: mockOrderBy,
+      });
+
+      const mockDocs = [
+        {
+          id: "audit1",
+          data: () => ({
+            action: "CLIENT_CREATED",
+            resource_type: "client",
+            resource_id: "client1",
+            client_id: "client1",
+            account_id: null,
+            group_id: null,
+            transaction_id: null,
+            actor: mockActor,
+            changes: { before: null, after: { name: "Test" } },
+            metadata: {},
+            timestamp: { toDate: () => new Date("2025-01-01T00:00:00Z") },
+          }),
+        },
+      ];
+
+      mockGet.mockResolvedValue({
+        docs: mockDocs,
+        forEach: (cb: any) => mockDocs.forEach(cb),
+      });
+
+      const result = await auditService.listAuditLogs({
+        limit: 1,
+        next_cursor: "cursor-missing",
+      });
+
+      expect(mockStartAfter).not.toHaveBeenCalled();
+      expect(result.paging.next_cursor).toBe("audit1");
+    });
+
+    it("should return null next_cursor when fewer results than limit", async () => {
+      const mockQuery = {
+        where: mockWhere,
+        orderBy: mockOrderBy,
+        limit: mockLimit,
+        get: mockGet,
+      };
+
+      mockOrderBy.mockReturnValue(mockQuery);
+      mockWhere.mockReturnValue(mockQuery);
+      mockLimit.mockReturnValue(mockQuery);
+
+      (mockFirestore.collection as jest.Mock).mockReturnValue({
+        doc: mockDoc,
+        where: mockWhere,
+        orderBy: mockOrderBy,
+      });
+
+      const mockDocs = [
+        {
+          id: "audit1",
+          data: () => ({
+            action: "CLIENT_CREATED",
+            resource_type: "client",
+            resource_id: "client1",
+            client_id: "client1",
+            account_id: null,
+            group_id: null,
+            transaction_id: null,
+            actor: mockActor,
+            changes: { before: null, after: { name: "Test" } },
+            metadata: {},
+            timestamp: { toDate: () => new Date("2025-01-01T00:00:00Z") },
+          }),
+        },
+      ];
+
+      mockGet.mockResolvedValue({
+        docs: mockDocs,
+        forEach: (cb: any) => mockDocs.forEach(cb),
+      });
+
+      const result = await auditService.listAuditLogs({
+        limit: 5,
+      });
+
+      expect(result.paging.next_cursor).toBeNull();
+    });
   });
 
   describe("getClientAuditLogs", () => {
@@ -386,4 +564,22 @@ describe("AuditService", () => {
       expect(mockWhere).toHaveBeenCalledWith("account_id", "==", "account123");
     });
   });
+
+  describe("getGroupAuditLogs", () => {
+    it("should get audit logs for a specific group", async () => {
+      const listSpy = jest.spyOn(auditService, "listAuditLogs");
+
+      listSpy.mockResolvedValue({ data: [], paging: { next_cursor: null } });
+
+      const result = await auditService.getGroupAuditLogs("group123", 10, "cur");
+
+      expect(listSpy).toHaveBeenCalledWith({
+        resource_type: "group",
+        limit: 10,
+        next_cursor: "cur",
+      });
+      expect(result.paging.next_cursor).toBeNull();
+    });
+  });
+
 });

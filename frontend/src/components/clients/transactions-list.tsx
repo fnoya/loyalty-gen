@@ -1,13 +1,12 @@
 "use client";
 
-import { ArrowDown, ArrowUp, Clock, FileSearch } from "lucide-react";
+import { ArrowDown, ArrowUp, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useState } from "react";
 
 import { Transaction } from "@/types/transaction";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
 import { AuditLogDialog } from "@/components/audit/audit-log-dialog";
 import { apiRequest } from "@/lib/api";
 import { AuditLog } from "@/types/audit";

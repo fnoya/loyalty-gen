@@ -8,6 +8,7 @@ import clientRoutes from "./api/routes/client.routes";
 import groupRoutes from "./api/routes/group.routes";
 import accountRoutes from "./api/routes/account.routes";
 import auditRoutes from "./api/routes/audit.routes";
+import { familyCircleRouter } from "./api/routes/family-circle.routes";
 
 // Create Express app
 const app = express();
@@ -32,6 +33,7 @@ app.use("/v1/groups", groupRoutes);
 app.use("/v1", accountRoutes);
 app.use("/v1/audit-logs", auditRoutes);
 app.use("/v1", auditRoutes); // For /clients/:id/audit-logs paths
+app.use("/v1", familyCircleRouter); // Family Circle routes
 
 // 404 handler (must be after all routes)
 app.use(notFoundHandler);

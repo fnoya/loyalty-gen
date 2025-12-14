@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus, Loader2, Trash2, Settings } from "lucide-react";
+import { Loader2, Trash2, Settings } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,7 +13,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import { CreateGroupForm } from "@/components/clients/create-group-form";
 import { apiRequest } from "@/lib/api";
 import { toast } from "@/components/ui/toast";
@@ -151,7 +150,7 @@ export default function GroupsManagementPage() {
                         <AlertDialogHeader>
                           <AlertDialogTitle>¿Eliminar grupo?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Esta acción eliminará el grupo "{group.name}"
+                            Esta acción eliminará el grupo &quot;{group.name}&quot;
                             permanentemente. Se removerán todas las asociaciones
                             de clientes.
                           </AlertDialogDescription>

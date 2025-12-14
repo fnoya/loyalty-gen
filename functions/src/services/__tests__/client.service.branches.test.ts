@@ -409,5 +409,77 @@ describe("ClientService Branch Coverage", () => {
       expect(result.familyCircleMembers).toBeNull();
       expect(result.account_balances).toEqual({});
     });
+
+    it("should return family circle holder info in getClient", async () => {
+      const now = new Date();
+      mockGet.mockResolvedValue({
+        exists: true,
+        id: "client123",
+        data: () => ({
+          name: { firstName: "Holder", firstLastName: "Test" },
+          created_at: now,
+          updated_at: now,
+          familyCircle: { role: "holder", holderId: null, relationshipType: null, joinedAt: null },
+          familyCircleMembers: [
+            {
+              memberId: "member-1",
+              relationshipType: "child",
+              addedAt: now,
+              addedBy: "user123",
+            },
+          ],
+          account_balances: { acc1: 100 },
+        }),
+      });
+
+      const result = await clientService.getClient("client123");
+
+      expect(result.familyCircle).toEqual({
+        role: "holder",
+        holderId: null,
+        relationshipType: null,
+        joinedAt: null,
+      });
+      expect(result.familyCircleMembers).toEqual([
+        {
+          memberId: "member-1",
+          relationshipType: "child",
+          addedAt: now,
+          addedBy: "user123",
+        },
+      ]);
+      expect(result.account_balances).toEqual({ acc1: 100 });
+    });
+
+    it("should return family circle member info in getClient", async () => {
+      const now = new Date();
+      mockGet.mockResolvedValue({
+        exists: true,
+        id: "client456",
+        data: () => ({
+          name: { firstName: "Member", firstLastName: "Test" },
+          created_at: now,
+          updated_at: now,
+          familyCircle: {
+            role: "member",
+            holderId: "holder-123",
+            relationshipType: "parent",
+            joinedAt: now,
+          },
+          familyCircleMembers: null,
+          account_balances: {},
+        }),
+      });
+
+      const result = await clientService.getClient("client456");
+
+      expect(result.familyCircle).toEqual({
+        role: "member",
+        holderId: "holder-123",
+        relationshipType: "parent",
+        joinedAt: now,
+      });
+      expect(result.familyCircleMembers).toBeNull();
+    });
   });
 });

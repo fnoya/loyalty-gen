@@ -18,7 +18,7 @@ import { toast } from "@/components/ui/toast";
 import { apiRequest } from "@/lib/api";
 import { Loader2, Plus } from "lucide-react";
 
-const createGroupSchema = z.object({
+export const createGroupSchema = z.object({
   name: z
     .string()
     .min(1, "El nombre es requerido")
@@ -30,7 +30,7 @@ const createGroupSchema = z.object({
     .or(z.literal("")),
 });
 
-type CreateGroupFormValues = z.infer<typeof createGroupSchema>;
+export type CreateGroupFormValues = z.infer<typeof createGroupSchema>;
 
 interface CreateGroupFormProps {
   onSuccess?: (group: { id: string; name: string; description?: string }) => void;

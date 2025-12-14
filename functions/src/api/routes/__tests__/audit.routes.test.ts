@@ -161,6 +161,14 @@ describe("Audit Routes", () => {
 
       expect(response.status).not.toBe(200);
     });
+
+    it("should handle too-small limit for client logs", async () => {
+      const response = await request(app)
+        .get("/v1/audit-logs/clients/c1/audit-logs")
+        .query({ limit: "0" });
+
+      expect(response.status).not.toBe(200);
+    });
   });
 
   describe("GET /v1/audit-logs/clients/:clientId/accounts/:accountId/audit-logs", () => {
@@ -187,6 +195,14 @@ describe("Audit Routes", () => {
       const response = await request(app)
         .get("/v1/audit-logs/clients/c1/accounts/a1/audit-logs")
         .query({ limit: "101" });
+
+      expect(response.status).not.toBe(200);
+    });
+
+    it("should handle too-small limit for account logs", async () => {
+      const response = await request(app)
+        .get("/v1/audit-logs/clients/c1/accounts/a1/audit-logs")
+        .query({ limit: "0" });
 
       expect(response.status).not.toBe(200);
     });

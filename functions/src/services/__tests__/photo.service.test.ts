@@ -303,4 +303,198 @@ describe("PhotoService", () => {
       );
     });
   });
+
+  describe("Branch coverage - emulator environment", () => {
+    it("should use emulator URL when FIREBASE_STORAGE_EMULATOR_HOST is set", async () => {
+      const originalEnv = process.env.FIREBASE_STORAGE_EMULATOR_HOST;
+      process.env.FIREBASE_STORAGE_EMULATOR_HOST = "localhost:9199";
+
+      const clientId = "client123";
+      const buffer = Buffer.from("test image data");
+
+      mockGet.mockResolvedValue({
+        exists: true,
+        data: () => ({
+          clientId,
+        }),
+      });
+
+      mockSave.mockResolvedValue(undefined);
+      mockGetSignedUrl.mockResolvedValue(["https://signed-url.example.com/photo"]);
+
+      await photoService.uploadPhoto(clientId, buffer, "image/jpeg");
+
+      expect(mockSave).toHaveBeenCalled();
+      expect(mockUpdate).toHaveBeenCalled();
+      const updateCall = mockUpdate.mock.calls[0][0];
+      expect(updateCall.photoUrl).toContain("http://localhost:9199");
+
+      process.env.FIREBASE_STORAGE_EMULATOR_HOST = originalEnv;
+    });
+
+    it("should replace 127.0.0.1 with localhost in emulator host (line 113)", async () => {
+      const originalEnv = process.env.FIREBASE_STORAGE_EMULATOR_HOST;
+      process.env.FIREBASE_STORAGE_EMULATOR_HOST = "127.0.0.1:9199";
+
+      const clientId = "client123";
+      const buffer = Buffer.from("test image data");
+
+      mockGet.mockResolvedValue({
+        exists: true,
+        data: () => ({
+          clientId,
+        }),
+      });
+
+      mockSave.mockResolvedValue(undefined);
+
+      await photoService.uploadPhoto(clientId, buffer, "image/png");
+
+      expect(mockUpdate).toHaveBeenCalled();
+      const updateCall = mockUpdate.mock.calls[0][0];
+      expect(updateCall.photoUrl).toContain("localhost:9199");
+      expect(updateCall.photoUrl).not.toContain("127.0.0.1");
+
+      process.env.FIREBASE_STORAGE_EMULATOR_HOST = originalEnv;
+    });
+
+    it("should use signed URL when FIREBASE_STORAGE_EMULATOR_HOST is not set", async () => {
+      const originalEnv = process.env.FIREBASE_STORAGE_EMULATOR_HOST;
+      delete process.env.FIREBASE_STORAGE_EMULATOR_HOST;
+
+      const clientId = "client123";
+      const buffer = Buffer.from("test image data");
+      const signedUrl = "https://storage.googleapis.com/bucket/path?token=xyz";
+
+      mockGet.mockResolvedValue({
+        exists: true,
+        data: () => ({
+          clientId,
+        }),
+      });
+
+      mockSave.mockResolvedValue(undefined);
+      mockGetSignedUrl.mockResolvedValue([signedUrl]);
+
+      await photoService.uploadPhoto(clientId, buffer, "image/webp");
+
+      expect(mockGetSignedUrl).toHaveBeenCalledWith({
+        action: "read",
+        expires: expect.any(Number),
+      });
+      expect(mockUpdate).toHaveBeenCalled();
+      const updateCall = mockUpdate.mock.calls[0][0];
+      expect(updateCall.photoUrl).toBe(signedUrl);
+
+      process.env.FIREBASE_STORAGE_EMULATOR_HOST = originalEnv;
+    });
+  });
+
+  describe("Branch coverage - delete photo", () => {
+    it("should handle standard URL format gracefully (line 194)", async () => {
+      const clientId = "client123";
+      const photoUrl = "https://storage.googleapis.com/bucket/path/to/file";
+
+      mockGet.mockResolvedValue({
+        exists: true,
+        data: () => ({
+          photoUrl: photoUrl,
+        }),
+      });
+
+      await photoService.deletePhoto(clientId);
+
+      // Should not crash and should update without deleting from storage
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          photoUrl: null,
+        })
+      );
+      // Should not call file.delete for standard URLs
+      expect(mockDelete).not.toHaveBeenCalled();
+    });
+
+    it("should handle error during deletePhotoFromStorage (line 211)", async () => {
+      const clientId = "client123";
+      const photoUrl = "http://localhost:9199/v0/b/bucket/o/path?alt=media";
+
+      mockGet.mockResolvedValue({
+        exists: true,
+        data: () => ({
+          photoUrl: photoUrl,
+        }),
+      });
+
+      mockExists.mockRejectedValue(new Error("Storage error"));
+
+      // Should not throw and should still update the client
+      await expect(photoService.deletePhoto(clientId)).resolves.not.toThrow();
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          photoUrl: null,
+        })
+      );
+    });
+  });
+
+  describe("Branch coverage - MIME type handling", () => {
+    it("should handle image/jpeg extension (line 220-228)", async () => {
+      const clientId = "client123";
+      const buffer = Buffer.from("jpeg image data");
+
+      mockGet.mockResolvedValue({
+        exists: true,
+        data: () => ({
+          clientId,
+        }),
+      });
+
+      mockSave.mockResolvedValue(undefined);
+      mockGetSignedUrl.mockResolvedValue(["https://signed-url.example.com"]);
+
+      await photoService.uploadPhoto(clientId, buffer, "image/jpeg");
+
+      // mockSave is called with (buffer, options)
+      // file.save was called so the operation succeeded
+      expect(mockSave).toHaveBeenCalled();
+      expect(mockFile.save.mock.calls[0][1].metadata.metadata.clientId).toBe(clientId);
+    });
+
+    it("should handle image/png extension", async () => {
+      const clientId = "client123";
+      const buffer = Buffer.from("png image data");
+
+      mockGet.mockResolvedValue({
+        exists: true,
+        data: () => ({
+          clientId,
+        }),
+      });
+
+      mockSave.mockClear();
+      mockSave.mockResolvedValue(undefined);
+      mockGetSignedUrl.mockResolvedValue(["https://signed-url.example.com"]);
+
+      await photoService.uploadPhoto(clientId, buffer, "image/png");
+
+      expect(mockSave).toHaveBeenCalled();
+      expect(mockFile.save.mock.calls[0][1].contentType).toBe("image/png");
+    });
+
+    it("should reject unknown MIME types", async () => {
+      const clientId = "client123";
+      const buffer = Buffer.from("unknown image data");
+
+      mockGet.mockResolvedValue({
+        exists: true,
+        data: () => ({
+          clientId,
+        }),
+      });
+
+      await expect(
+        photoService.uploadPhoto(clientId, buffer, "image/unknown")
+      ).rejects.toThrow("Invalid file type");
+    });
+  });
 });

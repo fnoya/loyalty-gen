@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { accountService } from "../../services/account.service";
+import { familyCircleService } from "../../services/family-circle.service";
 import {
   authenticate,
   AuthenticatedRequest,
@@ -71,6 +72,7 @@ router.post(
 /**
  * @route POST /api/v1/clients/:clientId/accounts/:accountId/credit
  * @desc Credit points to a loyalty account
+ * @query on_behalf_of - Optional: ID of family circle member crediting on behalf of holder
  * @access Protected
  */
 router.post(
@@ -79,13 +81,32 @@ router.post(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { clientId, accountId } = req.params;
+      const onBehalfOf = req.query.on_behalf_of as string | undefined;
       const actor = getActor(req);
       const validated = creditDebitRequestSchema.parse(req.body);
+
+      // If on_behalf_of is provided, validate family circle permission
+      let originator = null;
+      if (onBehalfOf) {
+        const relationshipType = await familyCircleService.validateMemberTransactionPermission(
+          clientId!,
+          onBehalfOf,
+          accountId!,
+          "credit"
+        );
+        originator = {
+          clientId: onBehalfOf,
+          isCircleMember: true,
+          relationshipType,
+        };
+      }
+
       const account = await accountService.instance.creditPoints(
         clientId!,
         accountId!,
         validated,
-        actor
+        actor,
+        originator
       );
       res.status(200).json(account);
     } catch (error) {
@@ -97,6 +118,7 @@ router.post(
 /**
  * @route POST /api/v1/clients/:clientId/accounts/:accountId/debit
  * @desc Debit points from a loyalty account
+ * @query on_behalf_of - Optional: ID of family circle member debiting on behalf of holder
  * @access Protected
  */
 router.post(
@@ -105,13 +127,32 @@ router.post(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { clientId, accountId } = req.params;
+      const onBehalfOf = req.query.on_behalf_of as string | undefined;
       const actor = getActor(req);
       const validated = creditDebitRequestSchema.parse(req.body);
+
+      // If on_behalf_of is provided, validate family circle permission
+      let originator = null;
+      if (onBehalfOf) {
+        const relationshipType = await familyCircleService.validateMemberTransactionPermission(
+          clientId!,
+          onBehalfOf,
+          accountId!,
+          "debit"
+        );
+        originator = {
+          clientId: onBehalfOf,
+          isCircleMember: true,
+          relationshipType,
+        };
+      }
+
       const account = await accountService.instance.debitPoints(
         clientId!,
         accountId!,
         validated,
-        actor
+        actor,
+        originator
       );
       res.status(200).json(account);
     } catch (error) {

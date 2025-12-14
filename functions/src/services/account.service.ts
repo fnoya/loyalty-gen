@@ -34,6 +34,22 @@ export class AccountService {
   }
 
   /**
+   * Helper to convert familyCircleConfig timestamps from Firestore
+   */
+  private convertFamilyCircleConfig(
+    config: unknown
+  ): { allowMemberCredits: boolean; allowMemberDebits: boolean; updatedAt: Date; updatedBy: string } | null {
+    if (!config) return null;
+    const cfg = config as Record<string, unknown>;
+    return {
+      allowMemberCredits: cfg.allowMemberCredits as boolean,
+      allowMemberDebits: cfg.allowMemberDebits as boolean,
+      updatedAt: (cfg.updatedAt as { toDate?: () => Date }).toDate ? (cfg.updatedAt as { toDate: () => Date }).toDate() : cfg.updatedAt as Date,
+      updatedBy: cfg.updatedBy as string,
+    };
+  }
+
+  /**
    * Create a new loyalty account for a client
    */
   async createAccount(
@@ -83,7 +99,7 @@ export class AccountService {
       id: createdDoc.id,
       account_name: data.account_name,
       points: data.points,
-      familyCircleConfig: data.familyCircleConfig,
+      familyCircleConfig: this.convertFamilyCircleConfig(data.familyCircleConfig),
       created_at: data.created_at.toDate
         ? data.created_at.toDate()
         : data.created_at,
@@ -138,7 +154,7 @@ export class AccountService {
           id: doc.id,
           account_name: data.account_name,
           points: data.points,
-          familyCircleConfig: data.familyCircleConfig || null,
+          familyCircleConfig: this.convertFamilyCircleConfig(data.familyCircleConfig),
           created_at: data.created_at.toDate
             ? data.created_at.toDate()
             : data.created_at,
@@ -185,7 +201,7 @@ export class AccountService {
       id: accountDoc.id,
       account_name: data.account_name,
       points: data.points,
-      familyCircleConfig: data.familyCircleConfig || null,
+      familyCircleConfig: this.convertFamilyCircleConfig(data.familyCircleConfig),
       created_at: data.created_at.toDate
         ? data.created_at.toDate()
         : data.created_at,
@@ -202,7 +218,8 @@ export class AccountService {
     clientId: string,
     accountId: string,
     request: CreditDebitRequest,
-    actor: AuditActor
+    actor: AuditActor,
+    originator?: { clientId: string; isCircleMember: boolean; relationshipType: string } | null
   ): Promise<LoyaltyAccount> {
     const accountRef = this.firestore
       .collection("clients")
@@ -245,6 +262,7 @@ export class AccountService {
         transaction_type: "credit",
         amount: request.amount,
         description: request.description || "",
+        originatedBy: originator || null,
         timestamp: FieldValue.serverTimestamp(),
       });
 
@@ -278,7 +296,7 @@ export class AccountService {
       id: updatedDoc.id,
       account_name: data.account_name,
       points: data.points,
-      familyCircleConfig: data.familyCircleConfig,
+      familyCircleConfig: this.convertFamilyCircleConfig(data.familyCircleConfig),
       created_at: data.created_at.toDate
         ? data.created_at.toDate()
         : data.created_at,
@@ -295,7 +313,8 @@ export class AccountService {
     clientId: string,
     accountId: string,
     request: CreditDebitRequest,
-    actor: AuditActor
+    actor: AuditActor,
+    originator?: { clientId: string; isCircleMember: boolean; relationshipType: string } | null
   ): Promise<LoyaltyAccount> {
     const accountRef = this.firestore
       .collection("clients")
@@ -347,6 +366,7 @@ export class AccountService {
         transaction_type: "debit",
         amount: request.amount,
         description: request.description || "",
+        originatedBy: originator || null,
         timestamp: FieldValue.serverTimestamp(),
       });
 
@@ -380,7 +400,7 @@ export class AccountService {
       id: updatedDoc.id,
       account_name: data.account_name,
       points: data.points,
-      familyCircleConfig: data.familyCircleConfig,
+      familyCircleConfig: this.convertFamilyCircleConfig(data.familyCircleConfig),
       created_at: data.created_at.toDate
         ? data.created_at.toDate()
         : data.created_at,

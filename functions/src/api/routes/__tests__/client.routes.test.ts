@@ -1,8 +1,10 @@
 import request from "supertest";
+import express from "express";
 import app from "../../../app";
 import { clientService } from "../../../services/client.service";
 import { photoService } from "../../../services/photo.service";
 import { ValidationError, AppError } from "../../../core/errors";
+import clientRoutes from "../client.routes";
 
 // Mock Firebase Admin
 jest.mock("firebase-admin", () => ({
@@ -145,6 +147,16 @@ describe("Client Routes", () => {
       expect(res.body).toEqual(mockClient);
       expect(clientService.getClient).toHaveBeenCalledWith("123");
     });
+
+    it("should return 404 when client is not found", async () => {
+      (clientService.getClient as jest.Mock).mockRejectedValue(
+        new AppError("Not found", 404, "NOT_FOUND")
+      );
+
+      const res = await request(app).get("/v1/clients/missing");
+
+      expect(res.status).toBe(404);
+    });
   });
 
   describe("PUT /v1/clients/:id", () => {
@@ -202,6 +214,52 @@ describe("Client Routes", () => {
       expect(photoService.uploadPhoto).toHaveBeenCalled();
     });
 
+    it("should upload via rawBody path", async () => {
+      const mockClient = { id: "raw-1", photoUrl: "http://example.com/p.jpg" };
+      (photoService.uploadPhoto as jest.Mock).mockResolvedValue("ok");
+      (clientService.getClient as jest.Mock).mockResolvedValue(mockClient);
+
+      const boundary = "----WebKitFormBoundary7MA4YWxkTrZu0gW";
+      const multipartBody =
+        `--${boundary}\r\n` +
+        'Content-Disposition: form-data; name="photo"; filename="test.png"\r\n' +
+        "Content-Type: image/png\r\n\r\n" +
+        "fake-image-data" +
+        `\r\n--${boundary}--\r\n`;
+
+      const rawApp = express();
+      rawApp.use((req, _res, next) => {
+        (req as any).rawBody = Buffer.from(multipartBody, "utf8");
+        next();
+      });
+      rawApp.use((req, _res, next) => {
+        req.headers["content-type"] = `multipart/form-data; boundary=${boundary}`;
+        next();
+      });
+      rawApp.use((req: any, _res: any, next) => {
+        req.user = { uid: "test-user" } as any;
+        next();
+      });
+      rawApp.use("/v1/clients", clientRoutes);
+      rawApp.use((err: any, _req: any, res: any, _next: any) => {
+        res.status(err.statusCode || 500).json({
+          error: { code: err.code || "INTERNAL_ERROR", message: err.message },
+        });
+      });
+
+      const res = await request(rawApp)
+        .post("/v1/clients/raw-1/photo")
+        .set("Content-Type", `multipart/form-data; boundary=${boundary}`)
+        .send(multipartBody);
+
+      expect(res.status).toBe(200);
+      expect(photoService.uploadPhoto).toHaveBeenCalledWith(
+        "raw-1",
+        expect.any(Buffer),
+        "image/png"
+      );
+    });
+
     it("should handle missing file", async () => {
       const res = await request(app)
         .post("/v1/clients/123/photo")
@@ -244,6 +302,16 @@ describe("Client Routes", () => {
 
       expect(res.status).toBe(200);
       expect(photoService.deletePhoto).toHaveBeenCalledWith("123");
+    });
+
+    it("should handle errors when deleting a photo", async () => {
+      (photoService.deletePhoto as jest.Mock).mockRejectedValue(
+        new AppError("Delete failed", 500, "INTERNAL_ERROR")
+      );
+
+      const res = await request(app).delete("/v1/clients/err/photo");
+
+      expect(res.status).toBe(500);
     });
   });
 });

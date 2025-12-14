@@ -1,8 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
 import { Loader2 } from "lucide-react";
 
 import { AuditLog } from "@/types/audit";

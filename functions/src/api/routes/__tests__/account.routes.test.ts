@@ -2,6 +2,7 @@ import request from "supertest";
 import app from "../../../app";
 import { accountService } from "../../../services/account.service";
 import { AppError, NotFoundError } from "../../../core/errors";
+import { familyCircleService } from "../../../services/family-circle.service";
 
 // Mock Firebase Admin
 jest.mock("firebase-admin", () => ({
@@ -11,7 +12,7 @@ jest.mock("firebase-admin", () => ({
   }),
 }));
 
-// Mock Services - Create mock instance
+// Mock Services - Create mock instances
 const mockAccountServiceInstance = {
   listAccounts: jest.fn(),
   createAccount: jest.fn(),
@@ -27,6 +28,13 @@ jest.mock("../../../services/account.service", () => ({
     get instance() {
       return mockAccountServiceInstance;
     },
+  },
+}));
+
+// Mock Family Circle Service
+jest.mock("../../../services/family-circle.service", () => ({
+  familyCircleService: {
+    validateMemberTransactionPermission: jest.fn(),
   },
 }));
 
@@ -171,7 +179,8 @@ describe("Account Routes", () => {
           amount: 50,
           description: "Bonus points",
         },
-        { uid: "test-user", email: null }
+        { uid: "test-user", email: null },
+        null
       );
     });
 
@@ -232,6 +241,54 @@ describe("Account Routes", () => {
 
       expect(res.status).toBe(404);
     });
+
+    it("should credit on behalf of a family member", async () => {
+      const mockAccount = {
+        id: "account-123",
+        account_name: "Main Account",
+        points: 200,
+        familyCircleConfig: null,
+        created_at: "2024-01-04T00:00:00.000Z",
+        updated_at: "2024-01-04T00:00:00.000Z",
+      };
+      (accountService.instance.creditPoints as jest.Mock).mockResolvedValue(
+        mockAccount
+      );
+      (familyCircleService.validateMemberTransactionPermission as jest.Mock).mockResolvedValue(
+        "spouse"
+      );
+
+      const res = await request(app)
+        .post(
+          "/v1/clients/client-123/accounts/account-123/credit?on_behalf_of=member-1"
+        )
+        .send({
+          amount: 50,
+          description: "Gift",
+        });
+
+      expect(res.status).toBe(200);
+      expect(familyCircleService.validateMemberTransactionPermission).toHaveBeenCalledWith(
+        "client-123",
+        "member-1",
+        "account-123",
+        "credit"
+      );
+      expect(accountService.instance.creditPoints).toHaveBeenCalledWith(
+        "client-123",
+        "account-123",
+        {
+          amount: 50,
+          description: "Gift",
+        },
+        { uid: "test-user", email: null },
+        {
+          clientId: "member-1",
+          isCircleMember: true,
+          relationshipType: "spouse",
+        }
+      );
+    });
   });
 
   describe("POST /v1/clients/:clientId/accounts/:accountId/debit", () => {
@@ -264,7 +321,8 @@ describe("Account Routes", () => {
           amount: 50,
           description: "Redemption",
         },
-        { uid: "test-user", email: null }
+        { uid: "test-user", email: null },
+        null
       );
     });
 
@@ -331,6 +389,54 @@ describe("Account Routes", () => {
         });
 
       expect(res.status).toBe(404);
+    });
+
+    it("should debit on behalf of a family member", async () => {
+      const mockAccount = {
+        id: "account-123",
+        account_name: "Main Account",
+        points: 0,
+        familyCircleConfig: null,
+        created_at: "2024-01-05T00:00:00.000Z",
+        updated_at: "2024-01-05T00:00:00.000Z",
+      };
+      (accountService.instance.debitPoints as jest.Mock).mockResolvedValue(
+        mockAccount
+      );
+      (familyCircleService.validateMemberTransactionPermission as jest.Mock).mockResolvedValue(
+        "child"
+      );
+
+      const res = await request(app)
+        .post(
+          "/v1/clients/client-123/accounts/account-123/debit?on_behalf_of=member-2"
+        )
+        .send({
+          amount: 25,
+          description: "Family redemption",
+        });
+
+      expect(res.status).toBe(200);
+      expect(familyCircleService.validateMemberTransactionPermission).toHaveBeenCalledWith(
+        "client-123",
+        "member-2",
+        "account-123",
+        "debit"
+      );
+      expect(accountService.instance.debitPoints).toHaveBeenCalledWith(
+        "client-123",
+        "account-123",
+        {
+          amount: 25,
+          description: "Family redemption",
+        },
+        { uid: "test-user", email: null },
+        {
+          clientId: "member-2",
+          isCircleMember: true,
+          relationshipType: "child",
+        }
+      );
     });
   });
 
@@ -415,6 +521,60 @@ describe("Account Routes", () => {
       );
 
       expect(res.status).toBe(400);
+    });
+
+    it("should handle invalid start_date", async () => {
+      const res = await request(app).get(
+        "/v1/clients/client-123/accounts/account-123/transactions?start_date=not-a-date"
+      );
+
+      expect(res.status).toBe(400);
+    });
+
+    it("should handle invalid end_date", async () => {
+      const res = await request(app).get(
+        "/v1/clients/client-123/accounts/account-123/transactions?end_date=bad-date"
+      );
+
+      expect(res.status).toBe(400);
+    });
+
+    it("should handle start_date after end_date", async () => {
+      const res = await request(app).get(
+        "/v1/clients/client-123/accounts/account-123/transactions?start_date=2024-02-01T00:00:00Z&end_date=2024-01-01T00:00:00Z"
+      );
+
+      expect(res.status).toBe(400);
+    });
+
+    it("should handle invalid transaction_type", async () => {
+      const res = await request(app).get(
+        "/v1/clients/client-123/accounts/account-123/transactions?transaction_type=transfer"
+      );
+
+      expect(res.status).toBe(400);
+    });
+
+    it("should parse date filters and transaction_type", async () => {
+      (accountService.instance.listTransactions as jest.Mock).mockResolvedValue({
+        transactions: [],
+        nextCursor: null,
+      });
+
+      const res = await request(app).get(
+        "/v1/clients/client-123/accounts/account-123/transactions?start_date=2024-01-01T00:00:00Z&end_date=2024-01-31T23:59:59Z&transaction_type=debit"
+      );
+
+      expect(res.status).toBe(200);
+      expect(accountService.instance.listTransactions).toHaveBeenCalledWith(
+        "client-123",
+        "account-123",
+        50,
+        undefined,
+        expect.any(Date),
+        expect.any(Date),
+        "debit"
+      );
     });
   });
 

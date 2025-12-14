@@ -82,7 +82,7 @@ export function ClientAuditHistory({ clientId, query = {} }: ClientAuditHistoryP
     };
 
     fetchLogs();
-  }, [clientId, query]);
+  }, [clientId, query, buildQueryString]);
 
   const fetchMoreLogs = async () => {
     if (!nextCursor) return;
