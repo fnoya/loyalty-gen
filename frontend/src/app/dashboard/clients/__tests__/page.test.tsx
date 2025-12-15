@@ -1,4 +1,4 @@
-/* eslint-disable react/display-name */
+ 
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import ClientsPage from "../page";
 import { apiRequest } from "@/lib/api";

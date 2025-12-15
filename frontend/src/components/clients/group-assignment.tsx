@@ -30,7 +30,11 @@ interface GroupAssignmentProps {
   onChange?: (groupIds: string[]) => void;
 }
 
-export function GroupAssignment({ clientId, initialGroupIds, onChange }: GroupAssignmentProps) {
+export function GroupAssignment({
+  clientId,
+  initialGroupIds,
+  onChange,
+}: GroupAssignmentProps) {
   const [allGroups, setAllGroups] = useState<AffinityGroup[]>([]);
   const [assignedIds, setAssignedIds] = useState<string[]>(initialGroupIds);
   const [loadingGroups, setLoadingGroups] = useState(true);
@@ -169,10 +173,13 @@ export function GroupAssignment({ clientId, initialGroupIds, onChange }: GroupAs
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>¿Remover del grupo?</AlertDialogTitle>
+                          <AlertDialogTitle>
+                            ¿Remover del grupo?
+                          </AlertDialogTitle>
                           <AlertDialogDescription>
-                            Esta acción removerá a este cliente del grupo &quot;{group.name}&quot;.
-                            El cambio es inmediato y no se podrá deshacer.
+                            Esta acción removerá a este cliente del grupo &quot;
+                            {group.name}&quot;. El cambio es inmediato y no se
+                            podrá deshacer.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -217,7 +224,8 @@ export function GroupAssignment({ clientId, initialGroupIds, onChange }: GroupAs
               />
               {addingGroupId && (
                 <div className="flex items-center gap-2 text-xs text-slate-600">
-                  <Loader2 className="h-3 w-3 animate-spin" /> Añadiendo grupo...
+                  <Loader2 className="h-3 w-3 animate-spin" /> Añadiendo
+                  grupo...
                 </div>
               )}
             </div>

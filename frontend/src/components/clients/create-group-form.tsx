@@ -33,7 +33,11 @@ export const createGroupSchema = z.object({
 export type CreateGroupFormValues = z.infer<typeof createGroupSchema>;
 
 interface CreateGroupFormProps {
-  onSuccess?: (group: { id: string; name: string; description?: string }) => void;
+  onSuccess?: (group: {
+    id: string;
+    name: string;
+    description?: string;
+  }) => void;
 }
 
 export function CreateGroupForm({ onSuccess }: CreateGroupFormProps) {
@@ -41,7 +45,9 @@ export function CreateGroupForm({ onSuccess }: CreateGroupFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [errors, setErrors] = useState<{ name?: string; description?: string }>({});
+  const [errors, setErrors] = useState<{ name?: string; description?: string }>(
+    {},
+  );
 
   const validate = (): boolean => {
     const newErrors: typeof errors = {};
@@ -88,9 +94,7 @@ export function CreateGroupForm({ onSuccess }: CreateGroupFormProps) {
     } catch (error) {
       console.error("Error creating group:", error);
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "No se pudo crear el grupo"
+        error instanceof Error ? error.message : "No se pudo crear el grupo",
       );
     } finally {
       setIsLoading(false);

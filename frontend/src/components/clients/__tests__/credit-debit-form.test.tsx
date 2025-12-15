@@ -518,9 +518,7 @@ describe("CreditDebitForm", () => {
   describe("Error handling", () => {
     it("displays generic API error for credit transaction", async () => {
       const errorMessage = "Network error occurred";
-      (apiRequest as jest.Mock).mockRejectedValueOnce(
-        new Error(errorMessage),
-      );
+      (apiRequest as jest.Mock).mockRejectedValueOnce(new Error(errorMessage));
 
       render(
         <CreditDebitForm
@@ -538,7 +536,9 @@ describe("CreditDebitForm", () => {
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/Error en la transacción/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Error en la transacción/i),
+        ).toBeInTheDocument();
       });
 
       expect(screen.getByText(errorMessage)).toBeInTheDocument();

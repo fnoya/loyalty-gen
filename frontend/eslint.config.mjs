@@ -16,6 +16,13 @@ const eslintConfig = defineConfig([
     "node_modules/**",
     "dist/**",
   ]),
+  {
+    files: ["**/__tests__/**/*", "**/*.test.tsx", "**/*.test.ts"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "react/display-name": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

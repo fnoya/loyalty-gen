@@ -150,9 +150,9 @@ export default function GroupsManagementPage() {
                         <AlertDialogHeader>
                           <AlertDialogTitle>¿Eliminar grupo?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Esta acción eliminará el grupo &quot;{group.name}&quot;
-                            permanentemente. Se removerán todas las asociaciones
-                            de clientes.
+                            Esta acción eliminará el grupo &quot;{group.name}
+                            &quot; permanentemente. Se removerán todas las
+                            asociaciones de clientes.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

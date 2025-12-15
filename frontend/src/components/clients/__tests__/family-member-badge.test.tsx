@@ -25,7 +25,9 @@ describe("FamilyMemberBadge", () => {
         memberId: "member-1",
         memberName: "John Doe",
         memberEmail: "john@example.com",
-        relationshipType: "spouse",
+        relationshipType: "spouse" as const,
+        addedAt: "2024-01-01T00:00:00Z",
+        addedBy: "admin-1",
       };
 
       render(<FamilyMemberBadge member={member} />);
@@ -38,7 +40,9 @@ describe("FamilyMemberBadge", () => {
         memberId: "member-1",
         memberName: "John Doe",
         memberEmail: "john@example.com",
-        relationshipType: "spouse",
+        relationshipType: "spouse" as const,
+        addedAt: "2024-01-01T00:00:00Z",
+        addedBy: "admin-1",
       };
 
       render(<FamilyMemberBadge member={member} />);
@@ -51,7 +55,9 @@ describe("FamilyMemberBadge", () => {
         memberId: "member-1",
         memberName: "John Doe",
         memberEmail: "john@example.com",
-        relationshipType: "spouse",
+        relationshipType: "spouse" as const,
+        addedAt: "2024-01-01T00:00:00Z",
+        addedBy: "admin-1",
       };
 
       render(<FamilyMemberBadge member={member} />);
@@ -64,7 +70,9 @@ describe("FamilyMemberBadge", () => {
         memberId: "member-1",
         memberName: "John Doe",
         memberEmail: "john@example.com",
-        relationshipType: "spouse",
+        relationshipType: "spouse" as const,
+        addedAt: "2024-01-01T00:00:00Z",
+        addedBy: "admin-1",
       };
 
       render(<FamilyMemberBadge member={member} />);
@@ -80,7 +88,9 @@ describe("FamilyMemberBadge", () => {
         memberId: "member-1",
         memberName: "Jane Doe",
         memberEmail: "jane@example.com",
-        relationshipType: "spouse",
+        relationshipType: "spouse" as const,
+        addedAt: "2024-01-01T00:00:00Z",
+        addedBy: "admin-1",
       };
 
       render(<FamilyMemberBadge member={member} />);
@@ -93,7 +103,9 @@ describe("FamilyMemberBadge", () => {
         memberId: "member-1",
         memberName: "John Jr",
         memberEmail: "johnJr@example.com",
-        relationshipType: "child",
+        relationshipType: "child" as const,
+        addedAt: "2024-01-01T00:00:00Z",
+        addedBy: "admin-1",
       };
 
       render(<FamilyMemberBadge member={member} />);
@@ -106,7 +118,9 @@ describe("FamilyMemberBadge", () => {
         memberId: "member-1",
         memberName: "Jane Parent",
         memberEmail: "parent@example.com",
-        relationshipType: "parent",
+        relationshipType: "parent" as const,
+        addedAt: "2024-01-01T00:00:00Z",
+        addedBy: "admin-1",
       };
 
       render(<FamilyMemberBadge member={member} />);
@@ -119,7 +133,9 @@ describe("FamilyMemberBadge", () => {
         memberId: "member-1",
         memberName: "Jack Sibling",
         memberEmail: "sibling@example.com",
-        relationshipType: "sibling",
+        relationshipType: "sibling" as const,
+        addedAt: "2024-01-01T00:00:00Z",
+        addedBy: "admin-1",
       };
 
       render(<FamilyMemberBadge member={member} />);
@@ -132,7 +148,9 @@ describe("FamilyMemberBadge", () => {
         memberId: "member-1",
         memberName: "Bob Friend",
         memberEmail: "friend@example.com",
-        relationshipType: "friend",
+        relationshipType: "friend" as const,
+        addedAt: "2024-01-01T00:00:00Z",
+        addedBy: "admin-1",
       };
 
       render(<FamilyMemberBadge member={member} />);
@@ -145,7 +163,9 @@ describe("FamilyMemberBadge", () => {
         memberId: "member-1",
         memberName: "Someone Else",
         memberEmail: "other@example.com",
-        relationshipType: "other",
+        relationshipType: "other" as const,
+        addedAt: "2024-01-01T00:00:00Z",
+        addedBy: "admin-1",
       };
 
       render(<FamilyMemberBadge member={member} />);
@@ -158,7 +178,9 @@ describe("FamilyMemberBadge", () => {
         memberId: "member-1",
         memberName: "Unknown Relation",
         memberEmail: "unknown@example.com",
-        relationshipType: "unknown",
+        relationshipType: "unknown" as any,
+        addedAt: "2024-01-01T00:00:00Z",
+        addedBy: "admin-1",
       };
 
       render(<FamilyMemberBadge member={member} />);
@@ -175,7 +197,9 @@ describe("FamilyMemberBadge", () => {
         memberId: "member-1",
         memberName: "John Doe",
         memberEmail: "john@example.com",
-        relationshipType: "spouse",
+        relationshipType: "spouse" as const,
+        addedAt: "2024-01-01T00:00:00Z",
+        addedBy: "admin-1",
       };
 
       render(<FamilyMemberBadge member={member} />);
@@ -188,7 +212,9 @@ describe("FamilyMemberBadge", () => {
         memberId: "member-1",
         memberName: "John Doe",
         memberEmail: null,
-        relationshipType: "spouse",
+        relationshipType: "spouse" as const,
+        addedAt: "2024-01-01T00:00:00Z",
+        addedBy: "admin-1",
       };
 
       render(<FamilyMemberBadge member={member} />);
@@ -201,7 +227,9 @@ describe("FamilyMemberBadge", () => {
         memberId: "member-1",
         memberName: "John Doe",
         memberEmail: undefined as any,
-        relationshipType: "spouse",
+        relationshipType: "spouse" as const,
+        addedAt: "2024-01-01T00:00:00Z",
+        addedBy: "admin-1",
       };
 
       render(<FamilyMemberBadge member={member} />);
@@ -216,7 +244,9 @@ describe("FamilyMemberBadge", () => {
         memberId: "member-1",
         memberName: "John Doe",
         memberEmail: "john@example.com",
-        relationshipType: "spouse",
+        relationshipType: "spouse" as const,
+        addedAt: "2024-01-01T00:00:00Z",
+        addedBy: "admin-1",
       };
 
       render(<FamilyMemberBadge member={member} hideRelationship={false} />);
@@ -229,7 +259,9 @@ describe("FamilyMemberBadge", () => {
         memberId: "member-1",
         memberName: "John Doe",
         memberEmail: "john@example.com",
-        relationshipType: "spouse",
+        relationshipType: "spouse" as const,
+        addedAt: "2024-01-01T00:00:00Z",
+        addedBy: "admin-1",
       };
 
       render(<FamilyMemberBadge member={member} hideRelationship={true} />);
@@ -243,7 +275,9 @@ describe("FamilyMemberBadge", () => {
         memberId: "member-1",
         memberName: "John Doe",
         memberEmail: "john@example.com",
-        relationshipType: "spouse",
+        relationshipType: "spouse" as const,
+        addedAt: "2024-01-01T00:00:00Z",
+        addedBy: "admin-1",
       };
 
       render(<FamilyMemberBadge member={member} />);
@@ -258,7 +292,9 @@ describe("FamilyMemberBadge", () => {
         memberId: "member-1",
         memberName: "John Doe",
         memberEmail: "john@example.com",
-        relationshipType: "spouse",
+        relationshipType: "spouse" as const,
+        addedAt: "2024-01-01T00:00:00Z",
+        addedBy: "admin-1",
       };
 
       render(<FamilyMemberBadge member={member} />);
@@ -272,7 +308,9 @@ describe("FamilyMemberBadge", () => {
         memberId: "member-1",
         memberName: "John Doe",
         memberEmail: "john@example.com",
-        relationshipType: "spouse",
+        relationshipType: "spouse" as const,
+        addedAt: "2024-01-01T00:00:00Z",
+        addedBy: "admin-1",
       };
 
       render(<FamilyMemberBadge member={member} />);
@@ -286,7 +324,9 @@ describe("FamilyMemberBadge", () => {
         memberId: "member-1",
         memberName: "John Doe",
         memberEmail: "john@example.com",
-        relationshipType: "spouse",
+        relationshipType: "spouse" as const,
+        addedAt: "2024-01-01T00:00:00Z",
+        addedBy: "admin-1",
       };
 
       const { container } = render(<FamilyMemberBadge member={member} />);
@@ -304,7 +344,9 @@ describe("FamilyMemberBadge", () => {
         memberId: "member-123",
         memberName: undefined as any,
         memberEmail: "john@example.com",
-        relationshipType: "spouse",
+        relationshipType: "spouse" as const,
+        addedAt: "2024-01-01T00:00:00Z",
+        addedBy: "admin-1",
       };
 
       render(<FamilyMemberBadge member={member} />);
@@ -317,7 +359,9 @@ describe("FamilyMemberBadge", () => {
         memberId: "member-456",
         memberName: null as any,
         memberEmail: "jane@example.com",
-        relationshipType: "child",
+        relationshipType: "child" as const,
+        addedAt: "2024-01-01T00:00:00Z",
+        addedBy: "admin-1",
       };
 
       render(<FamilyMemberBadge member={member} />);
@@ -330,7 +374,9 @@ describe("FamilyMemberBadge", () => {
         memberId: "member-789",
         memberName: "",
         memberEmail: "other@example.com",
-        relationshipType: "friend",
+        relationshipType: "friend" as const,
+        addedAt: "2024-01-01T00:00:00Z",
+        addedBy: "admin-1",
       };
 
       render(<FamilyMemberBadge member={member} />);
@@ -345,7 +391,9 @@ describe("FamilyMemberBadge", () => {
         memberId: "member-1",
         memberName: "José María López",
         memberEmail: "jose@example.com",
-        relationshipType: "spouse",
+        relationshipType: "spouse" as const,
+        addedAt: "2024-01-01T00:00:00Z",
+        addedBy: "admin-1",
       };
 
       render(<FamilyMemberBadge member={member} />);
@@ -358,7 +406,9 @@ describe("FamilyMemberBadge", () => {
         memberId: "member-1",
         memberName: "John Doe",
         memberEmail: "john+tag@example.co.uk",
-        relationshipType: "spouse",
+        relationshipType: "spouse" as const,
+        addedAt: "2024-01-01T00:00:00Z",
+        addedBy: "admin-1",
       };
 
       render(<FamilyMemberBadge member={member} />);
@@ -374,7 +424,9 @@ describe("FamilyMemberBadge", () => {
         memberName:
           "This is a very long member name that might wrap in the UI and could cause layout issues",
         memberEmail: "long@example.com",
-        relationshipType: "spouse",
+        relationshipType: "spouse" as const,
+        addedAt: "2024-01-01T00:00:00Z",
+        addedBy: "admin-1",
       };
 
       render(<FamilyMemberBadge member={member} />);
@@ -392,7 +444,9 @@ describe("FamilyMemberBadge", () => {
         memberName: "John Doe",
         memberEmail:
           "very.long.email.address.with.many.parts@subdomain.example.com",
-        relationshipType: "spouse",
+        relationshipType: "spouse" as const,
+        addedAt: "2024-01-01T00:00:00Z",
+        addedBy: "admin-1",
       };
 
       render(<FamilyMemberBadge member={member} />);
@@ -410,13 +464,17 @@ describe("FamilyMemberBadge", () => {
           memberId: "member-1",
           memberName: "John Doe",
           memberEmail: "john@example.com",
-          relationshipType: "spouse",
+          relationshipType: "spouse" as const,
+          addedAt: "2024-01-01T00:00:00Z",
+          addedBy: "admin-1",
         },
         {
           memberId: "member-2",
           memberName: "Jane Smith",
           memberEmail: "jane@example.com",
-          relationshipType: "sibling",
+          relationshipType: "sibling" as const,
+          addedAt: "2024-01-01T00:00:00Z",
+          addedBy: "admin-1",
         },
       ];
 

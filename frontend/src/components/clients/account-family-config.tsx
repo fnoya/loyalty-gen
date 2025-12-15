@@ -38,7 +38,7 @@ export function AccountFamilyConfig({
     try {
       setIsLoading(true);
       const data = await apiRequest<FamilyCircleConfig>(
-        `/clients/${clientId}/accounts/${accountId}/family-circle-config`
+        `/clients/${clientId}/accounts/${accountId}/family-circle-config`,
       );
       setConfig(data);
     } catch (error) {
@@ -50,7 +50,7 @@ export function AccountFamilyConfig({
 
   const handleToggle = async (
     field: "allowMemberCredits" | "allowMemberDebits",
-    newValue: boolean
+    newValue: boolean,
   ) => {
     if (!config) return;
 
@@ -67,20 +67,16 @@ export function AccountFamilyConfig({
           body: JSON.stringify({
             [field]: newValue,
           }),
-        }
+        },
       );
 
       toast.success("Permisos actualizados exitosamente");
     } catch (error) {
       // Rollback on error
-      setConfig((prev) =>
-        prev ? { ...prev, [field]: previousValue } : null
-      );
+      setConfig((prev) => (prev ? { ...prev, [field]: previousValue } : null));
 
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Error al actualizar permisos"
+        error instanceof Error ? error.message : "Error al actualizar permisos",
       );
     } finally {
       setIsUpdating(false);
@@ -146,7 +142,8 @@ export function AccountFamilyConfig({
         </div>
 
         <p className="text-xs text-slate-500 pt-2">
-          Última actualización: {new Date(config.updatedAt).toLocaleDateString()}
+          Última actualización:{" "}
+          {new Date(config.updatedAt).toLocaleDateString()}
         </p>
       </CardContent>
     </Card>

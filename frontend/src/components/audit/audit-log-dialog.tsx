@@ -22,7 +22,13 @@ interface AuditLogDialogProps {
   description?: string;
 }
 
-export function AuditLogDialog({ log, open, onOpenChange, title = "Detalle de Auditoría", description }: AuditLogDialogProps) {
+export function AuditLogDialog({
+  log,
+  open,
+  onOpenChange,
+  title = "Detalle de Auditoría",
+  description,
+}: AuditLogDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
@@ -49,12 +55,18 @@ export function AuditLogDialog({ log, open, onOpenChange, title = "Detalle de Au
               <div>
                 <p className="text-xs text-muted-foreground">Recurso</p>
                 <p className="font-medium capitalize">{log.resource_type}</p>
-                <p className="text-xs text-muted-foreground">{log.resource_id}</p>
+                <p className="text-xs text-muted-foreground">
+                  {log.resource_id}
+                </p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Actor</p>
-                <p className="font-medium">{log.actor.email || "Desconocido"}</p>
-                <p className="text-xs text-muted-foreground">UID: {log.actor.uid}</p>
+                <p className="font-medium">
+                  {log.actor.email || "Desconocido"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  UID: {log.actor.uid}
+                </p>
               </div>
             </div>
 
@@ -62,7 +74,9 @@ export function AuditLogDialog({ log, open, onOpenChange, title = "Detalle de Au
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">Metadata</p>
                 <div className="rounded-md border bg-slate-50 p-3 text-xs">
-                  <pre className="whitespace-pre-wrap">{JSON.stringify(log.metadata, null, 2)}</pre>
+                  <pre className="whitespace-pre-wrap">
+                    {JSON.stringify(log.metadata, null, 2)}
+                  </pre>
                 </div>
               </div>
             )}
@@ -73,18 +87,24 @@ export function AuditLogDialog({ log, open, onOpenChange, title = "Detalle de Au
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                   <div className="rounded-md border bg-slate-50 p-3 overflow-auto max-h-60">
                     <p className="font-semibold mb-2">Antes</p>
-                    <pre className="whitespace-pre-wrap">{JSON.stringify(log.changes.before, null, 2)}</pre>
+                    <pre className="whitespace-pre-wrap">
+                      {JSON.stringify(log.changes.before, null, 2)}
+                    </pre>
                   </div>
                   <div className="rounded-md border bg-slate-50 p-3 overflow-auto max-h-60">
                     <p className="font-semibold mb-2">Después</p>
-                    <pre className="whitespace-pre-wrap">{JSON.stringify(log.changes.after, null, 2)}</pre>
+                    <pre className="whitespace-pre-wrap">
+                      {JSON.stringify(log.changes.after, null, 2)}
+                    </pre>
                   </div>
                 </div>
               </div>
             )}
           </div>
         ) : (
-          <p className="text-sm text-slate-600">No se encontró registro de auditoría para esta operación.</p>
+          <p className="text-sm text-slate-600">
+            No se encontró registro de auditoría para esta operación.
+          </p>
         )}
       </DialogContent>
     </Dialog>

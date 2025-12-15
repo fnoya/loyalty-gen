@@ -31,7 +31,9 @@ export function TransactionsList({
   clientId,
   accountId,
 }: TransactionsListProps) {
-  const [selectedAuditLog, setSelectedAuditLog] = useState<AuditLog | null>(null);
+  const [selectedAuditLog, setSelectedAuditLog] = useState<AuditLog | null>(
+    null,
+  );
   const [loadingAudit, setLoadingAudit] = useState<string | null>(null);
 
   const handleViewAudit = async (transactionId: string) => {
@@ -49,14 +51,21 @@ export function TransactionsList({
       if (logs.length > 0) {
         setSelectedAuditLog(logs[0]);
       } else {
-        toast.error("No se encontró registro de auditoría para esta transacción");
+        toast.error(
+          "No se encontró registro de auditoría para esta transacción",
+        );
       }
     } catch (error) {
       console.error("Failed to load transaction audit", error);
-      const errorMessage = error instanceof Error ? error.message : "Error al cargar auditoría";
-      
+      const errorMessage =
+        error instanceof Error ? error.message : "Error al cargar auditoría";
+
       // Handle 404 specifically
-      if (errorMessage.includes("no encontrada") || errorMessage.includes("not found") || errorMessage.includes("404")) {
+      if (
+        errorMessage.includes("no encontrada") ||
+        errorMessage.includes("not found") ||
+        errorMessage.includes("404")
+      ) {
         toast.error("Auditoría de transacciones aún no disponible");
       } else {
         toast.error("Error al cargar auditoría");
@@ -163,7 +172,9 @@ export function TransactionsList({
         open={!!selectedAuditLog}
         onOpenChange={(open) => !open && setSelectedAuditLog(null)}
         title="Auditoría de Transacción"
-        description={selectedAuditLog ? `ID: ${selectedAuditLog.id}` : undefined}
+        description={
+          selectedAuditLog ? `ID: ${selectedAuditLog.id}` : undefined
+        }
       />
     </div>
   );

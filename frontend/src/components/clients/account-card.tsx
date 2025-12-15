@@ -11,7 +11,10 @@ import { apiRequest } from "@/lib/api";
 import { Transaction } from "@/types/transaction";
 import { TransactionsList } from "./transactions-list";
 import { CreditDebitForm } from "./credit-debit-form";
-import { TransactionsFilter, type TransactionFilters } from "./transactions-filter";
+import {
+  TransactionsFilter,
+  type TransactionFilters,
+} from "./transactions-filter";
 import { AuditLogsList } from "@/components/audit/audit-logs-list";
 import { AccountFamilyConfig } from "./account-family-config";
 
@@ -40,25 +43,28 @@ export function AccountCard({
   const [showAllTransactions, setShowAllTransactions] = useState(false);
   const [filters, setFilters] = useState<TransactionFilters>({});
 
-  const buildTransactionsUrl = useCallback((limit: number, cursor?: string | null) => {
-    const params = new URLSearchParams();
-    params.set("limit", limit.toString());
+  const buildTransactionsUrl = useCallback(
+    (limit: number, cursor?: string | null) => {
+      const params = new URLSearchParams();
+      params.set("limit", limit.toString());
 
-    if (filters.startDate) {
-      params.set("start_date", filters.startDate.toISOString());
-    }
-    if (filters.endDate) {
-      params.set("end_date", filters.endDate.toISOString());
-    }
-    if (filters.type) {
-      params.set("transaction_type", filters.type);
-    }
-    if (cursor) {
-      params.set("next_cursor", cursor);
-    }
+      if (filters.startDate) {
+        params.set("start_date", filters.startDate.toISOString());
+      }
+      if (filters.endDate) {
+        params.set("end_date", filters.endDate.toISOString());
+      }
+      if (filters.type) {
+        params.set("transaction_type", filters.type);
+      }
+      if (cursor) {
+        params.set("next_cursor", cursor);
+      }
 
-    return `/clients/${clientId}/accounts/${accountId}/transactions?${params.toString()}`;
-  }, [clientId, accountId, filters]);
+      return `/clients/${clientId}/accounts/${accountId}/transactions?${params.toString()}`;
+    },
+    [clientId, accountId, filters],
+  );
 
   const fetchTransactions = useCallback(async () => {
     try {
@@ -67,9 +73,10 @@ export function AccountCard({
       setNextCursor(null);
       setHasMore(false);
       const url = buildTransactionsUrl(5);
-      const response = await apiRequest<{ data: Transaction[]; paging?: { next_cursor?: string } }>(
-        url,
-      );
+      const response = await apiRequest<{
+        data: Transaction[];
+        paging?: { next_cursor?: string };
+      }>(url);
       setTransactions(response.data || []);
       const cursor = response.paging?.next_cursor || null;
       setNextCursor(cursor);
@@ -87,9 +94,10 @@ export function AccountCard({
       setLoadingMore(true);
       setShowAllTransactions(true);
       const url = buildTransactionsUrl(20, nextCursor);
-      const response = await apiRequest<{ data: Transaction[]; paging?: { next_cursor?: string } }>(
-        url,
-      );
+      const response = await apiRequest<{
+        data: Transaction[];
+        paging?: { next_cursor?: string };
+      }>(url);
       setTransactions((prev) => [...prev, ...(response.data || [])]);
       const cursor = response.paging?.next_cursor || null;
       setNextCursor(cursor);
@@ -114,7 +122,7 @@ export function AccountCard({
     // Build URL with current filters (fetch limit+1 to detect if more results exist)
     const params = new URLSearchParams();
     params.set("limit", "6"); // Fetch one extra to detect if more results exist
-    
+
     if (filters.startDate) {
       params.set("start_date", filters.startDate.toISOString());
     }
@@ -132,17 +140,20 @@ export function AccountCard({
         setNextCursor(null);
         setHasMore(false);
         const url = `/clients/${clientId}/accounts/${accountId}/transactions?${params.toString()}`;
-        const response = await apiRequest<{ data: Transaction[]; paging?: { next_cursor?: string } }>(
-          url,
-        );
+        const response = await apiRequest<{
+          data: Transaction[];
+          paging?: { next_cursor?: string };
+        }>(url);
         // Slice to 5 items for display, but keep nextCursor if there are 6+ items
         const allData = response.data || [];
         const displayData = allData.slice(0, 5);
         setTransactions(displayData);
-        
+
         // Determine if there are more results
         const hasMoreResults = allData.length > 5;
-        const cursor = response.paging?.next_cursor || (hasMoreResults ? allData[4]?.id : null);
+        const cursor =
+          response.paging?.next_cursor ||
+          (hasMoreResults ? allData[4]?.id : null);
         setNextCursor(cursor);
         setHasMore(!!cursor);
       } catch (error) {
@@ -230,7 +241,9 @@ export function AccountCard({
             <TransactionsFilter onFilterChange={setFilters} />
 
             <h3 className="font-medium text-sm">
-              {showAllTransactions ? "Todas las Transacciones" : "Transacciones Recientes"}
+              {showAllTransactions
+                ? "Todas las Transacciones"
+                : "Transacciones Recientes"}
             </h3>
             {loading ? (
               <div className="space-y-3">
@@ -239,8 +252,8 @@ export function AccountCard({
                 <Skeleton className="h-16 w-full" />
               </div>
             ) : (
-              <TransactionsList 
-                transactions={transactions} 
+              <TransactionsList
+                transactions={transactions}
                 limit={showAllTransactions ? undefined : 5}
                 showViewMore={hasMore}
                 onViewMore={fetchMoreTransactions}

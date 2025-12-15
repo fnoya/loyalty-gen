@@ -30,7 +30,13 @@ export interface Address {
 
 export interface FamilyCircleMember {
   memberId: string;
-  relationshipType: "spouse" | "child" | "parent" | "sibling" | "friend" | "other";
+  relationshipType:
+    | "spouse"
+    | "child"
+    | "parent"
+    | "sibling"
+    | "friend"
+    | "other";
   addedAt: string;
   addedBy: string;
   memberName?: string;
@@ -42,7 +48,14 @@ export interface FamilyCircleInfo {
   members?: FamilyCircleMember[];
   totalMembers?: number;
   holderId?: string | null;
-  relationshipType?: "spouse" | "child" | "parent" | "sibling" | "friend" | "other" | null;
+  relationshipType?:
+    | "spouse"
+    | "child"
+    | "parent"
+    | "sibling"
+    | "friend"
+    | "other"
+    | null;
   joinedAt?: string | null;
   message?: string;
 }

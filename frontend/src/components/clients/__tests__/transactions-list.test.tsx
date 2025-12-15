@@ -171,7 +171,9 @@ describe("TransactionsList", () => {
       />,
     );
 
-    expect(screen.queryByText(/Ver más transacciones/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Ver más transacciones/i),
+    ).not.toBeInTheDocument();
   });
 
   it("calls onViewMore when button is clicked", () => {

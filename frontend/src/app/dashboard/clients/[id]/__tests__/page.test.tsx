@@ -153,7 +153,9 @@ jest.mock("@/components/ui/dialog", () => ({
 jest.mock("@/components/ui/command", () => ({
   Command: ({ children }: any) => <div>{children}</div>,
   CommandInput: ({ ...props }: any) => <input {...props} />,
-  CommandItem: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+  CommandItem: ({ children, ...props }: any) => (
+    <button {...props}>{children}</button>
+  ),
   CommandList: ({ children }: any) => <div>{children}</div>,
   CommandEmpty: ({ children }: any) => <div>{children}</div>,
   CommandGroup: ({ children }: any) => <div>{children}</div>,

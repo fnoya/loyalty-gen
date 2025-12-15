@@ -22,7 +22,7 @@ interface FormFieldContextValue<
 }
 
 const FormFieldContext = React.createContext<FormFieldContextValue>(
-  {} as FormFieldContextValue
+  {} as FormFieldContextValue,
 );
 
 const FormField = React.forwardRef<
@@ -30,6 +30,7 @@ const FormField = React.forwardRef<
   ControllerProps<FieldValues, FieldPath<FieldValues>>
 >(({ ...props }, ref) => (
   <FormFieldContext.Provider value={{ name: props.name }}>
+    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
     <Controller {...(props as any)} ref={ref} />
   </FormFieldContext.Provider>
 ));
@@ -63,7 +64,7 @@ interface FormItemContextValue {
 }
 
 const FormItemContext = React.createContext<FormItemContextValue>(
-  {} as FormItemContextValue
+  {} as FormItemContextValue,
 );
 
 const FormItem = React.forwardRef<
@@ -91,7 +92,8 @@ const FormLabel = React.forwardRef<
       ref={ref}
       className={cn(
         "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
-        error && "text-destructive"
+        error && "text-destructive",
+        className,
       )}
       htmlFor={formItemId}
       {...props}
@@ -104,7 +106,8 @@ const FormControl = React.forwardRef<
   React.ElementRef<typeof Slot>,
   React.ComponentPropsWithoutRef<typeof Slot>
 >(({ ...props }, ref) => {
-  const { error, formItemId, formDescriptionId, formMessageId } = useFormField();
+  const { error, formItemId, formDescriptionId, formMessageId } =
+    useFormField();
 
   return (
     <Slot

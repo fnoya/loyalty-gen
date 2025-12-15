@@ -122,7 +122,8 @@ describe("Client Routes", () => {
       expect(res.status).toBe(200);
       expect(res.body.data).toEqual(mockClients);
       expect(res.body.metadata.query).toBe("John");
-      expect(clientService.searchClients).toHaveBeenCalledWith("John", 30);
+      // Expect 31 because we fetch limit + 1 to check for next page
+      expect(clientService.searchClients).toHaveBeenCalledWith("John", 31);
     });
 
     it("should return 400 if query is missing", async () => {

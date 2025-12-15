@@ -398,6 +398,8 @@ const tests = [
   test("11a. Search Clients with Mixed Query (letters and digits)", async () => {
     // Create a test client with identity document for mixed search
     const timestamp = Date.now();
+    // Use just digits for identity document to avoid issues with mixed content
+    const uniqueIdNum = timestamp.toString().slice(-10);
     const testClientData = {
       name: {
         firstName: "Mixed",
@@ -406,7 +408,7 @@ const tests = [
       email: `mixed-search-${timestamp}@test.com`,
       identity_document: {
         type: "cedula_identidad",
-        number: `id${timestamp.toString().slice(-6)}`,
+        number: uniqueIdNum,
       },
       phones: [{ type: "mobile", number: `555${timestamp.toString().slice(-7)}`, isPrimary: true }],
       addresses: [],
@@ -474,7 +476,7 @@ const tests = [
     // Test 3: Search by identity document number - should find the created client
     const { status: searchStatus3, data: searchData3 } = await apiRequest(
       "GET",
-      "/search?q=12345",
+      `/search?q=${uniqueIdNum}`,
       authToken,
     );
     if (searchStatus3 !== 200) {

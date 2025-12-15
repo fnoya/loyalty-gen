@@ -18,10 +18,18 @@ jest.mock("@/components/ui/toast");
 
 jest.mock("@/components/ui/card", () => ({
   Card: ({ children }: any) => <div data-testid="card">{children}</div>,
-  CardContent: ({ children }: any) => <div data-testid="card-content">{children}</div>,
-  CardDescription: ({ children }: any) => <div data-testid="card-description">{children}</div>,
-  CardHeader: ({ children }: any) => <div data-testid="card-header">{children}</div>,
-  CardTitle: ({ children }: any) => <div data-testid="card-title">{children}</div>,
+  CardContent: ({ children }: any) => (
+    <div data-testid="card-content">{children}</div>
+  ),
+  CardDescription: ({ children }: any) => (
+    <div data-testid="card-description">{children}</div>
+  ),
+  CardHeader: ({ children }: any) => (
+    <div data-testid="card-header">{children}</div>
+  ),
+  CardTitle: ({ children }: any) => (
+    <div data-testid="card-title">{children}</div>
+  ),
 }));
 
 jest.mock("@/components/ui/label", () => ({
@@ -41,7 +49,9 @@ jest.mock("@/components/ui/switch", () => ({
 }));
 
 jest.mock("@/components/ui/skeleton", () => ({
-  Skeleton: ({ className }: any) => <div data-testid="skeleton" className={className} />,
+  Skeleton: ({ className }: any) => (
+    <div data-testid="skeleton" className={className} />
+  ),
 }));
 
 describe("AccountFamilyConfig", () => {
@@ -59,7 +69,7 @@ describe("AccountFamilyConfig", () => {
 
   it("should render loading skeleton initially", async () => {
     (apiModule.apiRequest as jest.Mock).mockImplementation(
-      () => new Promise(() => {}) // Never resolves
+      () => new Promise(() => {}), // Never resolves
     );
 
     render(
@@ -67,7 +77,7 @@ describe("AccountFamilyConfig", () => {
         clientId="client-1"
         accountId="account-1"
         accountName="Premium"
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -81,12 +91,12 @@ describe("AccountFamilyConfig", () => {
         clientId="client-1"
         accountId="account-1"
         accountName="Premium"
-      />
+      />,
     );
 
     await waitFor(() => {
       expect(apiModule.apiRequest).toHaveBeenCalledWith(
-        "/clients/client-1/accounts/account-1/family-circle-config"
+        "/clients/client-1/accounts/account-1/family-circle-config",
       );
     });
   });
@@ -97,13 +107,19 @@ describe("AccountFamilyConfig", () => {
         clientId="client-1"
         accountId="account-1"
         accountName="Premium"
-      />
+      />,
     );
 
     await waitFor(() => {
-      expect(screen.getByText("Permisos de Círculo Familiar")).toBeInTheDocument();
-      expect(screen.getByText("Permitir créditos de miembros")).toBeInTheDocument();
-      expect(screen.getByText("Permitir débitos de miembros")).toBeInTheDocument();
+      expect(
+        screen.getByText("Permisos de Círculo Familiar"),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText("Permitir créditos de miembros"),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText("Permitir débitos de miembros"),
+      ).toBeInTheDocument();
     });
   });
 
@@ -115,11 +131,13 @@ describe("AccountFamilyConfig", () => {
         clientId="client-1"
         accountId="account-1"
         accountName="Premium"
-      />
+      />,
     );
 
     await waitFor(() => {
-      expect(screen.getByText("Permitir créditos de miembros")).toBeInTheDocument();
+      expect(
+        screen.getByText("Permitir créditos de miembros"),
+      ).toBeInTheDocument();
     });
 
     const switches = screen.getAllByRole("checkbox");
@@ -131,10 +149,10 @@ describe("AccountFamilyConfig", () => {
         {
           method: "PATCH",
           body: JSON.stringify({ allowMemberCredits: false }),
-        }
+        },
       );
       expect(toastModule.toast.success).toHaveBeenCalledWith(
-        "Permisos actualizados exitosamente"
+        "Permisos actualizados exitosamente",
       );
     });
   });
@@ -147,11 +165,13 @@ describe("AccountFamilyConfig", () => {
         clientId="client-1"
         accountId="account-1"
         accountName="Premium"
-      />
+      />,
     );
 
     await waitFor(() => {
-      expect(screen.getByText("Permitir débitos de miembros")).toBeInTheDocument();
+      expect(
+        screen.getByText("Permitir débitos de miembros"),
+      ).toBeInTheDocument();
     });
 
     const switches = screen.getAllByRole("checkbox");
@@ -163,7 +183,7 @@ describe("AccountFamilyConfig", () => {
         {
           method: "PATCH",
           body: JSON.stringify({ allowMemberDebits: true }),
-        }
+        },
       );
     });
   });
@@ -177,16 +197,18 @@ describe("AccountFamilyConfig", () => {
         clientId="client-1"
         accountId="account-1"
         accountName="Premium"
-      />
+      />,
     );
 
     await waitFor(() => {
-      expect(screen.getByText("Permitir créditos de miembros")).toBeInTheDocument();
+      expect(
+        screen.getByText("Permitir créditos de miembros"),
+      ).toBeInTheDocument();
     });
 
     // Mock error for second call
     (apiModule.apiRequest as jest.Mock).mockRejectedValueOnce(
-      new Error(errorMessage)
+      new Error(errorMessage),
     );
 
     const switches = screen.getAllByRole("checkbox");
@@ -205,11 +227,13 @@ describe("AccountFamilyConfig", () => {
         clientId="client-1"
         accountId="account-1"
         accountName="Premium"
-      />
+      />,
     );
 
     await waitFor(() => {
-      expect(screen.getByText("Permitir créditos de miembros")).toBeInTheDocument();
+      expect(
+        screen.getByText("Permitir créditos de miembros"),
+      ).toBeInTheDocument();
     });
 
     (apiModule.apiRequest as jest.Mock).mockRejectedValueOnce({});
@@ -219,7 +243,7 @@ describe("AccountFamilyConfig", () => {
 
     await waitFor(() => {
       expect(toastModule.toast.error).toHaveBeenCalledWith(
-        "Error al actualizar permisos"
+        "Error al actualizar permisos",
       );
     });
   });
@@ -234,12 +258,17 @@ describe("AccountFamilyConfig", () => {
         clientId="client-1"
         accountId="account-1"
         accountName="Premium"
-      />
+      />,
     );
 
-    await waitFor(() => {
-      expect(screen.getByText("Permitir créditos de miembros")).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(
+          screen.getByText("Permitir créditos de miembros"),
+        ).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
 
     const switches = screen.getAllByRole("checkbox");
     fireEvent.click(switches[0]);
@@ -254,7 +283,7 @@ describe("AccountFamilyConfig", () => {
         clientId="client-1"
         accountId="account-1"
         accountName="Premium"
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -270,7 +299,7 @@ describe("AccountFamilyConfig", () => {
         clientId="client-1"
         accountId="account-1"
         accountName="Premium"
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -287,29 +316,36 @@ describe("AccountFamilyConfig", () => {
         clientId="client-1"
         accountId="account-1"
         accountName="Premium"
-      />
+      />,
     );
 
-    await waitFor(() => {
-      expect(apiModule.apiRequest).toHaveBeenCalledWith(
-        "/clients/client-1/accounts/account-1/family-circle-config"
-      );
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(apiModule.apiRequest).toHaveBeenCalledWith(
+          "/clients/client-1/accounts/account-1/family-circle-config",
+        );
+      },
+      { timeout: 3000 },
+    );
 
-    const firstCallCount = (apiModule.apiRequest as jest.Mock).mock.calls.length;
+    const firstCallCount = (apiModule.apiRequest as jest.Mock).mock.calls
+      .length;
 
     rerender(
       <AccountFamilyConfig
         clientId="client-2"
         accountId="account-2"
         accountName="Gold"
-      />
+      />,
     );
 
-    await waitFor(() => {
-      expect((apiModule.apiRequest as jest.Mock).mock.calls.length).toBeGreaterThan(
-        firstCallCount
-      );
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(
+          (apiModule.apiRequest as jest.Mock).mock.calls.length,
+        ).toBeGreaterThan(firstCallCount);
+      },
+      { timeout: 3000 },
+    );
   });
 });

@@ -30,7 +30,10 @@ interface ClientAuditHistoryProps {
   query?: Record<string, string | number | undefined>;
 }
 
-export function ClientAuditHistory({ clientId, query = {} }: ClientAuditHistoryProps) {
+export function ClientAuditHistory({
+  clientId,
+  query = {},
+}: ClientAuditHistoryProps) {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -44,7 +47,9 @@ export function ClientAuditHistory({ clientId, query = {} }: ClientAuditHistoryP
     return val.trim().replace(/\s+/g, "_").toUpperCase();
   };
 
-  const buildQueryString = (extra: Record<string, string | number | undefined> = {}) => {
+  const buildQueryString = (
+    extra: Record<string, string | number | undefined> = {},
+  ) => {
     const params = new URLSearchParams();
     // Always include client_id
     params.set("client_id", clientId);
@@ -66,9 +71,10 @@ export function ClientAuditHistory({ clientId, query = {} }: ClientAuditHistoryP
       try {
         setLoading(true);
         const qs = buildQueryString({ limit: 10 });
-        const response = await apiRequest<{ data: AuditLog[]; paging?: { next_cursor?: string } }>(
-          `/audit-logs?${qs}`,
-        );
+        const response = await apiRequest<{
+          data: AuditLog[];
+          paging?: { next_cursor?: string };
+        }>(`/audit-logs?${qs}`);
         setLogs(response.data || []);
         const cursor = response.paging?.next_cursor || null;
         setNextCursor(cursor);
@@ -89,9 +95,10 @@ export function ClientAuditHistory({ clientId, query = {} }: ClientAuditHistoryP
     try {
       setLoadingMore(true);
       const qs = buildQueryString({ limit: 20, next_cursor: nextCursor });
-      const response = await apiRequest<{ data: AuditLog[]; paging?: { next_cursor?: string } }>(
-        `/audit-logs?${qs}`,
-      );
+      const response = await apiRequest<{
+        data: AuditLog[];
+        paging?: { next_cursor?: string };
+      }>(`/audit-logs?${qs}`);
       setLogs((prev) => [...prev, ...(response.data || [])]);
       const cursor = response.paging?.next_cursor || null;
       setNextCursor(cursor);

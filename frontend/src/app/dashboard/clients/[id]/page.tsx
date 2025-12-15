@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiRequest } from "@/lib/api";
-import { Client } from "@/types/client";
+import { Client, FamilyCircleInfo } from "@/types/client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -68,7 +68,9 @@ export default function ClientDetailPage() {
         await Promise.all([
           apiRequest<Client>(`/clients/${id}`),
           apiRequest<LoyaltyAccount[]>(`/clients/${id}/accounts`),
-          apiRequest<any>(`/clients/${id}/family-circle`).catch(() => null),
+          apiRequest<FamilyCircleInfo>(`/clients/${id}/family-circle`).catch(
+            () => null,
+          ),
         ]);
 
       // Merge family circle data if holder
@@ -78,7 +80,7 @@ export default function ClientDetailPage() {
       ) {
         clientData.familyCircle = {
           role: "holder",
-          members: familyCircleResponse.members.map((m: any) => ({
+          members: familyCircleResponse.members.map((m) => ({
             memberId: m.memberId,
             relationshipType: m.relationshipType,
             addedAt: m.addedAt,

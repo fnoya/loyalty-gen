@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import TransactionDetailPage from "../page";
 import { apiRequest } from "@/lib/api";

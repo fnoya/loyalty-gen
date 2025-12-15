@@ -19,7 +19,9 @@ jest.mock("lucide-react", () => ({
   Loader2: () => <span data-testid="icon-loader" />,
 }));
 jest.mock("@/components/ui/button", () => ({
-  Button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+  Button: ({ children, ...props }: any) => (
+    <button {...props}>{children}</button>
+  ),
 }));
 jest.mock("@/components/ui/input", () => ({
   Input: (props: any) => <input {...props} />,
@@ -56,13 +58,17 @@ describe("CreateGroupForm", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("Crear nuevo grupo de afinidad")
+        screen.getByText("Crear nuevo grupo de afinidad"),
       ).toBeInTheDocument();
     });
   });
 
   it("should call apiRequest when form is submitted", async () => {
-    const mockGroup = { id: "group-1", name: "VIP Clients", description: "Top tier" };
+    const mockGroup = {
+      id: "group-1",
+      name: "VIP Clients",
+      description: "Top tier",
+    };
     (apiModule.apiRequest as jest.Mock).mockResolvedValueOnce(mockGroup);
 
     const onSuccess = jest.fn();
@@ -73,12 +79,14 @@ describe("CreateGroupForm", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("Crear nuevo grupo de afinidad")
+        screen.getByText("Crear nuevo grupo de afinidad"),
       ).toBeInTheDocument();
     });
 
     // Verify the component rendered the dialog
-    expect(screen.getByText("Crear nuevo grupo de afinidad")).toBeInTheDocument();
+    expect(
+      screen.getByText("Crear nuevo grupo de afinidad"),
+    ).toBeInTheDocument();
   });
 
   it("should handle API calls correctly", async () => {

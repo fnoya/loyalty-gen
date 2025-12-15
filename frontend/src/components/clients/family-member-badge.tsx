@@ -26,7 +26,9 @@ export function FamilyMemberBadge({
   return (
     <div className="flex items-center gap-2">
       <div className="flex-1">
-        <p className="font-medium text-sm">{member.memberName || member.memberId}</p>
+        <p className="font-medium text-sm">
+          {member.memberName || member.memberId}
+        </p>
         {member.memberEmail && (
           <p className="text-xs text-slate-600">{member.memberEmail}</p>
         )}

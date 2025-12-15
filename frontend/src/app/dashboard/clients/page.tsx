@@ -39,7 +39,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 export default function ClientsPage() {
   const router = useRouter();
@@ -81,7 +81,19 @@ export default function ClientsPage() {
         setClients(newClients);
       }
 
-      const newCursor = data.paging?.next_cursor;
+      const apiCursor = data.paging?.next_cursor;
+      const totalResults = data.metadata?.total_results as number | undefined;
+      const accumulated = cursor
+        ? clients.length + newClients.length
+        : newClients.length;
+
+      // Prefer API cursor; fall back to total count if cursor missing
+      const fallbackCursor =
+        totalResults && totalResults > accumulated
+          ? accumulated.toString()
+          : null;
+
+      const newCursor = apiCursor ?? fallbackCursor;
       setNextCursor(newCursor);
       setHasMore(!!newCursor);
     } catch (error) {
@@ -92,17 +104,22 @@ export default function ClientsPage() {
     }
   };
 
-  const searchClients = async (query: string) => {
+  const searchClients = async (query: string, cursor?: string | null) => {
     if (!query.trim()) {
       setSearchQuery("");
-      setClients([]);
       setNextCursor(null);
       setHasMore(false);
+      // Reset to initial list
+      await fetchClients();
       return;
     }
 
     try {
-      setSearching(true);
+      if (!cursor) {
+        setSearching(true);
+      } else {
+        setLoadingMore(true);
+      }
       setSearchQuery(query);
 
       const params = new URLSearchParams({
@@ -110,15 +127,28 @@ export default function ClientsPage() {
         limit: PAGE_SIZE.toString(),
       });
 
+      if (cursor) {
+        params.append("next_cursor", cursor);
+      }
+
       const data = await apiRequest(`/clients/search?${params.toString()}`);
-      setClients(data.data || []);
-      setNextCursor(null);
-      setHasMore(false);
+      const newClients = data.data || [];
+
+      if (cursor) {
+        setClients((prev) => [...prev, ...newClients]);
+      } else {
+        setClients(newClients);
+      }
+
+      const newCursor = data.paging?.next_cursor;
+      setNextCursor(newCursor);
+      setHasMore(!!newCursor);
     } catch (error) {
       console.error("Failed to search clients:", error);
       toast.error("Error al buscar clientes");
     } finally {
       setSearching(false);
+      setLoadingMore(false);
     }
   };
 
@@ -141,12 +171,16 @@ export default function ClientsPage() {
 
   const handleLoadMore = () => {
     if (nextCursor && !loadingMore) {
-      fetchClients(nextCursor);
+      if (searchQuery) {
+        searchClients(searchQuery, nextCursor);
+      } else {
+        fetchClients(nextCursor);
+      }
     }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-24">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Clients</h1>
         <Button asChild>
@@ -276,13 +310,14 @@ export default function ClientsPage() {
       </div>
 
       {hasMore && (
-        <div className="flex justify-center pt-6">
+        <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50">
           <Button
-            variant="outline"
+            variant="secondary"
+            className="shadow-xl rounded-full px-8 border"
             onClick={handleLoadMore}
             disabled={loadingMore}
           >
-            {loadingMore ? "Cargando..." : "Ver más"}
+            {loadingMore ? "Cargando..." : "Ver más clientes"}
           </Button>
         </div>
       )}

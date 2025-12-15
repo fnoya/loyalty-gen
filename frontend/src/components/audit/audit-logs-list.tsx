@@ -17,7 +17,12 @@ interface AuditLogsListProps {
   emptyMessage?: string;
 }
 
-export function AuditLogsList({ endpoint, query = {}, pageSize = 20, emptyMessage = "No se encontraron registros de auditoría." }: AuditLogsListProps) {
+export function AuditLogsList({
+  endpoint,
+  query = {},
+  pageSize = 20,
+  emptyMessage = "No se encontraron registros de auditoría.",
+}: AuditLogsListProps) {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -54,10 +59,14 @@ export function AuditLogsList({ endpoint, query = {}, pageSize = 20, emptyMessag
         // Avoid logging tokens or sensitive headers; only URL
         console.debug("[AuditLogsList] fetch:", url);
       }
-      const response = await apiRequest<{ data: AuditLog[]; paging?: { next_cursor?: string } }>(url);
+      const response = await apiRequest<{
+        data: AuditLog[];
+        paging?: { next_cursor?: string };
+      }>(url);
       const data = response.data || [];
       const sorted = [...data].sort(
-        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
       );
       setLogs(sorted);
       setNextCursor(response.paging?.next_cursor || null);
@@ -78,11 +87,15 @@ export function AuditLogsList({ endpoint, query = {}, pageSize = 20, emptyMessag
       if (process.env.NODE_ENV !== "production") {
         console.debug("[AuditLogsList] fetchMore:", url);
       }
-      const response = await apiRequest<{ data: AuditLog[]; paging?: { next_cursor?: string } }>(url);
+      const response = await apiRequest<{
+        data: AuditLog[];
+        paging?: { next_cursor?: string };
+      }>(url);
       const data = response.data || [];
       setLogs((prev) => {
         const merged = [...prev, ...data].sort(
-          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+          (a, b) =>
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
         );
         return merged;
       });
@@ -115,7 +128,11 @@ export function AuditLogsList({ endpoint, query = {}, pageSize = 20, emptyMessag
         <p className="text-sm text-slate-600">{emptyMessage}</p>
       ) : (
         logs.map((log) => (
-          <AuditLogItem key={`${log.id}-${log.timestamp}`} log={log} onClick={() => setSelectedLog(log)} />
+          <AuditLogItem
+            key={`${log.id}-${log.timestamp}`}
+            log={log}
+            onClick={() => setSelectedLog(log)}
+          />
         ))
       )}
 

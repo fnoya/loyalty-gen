@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { render, screen, waitFor } from "@testing-library/react";
 import { AccountCard } from "../account-card";
 import { apiRequest } from "@/lib/api";
@@ -30,12 +30,13 @@ jest.mock("../credit-debit-form", () => ({
 }));
 
 jest.mock("../transactions-filter", () => ({
-  TransactionsFilter: ({ onFilterChange }: any) => (
+  TransactionsFilter: ({ onFilterChange: _ }: any) => (
     <div data-testid="transactions-filter" />
   ),
 }));
 
 jest.mock("@/components/ui/select", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const React = require("react");
   return {
     Select: ({ children, ...props }: any) =>

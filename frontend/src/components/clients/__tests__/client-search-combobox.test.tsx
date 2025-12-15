@@ -14,27 +14,27 @@ jest.mock("@/lib/api", () => ({
 }));
 
 // Mock all UI components to avoid complex rendering
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 jest.mock("@/components/ui/command", () => ({
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   Command: ({ children }: any) => <div data-testid="command">{children}</div>,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   CommandInput: (props: any) => (
     <input data-testid="command-input" {...props} />
   ),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   CommandList: ({ children }: any) => (
     <div data-testid="command-list">{children}</div>
   ),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   CommandEmpty: ({ children }: any) => (
     <div data-testid="command-empty">{children}</div>
   ),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   CommandGroup: ({ children }: any) => (
     <div data-testid="command-group">{children}</div>
   ),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   CommandItem: ({ children, ...props }: any) => (
     <div data-testid="command-item" {...props}>
       {children}
@@ -42,23 +42,23 @@ jest.mock("@/components/ui/command", () => ({
   ),
 }));
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 jest.mock("@/components/ui/popover", () => ({
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   Popover: ({ children }: any) => <div data-testid="popover">{children}</div>,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   PopoverTrigger: ({ children }: any) => (
     <div data-testid="popover-trigger">{children}</div>
   ),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   PopoverContent: ({ children }: any) => (
     <div data-testid="popover-content">{children}</div>
   ),
 }));
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 jest.mock("@/components/ui/button", () => ({
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   Button: ({ children, ...props }: any) => (
     <button data-testid="button" {...props}>
       {children}
@@ -66,9 +66,9 @@ jest.mock("@/components/ui/button", () => ({
   ),
 }));
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 jest.mock("@/components/ui/skeleton", () => ({
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   Skeleton: (props: any) => <div data-testid="skeleton" {...props} />,
 }));
 
@@ -77,9 +77,9 @@ jest.mock("lucide-react", () => ({
   ChevronsUpDown: () => <span data-testid="chevrons-icon" />,
 }));
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 jest.mock("@/lib/utils", () => ({
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   cn: (...classes: any[]) => classes.filter(Boolean).join(" "),
 }));
 

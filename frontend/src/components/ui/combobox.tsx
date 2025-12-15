@@ -13,7 +13,11 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 export interface ComboboxOption {
   value: string;
@@ -73,12 +77,15 @@ export function Combobox({
         <Command loop onValueChange={(val) => setInputValue(val)}>
           <CommandInput placeholder={searchPlaceholder} />
           <CommandList>
-            <CommandEmpty>{loading ? "Cargando..." : emptyMessage}</CommandEmpty>
+            <CommandEmpty>
+              {loading ? "Cargando..." : emptyMessage}
+            </CommandEmpty>
             <CommandGroup>
               {filteredOptions.map((option) => (
                 <CommandItem
                   key={option.value}
                   value={option.label}
+                  data-testid={`command-item-${option.value}`}
                   onSelect={() => {
                     onSelect(option);
                     setOpen(false);

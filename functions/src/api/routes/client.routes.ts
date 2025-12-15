@@ -80,7 +80,7 @@ router.get(
 
 /**
  * @route GET /api/v1/clients/search
- * @desc Search clients by query string
+ * @desc Search clients by query string with pagination
  * @access Protected
  */
 router.get(
@@ -90,6 +90,7 @@ router.get(
     try {
       const query = req.query.q as string;
       const limit = parseInt(req.query.limit as string) || 30;
+      const nextCursor = req.query.next_cursor as string | undefined;
 
       if (!query) {
         throw new ValidationError("Query parameter 'q' is required");
@@ -99,7 +100,14 @@ router.get(
         throw new ValidationError("Limit must be between 1 and 100");
       }
 
-      const clients = await clientService.searchClients(query, limit);
+      // Parse cursor if provided (it's the index in the results)
+      const startIndex = nextCursor ? parseInt(nextCursor) : 0;
+
+      // Calculate dynamic fetch limit to minimize Firestore reads
+      // We need: previous pages (startIndex) + current page (limit) + 1 (to check for next page)
+      const fetchLimit = startIndex + limit + 1;
+
+      const allClients = await clientService.searchClients(query, fetchLimit);
 
       // Determine search type for metadata
       const hasDigits = /\d/.test(query);
@@ -114,13 +122,20 @@ router.get(
         searchType = "multi_field";
       }
 
+      const endIndex = startIndex + limit;
+      const paginatedClients = allClients.slice(startIndex, endIndex);
+
+      // Check if there are more results
+      const newCursor =
+        endIndex < allClients.length ? endIndex.toString() : null;
+
       res.status(200).json({
-        data: clients,
+        data: paginatedClients,
         paging: {
-          next_cursor: null, // Search doesn't support pagination in MVP
+          next_cursor: newCursor,
         },
         metadata: {
-          total_results: clients.length,
+          total_results: allClients.length,
           query: query,
           search_type: searchType,
         },

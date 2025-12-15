@@ -80,9 +80,7 @@ export function AddFamilyMemberDialog({
         error instanceof Error ? error.message : "Error al añadir miembro";
 
       if (message.includes("MEMBER_ALREADY_IN_CIRCLE")) {
-        toast.error(
-          "Este cliente ya pertenece a otro círculo familiar"
-        );
+        toast.error("Este cliente ya pertenece a otro círculo familiar");
       } else if (message.includes("CANNOT_ADD_SELF")) {
         toast.error("No puedes añadirte a ti mismo al círculo");
       } else {
@@ -116,18 +114,19 @@ export function AddFamilyMemberDialog({
 
           <div className="space-y-2">
             <Label htmlFor="relationship-type">Tipo de Relación</Label>
-            <Select value={relationshipType} onValueChange={setRelationshipType}>
+            <Select
+              value={relationshipType}
+              onValueChange={setRelationshipType}
+            >
               <SelectTrigger id="relationship-type">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(relationshipTypeLabels).map(
-                  ([key, label]) => (
-                    <SelectItem key={key} value={key}>
-                      {label}
-                    </SelectItem>
-                  )
-                )}
+                {Object.entries(relationshipTypeLabels).map(([key, label]) => (
+                  <SelectItem key={key} value={key}>
+                    {label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

@@ -19,7 +19,10 @@ interface AccountsSummaryProps {
   onAccountClick?: (accountId: string) => void;
 }
 
-export function AccountsSummary({ clientId, onAccountClick }: AccountsSummaryProps) {
+export function AccountsSummary({
+  clientId,
+  onAccountClick,
+}: AccountsSummaryProps) {
   const [balances, setBalances] = useState<AllBalancesResponse | null>(null);
   const [accounts, setAccounts] = useState<LoyaltyAccount[]>([]);
   const [loading, setLoading] = useState(true);

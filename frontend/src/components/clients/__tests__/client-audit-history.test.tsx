@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { ClientAuditHistory } from "../client-audit-history";
 import { apiRequest } from "@/lib/api";

@@ -1,4 +1,10 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 
 import { AuditLogsList } from "../audit-logs-list";
 import { apiRequest } from "@/lib/api";
@@ -28,14 +34,32 @@ describe("AuditLogsList", () => {
     (apiRequest as jest.Mock)
       .mockResolvedValueOnce({
         data: [
-          { ...baseLog, id: "1", action: "create", resource_id: "r1", timestamp: "2023-01-01T00:00:00Z" },
-          { ...baseLog, id: "2", action: "update", resource_id: "r2", timestamp: "2023-02-01T00:00:00Z" },
+          {
+            ...baseLog,
+            id: "1",
+            action: "create",
+            resource_id: "r1",
+            timestamp: "2023-01-01T00:00:00Z",
+          },
+          {
+            ...baseLog,
+            id: "2",
+            action: "update",
+            resource_id: "r2",
+            timestamp: "2023-02-01T00:00:00Z",
+          },
         ],
         paging: { next_cursor: "cursor123" },
       })
       .mockResolvedValueOnce({
         data: [
-          { ...baseLog, id: "3", action: "delete", resource_id: "r3", timestamp: "2023-03-01T00:00:00Z" },
+          {
+            ...baseLog,
+            id: "3",
+            action: "delete",
+            resource_id: "r3",
+            timestamp: "2023-03-01T00:00:00Z",
+          },
         ],
         paging: {},
       });

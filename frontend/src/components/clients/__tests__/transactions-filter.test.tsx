@@ -130,7 +130,7 @@ describe("TransactionsFilter", () => {
         expect(mockOnFilterChange).toHaveBeenCalledWith(
           expect.objectContaining({
             startDate: expect.any(Date),
-          })
+          }),
         );
       },
       { timeout: 600 },
@@ -151,7 +151,7 @@ describe("TransactionsFilter", () => {
         expect(mockOnFilterChange).toHaveBeenCalledWith(
           expect.objectContaining({
             endDate: expect.any(Date),
-          })
+          }),
         );
       },
       { timeout: 600 },
@@ -232,7 +232,7 @@ describe("TransactionsFilter", () => {
         expect(mockOnFilterChange).toHaveBeenCalledWith(
           expect.objectContaining({
             startDate: expect.any(Date),
-          })
+          }),
         );
       },
       { timeout: 600 },
@@ -257,7 +257,7 @@ describe("TransactionsFilter", () => {
           expect.objectContaining({
             startDate: expect.any(Date),
             endDate: expect.any(Date),
-          })
+          }),
         );
       },
       { timeout: 600 },

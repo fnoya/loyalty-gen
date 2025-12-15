@@ -29,8 +29,8 @@ jest.mock("@/components/ui/command", () => ({
   CommandInput: (props: any) => (
     <input data-testid="command-input" {...props} />
   ),
-  CommandItem: ({ children, value }: any) => (
-    <div data-testid={`command-item-${value}`} role="option">
+  CommandItem: ({ children, value, ...props }: any) => (
+    <div role="option" data-testid={`command-item-${value}`} {...props}>
       {children}
     </div>
   ),
@@ -74,7 +74,7 @@ describe("Combobox", () => {
           options={mockOptions}
           onSelect={mockOnSelect}
           placeholder="Choose one..."
-        />
+        />,
       );
       expect(screen.getByTestId("combobox-button")).toBeInTheDocument();
     });
@@ -107,11 +107,7 @@ describe("Combobox", () => {
 
     it("accepts value prop", () => {
       render(
-        <Combobox
-          options={mockOptions}
-          onSelect={mockOnSelect}
-          value="opt1"
-        />
+        <Combobox options={mockOptions} onSelect={mockOnSelect} value="opt1" />,
       );
       expect(screen.getByTestId("combobox-button")).toBeInTheDocument();
     });
@@ -122,7 +118,7 @@ describe("Combobox", () => {
           options={mockOptions}
           onSelect={mockOnSelect}
           placeholder="Custom"
-        />
+        />,
       );
       expect(screen.getByTestId("combobox-button")).toBeInTheDocument();
     });
@@ -133,7 +129,7 @@ describe("Combobox", () => {
           options={mockOptions}
           onSelect={mockOnSelect}
           disabled={true}
-        />
+        />,
       );
       expect(screen.getByTestId("combobox-button")).toBeInTheDocument();
     });
@@ -144,7 +140,7 @@ describe("Combobox", () => {
           options={mockOptions}
           onSelect={mockOnSelect}
           loading={true}
-        />
+        />,
       );
       expect(screen.getByTestId("combobox-button")).toBeInTheDocument();
     });
@@ -157,24 +153,16 @@ describe("Combobox", () => {
     });
 
     it("renders with single option", () => {
-      render(
-        <Combobox
-          options={[mockOptions[0]]}
-          onSelect={mockOnSelect}
-        />
-      );
+      render(<Combobox options={[mockOptions[0]]} onSelect={mockOnSelect} />);
       expect(screen.getByTestId("combobox-button")).toBeInTheDocument();
     });
 
     it("renders with multiple options", () => {
-      render(
-        <Combobox
-          options={mockOptions}
-          onSelect={mockOnSelect}
-        />
-      );
+      render(<Combobox options={mockOptions} onSelect={mockOnSelect} />);
       mockOptions.forEach((option) => {
-        expect(screen.getByTestId(`command-item-${option.value}`)).toBeInTheDocument();
+        expect(
+          screen.getByTestId(`command-item-${option.value}`),
+        ).toBeInTheDocument();
       });
     });
   });
@@ -182,11 +170,7 @@ describe("Combobox", () => {
   describe("States", () => {
     it("handles null value", () => {
       render(
-        <Combobox
-          options={mockOptions}
-          onSelect={mockOnSelect}
-          value={null}
-        />
+        <Combobox options={mockOptions} onSelect={mockOnSelect} value={null} />,
       );
       expect(screen.getByTestId("combobox-button")).toBeInTheDocument();
     });
@@ -197,7 +181,7 @@ describe("Combobox", () => {
           options={mockOptions}
           onSelect={mockOnSelect}
           loading={true}
-        />
+        />,
       );
       expect(screen.getByTestId("combobox-button")).toBeInTheDocument();
     });
@@ -208,7 +192,7 @@ describe("Combobox", () => {
           options={mockOptions}
           onSelect={mockOnSelect}
           disabled={true}
-        />
+        />,
       );
       expect(screen.getByTestId("combobox-button")).toBeInTheDocument();
     });
@@ -224,7 +208,7 @@ describe("Combobox", () => {
       render(<Combobox options={mockOptions} onSelect={mockOnSelect} />);
       mockOptions.forEach((option) => {
         expect(
-          screen.getByTestId(`command-item-${option.value}`)
+          screen.getByTestId(`command-item-${option.value}`),
         ).toHaveAttribute("role", "option");
       });
     });
