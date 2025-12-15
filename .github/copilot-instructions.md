@@ -92,10 +92,16 @@ All API errors must follow this standardized format:
 
 ### Running emulators
 
-When in need of restarting or starting emulators, consider using the following command to ensure a clean environment:
+Check if emulators are running by executing:
 
 ```bash
-cd /Users/fnoya/Projects/google/loyalty-gen/functions && npm run build && pkill -f "firebase emulators" && sleep 2 && cd /Users/fnoya/Projects/google/loyalty-gen && nohup firebase emulators:start --only functions,firestore,auth,storage > /tmp/firebase-emulator.log 2>&1 &
+ps aux | grep "firebase"
+```
+
+When in need of restarting emulators to ensure a clean environment:
+
+```bash
+cd /Users/fnoya/Projects/google/loyalty-gen/functions && npm run build && pkill -f "firebase emulators" && sleep 2 && firebase emulators:start --only functions,firestore,auth,storage > /tmp/firebase-emulator.log 2>&1 &
 ```
 Wait 10 seconds for emulators to start before running tests or making requests.
 You can tail the log file to monitor startup or to

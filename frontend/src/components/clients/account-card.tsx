@@ -13,6 +13,7 @@ import { TransactionsList } from "./transactions-list";
 import { CreditDebitForm } from "./credit-debit-form";
 import { TransactionsFilter, type TransactionFilters } from "./transactions-filter";
 import { AuditLogsList } from "@/components/audit/audit-logs-list";
+import { AccountFamilyConfig } from "./account-family-config";
 
 interface AccountCardProps {
   clientId: string;
@@ -205,6 +206,15 @@ export function AccountCard({
             />
           </div>
         </div>
+
+        <Separator />
+
+        {/* Family Circle Permissions */}
+        <AccountFamilyConfig
+          clientId={clientId}
+          accountId={accountId}
+          accountName={accountName}
+        />
 
         <Separator />
 

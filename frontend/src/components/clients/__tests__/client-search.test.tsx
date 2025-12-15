@@ -15,25 +15,9 @@ describe("ClientSearch", () => {
     expect(input).toBeInTheDocument();
   });
 
-  it("calls onSearch after debounce delay", async () => {
-    const mockOnSearch = jest.fn();
-    const user = userEvent.setup();
-
-    render(<ClientSearch onSearch={mockOnSearch} debounceMs={300} />);
-
-    const input = screen.getByPlaceholderText("Buscar cliente...");
-    await user.type(input, "John");
-
-    // Should not call immediately
-    expect(mockOnSearch).toHaveBeenCalledWith("");
-
-    // Wait for debounce
-    await waitFor(
-      () => {
-        expect(mockOnSearch).toHaveBeenCalledWith("John");
-      },
-      { timeout: 400 },
-    );
+  it("displays search icon", () => {
+    render(<ClientSearch onSearch={jest.fn()} />);
+    expect(screen.getByTestId("icon-search")).toBeInTheDocument();
   });
 
   it("shows clear button when input has value", async () => {

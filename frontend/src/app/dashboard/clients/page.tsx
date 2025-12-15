@@ -39,26 +39,86 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+const PAGE_SIZE = 20;
+
 export default function ClientsPage() {
   const router = useRouter();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     fetchClients();
   }, []);
 
-  const fetchClients = async () => {
+  const fetchClients = async (cursor?: string | null) => {
     try {
-      setLoading(true);
-      const data = await apiRequest("/clients");
-      setClients(data.data || []);
+      if (!cursor) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+
+      const params = new URLSearchParams({
+        limit: PAGE_SIZE.toString(),
+      });
+
+      if (cursor) {
+        params.append("next_cursor", cursor);
+      }
+
+      const data = await apiRequest(`/clients?${params.toString()}`);
+      const newClients = data.data || [];
+
+      if (cursor) {
+        setClients((prev) => [...prev, ...newClients]);
+      } else {
+        setClients(newClients);
+      }
+
+      const newCursor = data.paging?.next_cursor;
+      setNextCursor(newCursor);
+      setHasMore(!!newCursor);
     } catch (error) {
       console.error("Failed to fetch clients:", error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  const searchClients = async (query: string) => {
+    if (!query.trim()) {
+      setSearchQuery("");
+      setClients([]);
+      setNextCursor(null);
+      setHasMore(false);
+      return;
+    }
+
+    try {
+      setSearching(true);
+      setSearchQuery(query);
+
+      const params = new URLSearchParams({
+        q: query,
+        limit: PAGE_SIZE.toString(),
+      });
+
+      const data = await apiRequest(`/clients/search?${params.toString()}`);
+      setClients(data.data || []);
+      setNextCursor(null);
+      setHasMore(false);
+    } catch (error) {
+      console.error("Failed to search clients:", error);
+      toast.error("Error al buscar clientes");
+    } finally {
+      setSearching(false);
     }
   };
 
@@ -76,26 +136,14 @@ export default function ClientsPage() {
   };
 
   const handleSearch = useCallback((query: string) => {
-    setSearchQuery(query);
+    searchClients(query);
   }, []);
 
-  // Client-side filtering (MVP implementation)
-  const filteredClients = searchQuery
-    ? clients.filter((client) => {
-        const query = searchQuery.toLowerCase();
-        const fullName =
-          `${client.name.firstName} ${client.name.secondName || ""} ${client.name.firstLastName} ${client.name.secondLastName || ""}`.toLowerCase();
-        const email = client.email?.toLowerCase() || "";
-        const documentNumber =
-          client.identity_document?.number.toLowerCase() || "";
-
-        return (
-          fullName.includes(query) ||
-          email.includes(query) ||
-          documentNumber.includes(query)
-        );
-      })
-    : clients;
+  const handleLoadMore = () => {
+    if (nextCursor && !loadingMore) {
+      fetchClients(nextCursor);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -128,7 +176,7 @@ export default function ClientsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {loading ? (
+            {loading || searching ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
                   <TableCell>
@@ -146,7 +194,7 @@ export default function ClientsPage() {
                   </TableCell>
                 </TableRow>
               ))
-            ) : filteredClients.length === 0 ? (
+            ) : clients.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="h-96 text-center">
                   <EmptyState
@@ -171,7 +219,7 @@ export default function ClientsPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredClients.map((client) => (
+              clients.map((client) => (
                 <TableRow
                   key={client.id}
                   className="cursor-pointer hover:bg-muted/50"
@@ -226,6 +274,18 @@ export default function ClientsPage() {
           </TableBody>
         </Table>
       </div>
+
+      {hasMore && (
+        <div className="flex justify-center pt-6">
+          <Button
+            variant="outline"
+            onClick={handleLoadMore}
+            disabled={loadingMore}
+          >
+            {loadingMore ? "Cargando..." : "Ver más"}
+          </Button>
+        </div>
+      )}
 
       <AlertDialog
         open={!!clientToDelete}

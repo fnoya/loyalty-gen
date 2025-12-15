@@ -38,6 +38,16 @@ jest.mock("lucide-react", () => ({
   Mail: () => <span data-testid="icon-mail" />,
   CreditCard: () => <span data-testid="icon-credit-card" />,
   Plus: () => <span data-testid="icon-plus" />,
+  Users: () => <span data-testid="icon-users" />,
+  Loader2: () => <span data-testid="icon-loader2" />,
+  MoreVertical: () => <span data-testid="icon-more-vertical" />,
+  ArrowRight: () => <span data-testid="icon-arrow-right" />,
+  ChevronsUpDown: () => <span data-testid="icon-chevrons-up-down" />,
+  Check: () => <span data-testid="icon-check" />,
+  Wallet: () => <span data-testid="icon-wallet" />,
+  TrendingUp: () => <span data-testid="icon-trending-up" />,
+  TrendingDown: () => <span data-testid="icon-trending-down" />,
+  FileSearch: () => <span data-testid="icon-file-search" />,
 }));
 
 // Mock toast
@@ -95,8 +105,66 @@ jest.mock("@/components/ui/button", () => ({
 jest.mock("@/components/ui/card", () => ({
   Card: ({ children }: any) => <div>{children}</div>,
   CardContent: ({ children }: any) => <div>{children}</div>,
+  CardDescription: ({ children }: any) => <div>{children}</div>,
   CardHeader: ({ children }: any) => <div>{children}</div>,
   CardTitle: ({ children }: any) => <div>{children}</div>,
+}));
+
+jest.mock("@/components/ui/badge", () => ({
+  Badge: ({ children }: any) => <span>{children}</span>,
+}));
+
+jest.mock("@/components/ui/skeleton", () => ({
+  Skeleton: ({ ...props }: any) => <div data-testid="skeleton" {...props} />,
+}));
+
+jest.mock("@/components/ui/separator", () => ({
+  Separator: ({ ...props }: any) => <hr data-testid="separator" {...props} />,
+}));
+
+jest.mock("@/components/ui/switch", () => ({
+  Switch: ({ ...props }: any) => <input type="checkbox" {...props} />,
+}));
+
+jest.mock("@/components/ui/label", () => ({
+  Label: ({ children, ...props }: any) => <label {...props}>{children}</label>,
+}));
+
+jest.mock("@/components/ui/dropdown-menu", () => ({
+  DropdownMenu: ({ children }: any) => <div>{children}</div>,
+  DropdownMenuTrigger: ({ children, ...props }: any) => (
+    <button {...props}>{children}</button>
+  ),
+  DropdownMenuContent: ({ children }: any) => <div>{children}</div>,
+  DropdownMenuItem: ({ children, ...props }: any) => (
+    <button {...props}>{children}</button>
+  ),
+}));
+
+jest.mock("@/components/ui/dialog", () => ({
+  Dialog: ({ children }: any) => <div>{children}</div>,
+  DialogTrigger: ({ children }: any) => <div>{children}</div>,
+  DialogContent: ({ children }: any) => <div>{children}</div>,
+  DialogHeader: ({ children }: any) => <div>{children}</div>,
+  DialogTitle: ({ children }: any) => <div>{children}</div>,
+  DialogDescription: ({ children }: any) => <div>{children}</div>,
+}));
+
+jest.mock("@/components/ui/command", () => ({
+  Command: ({ children }: any) => <div>{children}</div>,
+  CommandInput: ({ ...props }: any) => <input {...props} />,
+  CommandItem: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+  CommandList: ({ children }: any) => <div>{children}</div>,
+  CommandEmpty: ({ children }: any) => <div>{children}</div>,
+  CommandGroup: ({ children }: any) => <div>{children}</div>,
+}));
+
+jest.mock("@/components/ui/popover", () => ({
+  Popover: ({ children }: any) => <div>{children}</div>,
+  PopoverTrigger: ({ children, ...props }: any) => (
+    <button {...props}>{children}</button>
+  ),
+  PopoverContent: ({ children }: any) => <div>{children}</div>,
 }));
 
 jest.mock("@/components/ui/select", () => ({
@@ -138,6 +206,13 @@ jest.mock("@/components/clients/client-audit-history", () => ({
 // Mock ClientAvatar component
 jest.mock("@/components/clients/client-avatar", () => ({
   ClientAvatar: () => <div data-testid="client-avatar">Avatar</div>,
+}));
+
+// Mock FamilyCircleCard component
+jest.mock("@/components/clients/family-circle-card", () => ({
+  FamilyCircleCard: () => (
+    <div data-testid="family-circle-card">Family Circle Card</div>
+  ),
 }));
 
 // Mock AffinityGroupsSection component

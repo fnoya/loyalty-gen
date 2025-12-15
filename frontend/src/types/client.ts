@@ -28,6 +28,32 @@ export interface Address {
   notes?: string | null;
 }
 
+export interface FamilyCircleMember {
+  memberId: string;
+  relationshipType: "spouse" | "child" | "parent" | "sibling" | "friend" | "other";
+  addedAt: string;
+  addedBy: string;
+  memberName?: string;
+  memberEmail?: string | null;
+}
+
+export interface FamilyCircleInfo {
+  role: "holder" | "member" | null;
+  members?: FamilyCircleMember[];
+  totalMembers?: number;
+  holderId?: string | null;
+  relationshipType?: "spouse" | "child" | "parent" | "sibling" | "friend" | "other" | null;
+  joinedAt?: string | null;
+  message?: string;
+}
+
+export interface FamilyCircleConfig {
+  allowMemberCredits: boolean;
+  allowMemberDebits: boolean;
+  updatedAt: string;
+  updatedBy: string;
+}
+
 export interface Client {
   id: string;
   name: ClientName;
@@ -37,6 +63,7 @@ export interface Client {
   phones?: Phone[];
   addresses?: Address[];
   affinityGroupIds?: string[];
+  familyCircle?: FamilyCircleInfo | null;
   created_at: string;
   updated_at: string;
 }

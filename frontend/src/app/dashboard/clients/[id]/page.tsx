@@ -43,6 +43,7 @@ import { ClientAvatar } from "@/components/clients/client-avatar";
 import { AffinityGroupsSection } from "@/components/clients/affinity-groups-section";
 import { AccountsSummary } from "@/components/clients/accounts-summary";
 import { AccountCard } from "@/components/clients/account-card";
+import { FamilyCircleCard } from "@/components/clients/family-circle-card";
 import { toast } from "@/components/ui/toast";
 import { LoyaltyAccount } from "@/types/loyalty";
 
@@ -63,10 +64,30 @@ export default function ClientDetailPage() {
   const fetchClientData = useCallback(async () => {
     try {
       setLoading(true);
-      const [clientData, accountsData] = await Promise.all([
-        apiRequest<Client>(`/clients/${id}`),
-        apiRequest<LoyaltyAccount[]>(`/clients/${id}/accounts`),
-      ]);
+      const [clientData, accountsData, familyCircleResponse] =
+        await Promise.all([
+          apiRequest<Client>(`/clients/${id}`),
+          apiRequest<LoyaltyAccount[]>(`/clients/${id}/accounts`),
+          apiRequest<any>(`/clients/${id}/family-circle`).catch(() => null),
+        ]);
+
+      // Merge family circle data if holder
+      if (
+        familyCircleResponse?.role === "holder" &&
+        familyCircleResponse?.members
+      ) {
+        clientData.familyCircle = {
+          role: "holder",
+          members: familyCircleResponse.members.map((m: any) => ({
+            memberId: m.memberId,
+            relationshipType: m.relationshipType,
+            addedAt: m.addedAt,
+            addedBy: m.addedBy,
+          })),
+          totalMembers: familyCircleResponse.totalMembers,
+        };
+      }
+
       setClient(clientData);
       setAccounts(accountsData);
     } catch (err: unknown) {
@@ -317,6 +338,13 @@ export default function ClientDetailPage() {
           <AffinityGroupsSection
             clientId={id}
             groupIds={client.affinityGroupIds ?? []}
+          />
+
+          {/* Family Circle Section */}
+          <FamilyCircleCard
+            clientId={id}
+            familyCircle={client.familyCircle}
+            onRefresh={fetchClientData}
           />
         </TabsContent>
 
