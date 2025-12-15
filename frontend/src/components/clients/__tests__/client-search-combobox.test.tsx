@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import "@testing-library/jest-dom";
 
 // Mock Firebase before importing anything else
@@ -19,8 +19,12 @@ jest.mock("@/components/ui/command", () => ({
    
   Command: ({ children }: any) => <div data-testid="command">{children}</div>,
    
-  CommandInput: (props: any) => (
-    <input data-testid="command-input" {...props} />
+  CommandInput: ({ onValueChange, ...props }: any) => (
+    <input
+      data-testid="command-input"
+      onChange={(e) => onValueChange && onValueChange(e.target.value)}
+      {...props}
+    />
   ),
    
   CommandList: ({ children }: any) => (
@@ -35,8 +39,8 @@ jest.mock("@/components/ui/command", () => ({
     <div data-testid="command-group">{children}</div>
   ),
    
-  CommandItem: ({ children, ...props }: any) => (
-    <div data-testid="command-item" {...props}>
+  CommandItem: ({ children, onSelect, ...props }: any) => (
+    <div data-testid="command-item" onClick={onSelect} {...props}>
       {children}
     </div>
   ),
@@ -93,6 +97,7 @@ describe("ClientSearchCombobox", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.useFakeTimers();
     mockApiRequest.mockResolvedValue({
       data: [
         {
@@ -110,6 +115,10 @@ describe("ClientSearchCombobox", () => {
       ],
       paging: { nextCursor: undefined },
     });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   describe("Component Rendering", () => {
@@ -293,7 +302,7 @@ describe("ClientSearchCombobox", () => {
   });
 
   describe("Search Filtering Logic", () => {
-    it("should filter by first name", () => {
+    it("should filter by first name", async () => {
       mockApiRequest.mockResolvedValue({
         data: [
           {
@@ -313,10 +322,20 @@ describe("ClientSearchCombobox", () => {
       });
 
       render(<ClientSearchCombobox onSelect={mockOnSelect} excludeIds={[]} />);
-      expect(screen.getByTestId("command-input")).toBeInTheDocument();
+      
+      const input = screen.getByTestId("command-input");
+      fireEvent.change(input, { target: { value: "John" } });
+
+      await act(async () => {
+        jest.advanceTimersByTime(400);
+      });
+
+      expect(mockApiRequest).toHaveBeenCalledWith("/clients?limit=100");
+      expect(screen.getByText("John Doe (john@example.com)")).toBeInTheDocument();
+      expect(screen.queryByText("Jane Smith (jane@example.com)")).not.toBeInTheDocument();
     });
 
-    it("should filter by last name", () => {
+    it("should filter by last name", async () => {
       mockApiRequest.mockResolvedValue({
         data: [
           {
@@ -336,20 +355,19 @@ describe("ClientSearchCombobox", () => {
       });
 
       render(<ClientSearchCombobox onSelect={mockOnSelect} excludeIds={[]} />);
-      expect(screen.getByTestId("command-input")).toBeInTheDocument();
+      
+      const input = screen.getByTestId("command-input");
+      fireEvent.change(input, { target: { value: "Smith" } });
+
+      await act(async () => {
+        jest.advanceTimersByTime(400);
+      });
+
+      expect(screen.getByText("Jane Smith (jane@example.com)")).toBeInTheDocument();
+      expect(screen.queryByText("John Doe (john@example.com)")).not.toBeInTheDocument();
     });
 
-    it("should filter by email", () => {
-      render(<ClientSearchCombobox onSelect={mockOnSelect} excludeIds={[]} />);
-      expect(screen.getByTestId("command-input")).toBeInTheDocument();
-    });
-
-    it("should filter by document number", () => {
-      render(<ClientSearchCombobox onSelect={mockOnSelect} excludeIds={[]} />);
-      expect(screen.getByTestId("command-input")).toBeInTheDocument();
-    });
-
-    it("should exclude specified client IDs", () => {
+    it("should filter by email", async () => {
       mockApiRequest.mockResolvedValue({
         data: [
           {
@@ -363,6 +381,76 @@ describe("ClientSearchCombobox", () => {
             name: { firstName: "Jane", firstLastName: "Smith" },
             email: "jane@example.com",
             identity_document: { number: "67890", type: "SSN" },
+          },
+        ],
+        paging: { nextCursor: undefined },
+      });
+
+      render(<ClientSearchCombobox onSelect={mockOnSelect} excludeIds={[]} />);
+      
+      const input = screen.getByTestId("command-input");
+      fireEvent.change(input, { target: { value: "john@example.com" } });
+
+      await act(async () => {
+        jest.advanceTimersByTime(400);
+      });
+
+      expect(screen.getByText("John Doe (john@example.com)")).toBeInTheDocument();
+      expect(screen.queryByText("Jane Smith (jane@example.com)")).not.toBeInTheDocument();
+    });
+
+    it("should filter by document number", async () => {
+      mockApiRequest.mockResolvedValue({
+        data: [
+          {
+            id: "1",
+            name: { firstName: "John", firstLastName: "Doe" },
+            email: "john@example.com",
+            identity_document: { number: "12345", type: "SSN" },
+          },
+          {
+            id: "2",
+            name: { firstName: "Jane", firstLastName: "Smith" },
+            email: "jane@example.com",
+            identity_document: { number: "67890", type: "SSN" },
+          },
+        ],
+        paging: { nextCursor: undefined },
+      });
+
+      render(<ClientSearchCombobox onSelect={mockOnSelect} excludeIds={[]} />);
+      
+      const input = screen.getByTestId("command-input");
+      fireEvent.change(input, { target: { value: "67890" } });
+
+      await act(async () => {
+        jest.advanceTimersByTime(400);
+      });
+
+      expect(screen.getByText("Jane Smith (jane@example.com)")).toBeInTheDocument();
+      expect(screen.queryByText("John Doe (john@example.com)")).not.toBeInTheDocument();
+    });
+
+    it("should exclude specified client IDs", async () => {
+      mockApiRequest.mockResolvedValue({
+        data: [
+          {
+            id: "1",
+            name: { firstName: "John", firstLastName: "Doe" },
+            email: "john@example.com",
+            identity_document: { number: "12345", type: "SSN" },
+          },
+          {
+            id: "2",
+            name: { firstName: "Jane", firstLastName: "Smith" },
+            email: "jane@example.com",
+            identity_document: { number: "67890", type: "SSN" },
+          },
+          {
+            id: "3",
+            name: { firstName: "Bob", firstLastName: "Brown" },
+            email: "bob@example.com",
+            identity_document: { number: "11111", type: "SSN" },
           },
         ],
         paging: { nextCursor: undefined },
@@ -374,15 +462,21 @@ describe("ClientSearchCombobox", () => {
           excludeIds={["1", "2"]}
         />,
       );
-      expect(screen.getByTestId("popover")).toBeInTheDocument();
+      
+      const input = screen.getByTestId("command-input");
+      fireEvent.change(input, { target: { value: "example" } });
+
+      await act(async () => {
+        jest.advanceTimersByTime(400);
+      });
+
+      // Should only show Bob, as John (1) and Jane (2) are excluded
+      expect(screen.getByText("Bob Brown (bob@example.com)")).toBeInTheDocument();
+      expect(screen.queryByText("John Doe (john@example.com)")).not.toBeInTheDocument();
+      expect(screen.queryByText("Jane Smith (jane@example.com)")).not.toBeInTheDocument();
     });
 
-    it("should handle case-insensitive search", () => {
-      render(<ClientSearchCombobox onSelect={mockOnSelect} excludeIds={[]} />);
-      expect(screen.getByTestId("command-input")).toBeInTheDocument();
-    });
-
-    it("should perform partial name matching", () => {
+    it("should handle case-insensitive search", async () => {
       mockApiRequest.mockResolvedValue({
         data: [
           {
@@ -396,10 +490,46 @@ describe("ClientSearchCombobox", () => {
       });
 
       render(<ClientSearchCombobox onSelect={mockOnSelect} excludeIds={[]} />);
-      expect(screen.getByTestId("command-input")).toBeInTheDocument();
+      
+      const input = screen.getByTestId("command-input");
+      // Search with lowercase "john"
+      fireEvent.change(input, { target: { value: "john" } });
+
+      await act(async () => {
+        jest.advanceTimersByTime(400);
+      });
+
+      expect(mockApiRequest).toHaveBeenCalledWith("/clients?limit=100");
+      expect(screen.getByText("John Doe (john@example.com)")).toBeInTheDocument();
     });
 
-    it("should handle empty identity_document gracefully", () => {
+    it("should perform partial name matching", async () => {
+      mockApiRequest.mockResolvedValue({
+        data: [
+          {
+            id: "1",
+            name: { firstName: "John", firstLastName: "Doe" },
+            email: "john@example.com",
+            identity_document: { number: "12345", type: "SSN" },
+          },
+        ],
+        paging: { nextCursor: undefined },
+      });
+
+      render(<ClientSearchCombobox onSelect={mockOnSelect} excludeIds={[]} />);
+      
+      const input = screen.getByTestId("command-input");
+      fireEvent.change(input, { target: { value: "Jo" } });
+
+      await act(async () => {
+        jest.advanceTimersByTime(400);
+      });
+
+      expect(mockApiRequest).toHaveBeenCalledWith("/clients?limit=100");
+      expect(screen.getByText("John Doe (john@example.com)")).toBeInTheDocument();
+    });
+
+    it("should handle empty identity_document gracefully", async () => {
       mockApiRequest.mockResolvedValue({
         data: [
           {
@@ -413,7 +543,15 @@ describe("ClientSearchCombobox", () => {
       });
 
       render(<ClientSearchCombobox onSelect={mockOnSelect} excludeIds={[]} />);
-      expect(screen.getByTestId("popover")).toBeInTheDocument();
+      
+      const input = screen.getByTestId("command-input");
+      fireEvent.change(input, { target: { value: "john" } });
+
+      await act(async () => {
+        jest.advanceTimersByTime(400);
+      });
+
+      expect(screen.getByText("John Doe (john@example.com)")).toBeInTheDocument();
     });
   });
 
@@ -424,10 +562,24 @@ describe("ClientSearchCombobox", () => {
       expect(input).toBeInTheDocument();
     });
 
-    it("should handle rapid input changes", () => {
+    it("should handle rapid input changes", async () => {
       render(<ClientSearchCombobox onSelect={mockOnSelect} excludeIds={[]} />);
       const input = screen.getByTestId("command-input");
-      expect(input).toBeInTheDocument();
+      
+      fireEvent.change(input, { target: { value: "a" } });
+      fireEvent.change(input, { target: { value: "ab" } });
+      fireEvent.change(input, { target: { value: "abc" } });
+
+      // Should not have called API yet
+      expect(mockApiRequest).not.toHaveBeenCalled();
+
+      await act(async () => {
+        jest.advanceTimersByTime(400);
+      });
+
+      // Should have called API once with "abc"
+      expect(mockApiRequest).toHaveBeenCalledTimes(1);
+      expect(mockApiRequest).toHaveBeenCalledWith("/clients?limit=100");
     });
   });
 
@@ -438,24 +590,68 @@ describe("ClientSearchCombobox", () => {
       expect(input.value).toBe("");
     });
 
-    it("should handle whitespace-only search", () => {
+    it("should handle whitespace-only search", async () => {
       render(<ClientSearchCombobox onSelect={mockOnSelect} excludeIds={[]} />);
-      expect(screen.getByTestId("command-input")).toBeInTheDocument();
+      const input = screen.getByTestId("command-input");
+      
+      fireEvent.change(input, { target: { value: "   " } });
+
+      await act(async () => {
+        jest.advanceTimersByTime(400);
+      });
+
+      expect(mockApiRequest).not.toHaveBeenCalled();
     });
 
-    it("should handle all clients in excludeIds", () => {
+    it("should handle all clients in excludeIds", async () => {
+      mockApiRequest.mockResolvedValue({
+        data: [
+          {
+            id: "1",
+            name: { firstName: "John", firstLastName: "Doe" },
+            email: "john@example.com",
+            identity_document: { number: "12345", type: "SSN" },
+          },
+        ],
+        paging: { nextCursor: undefined },
+      });
+
       render(
         <ClientSearchCombobox
           onSelect={mockOnSelect}
-          excludeIds={["1", "2", "3", "4", "5"]}
+          excludeIds={["1"]}
         />,
       );
-      expect(screen.getByTestId("popover")).toBeInTheDocument();
+      
+      const input = screen.getByTestId("command-input");
+      fireEvent.change(input, { target: { value: "john" } });
+
+      await act(async () => {
+        jest.advanceTimersByTime(400);
+      });
+
+      expect(mockApiRequest).toHaveBeenCalled();
+      expect(screen.queryByText("John Doe (john@example.com)")).not.toBeInTheDocument();
+      expect(screen.getByText("No se encontraron clientes")).toBeInTheDocument();
     });
 
-    it("should handle very long search input", () => {
+    it("should handle very long search input", async () => {
+      mockApiRequest.mockResolvedValue({
+        data: [],
+        paging: { nextCursor: undefined },
+      });
+
       render(<ClientSearchCombobox onSelect={mockOnSelect} excludeIds={[]} />);
-      expect(screen.getByTestId("command-input")).toBeInTheDocument();
+      const input = screen.getByTestId("command-input");
+      
+      const longString = "a".repeat(100);
+      fireEvent.change(input, { target: { value: longString } });
+
+      await act(async () => {
+        jest.advanceTimersByTime(400);
+      });
+
+      expect(mockApiRequest).toHaveBeenCalledWith("/clients?limit=100");
     });
 
     it("should handle special characters in search", () => {
@@ -828,6 +1024,36 @@ describe("ClientSearchCombobox", () => {
       // Component should render without issues through multiple searches
       expect(screen.getByTestId("command-input")).toBeInTheDocument();
       expect(screen.getByTestId("popover")).toBeInTheDocument();
+    });
+  });
+
+  describe("User Interaction", () => {
+    it("should call onSelect when a client is selected", async () => {
+      const client = {
+        id: "1",
+        name: { firstName: "John", firstLastName: "Doe" },
+        email: "john@example.com",
+        identity_document: { number: "12345", type: "SSN" },
+      };
+
+      mockApiRequest.mockResolvedValue({
+        data: [client],
+        paging: { nextCursor: undefined },
+      });
+
+      render(<ClientSearchCombobox onSelect={mockOnSelect} excludeIds={[]} />);
+      
+      const input = screen.getByTestId("command-input");
+      fireEvent.change(input, { target: { value: "john" } });
+
+      await act(async () => {
+        jest.advanceTimersByTime(400);
+      });
+
+      const item = screen.getByText("John Doe (john@example.com)");
+      fireEvent.click(item);
+
+      expect(mockOnSelect).toHaveBeenCalledWith("1", client);
     });
   });
 });
