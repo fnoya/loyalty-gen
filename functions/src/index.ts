@@ -1,4 +1,4 @@
-import * as functions from "firebase-functions";
+import { onRequest } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import app from "./app";
 
@@ -6,4 +6,4 @@ import app from "./app";
 admin.initializeApp();
 
 // Export the Express app as a Cloud Function
-export const api = functions.https.onRequest(app);
+export const api = onRequest(app);
