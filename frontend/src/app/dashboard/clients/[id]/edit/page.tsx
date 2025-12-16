@@ -124,7 +124,7 @@ export default function EditClientPage() {
     setError("");
 
     try {
-      const token = await auth.currentUser?.getIdToken();
+      const token = await auth().currentUser?.getIdToken();
       const formData = new FormData();
       formData.append("photo", file);
 

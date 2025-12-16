@@ -80,7 +80,7 @@ export default function NewClientPage() {
       // If photo selected, upload it
       if (photoFile && newClient.id) {
         try {
-          const token = await auth.currentUser?.getIdToken();
+          const token = await auth().currentUser?.getIdToken();
           const formData = new FormData();
           formData.append("photo", photoFile);
 

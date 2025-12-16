@@ -5,7 +5,8 @@ import { auth } from "@/lib/firebase";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 async function getHeaders() {
-  const user = auth.currentUser;
+  const firebaseAuth = auth();
+  const user = firebaseAuth.currentUser;
   const token = user ? await user.getIdToken() : "";
   return {
     "Content-Type": "application/json",
