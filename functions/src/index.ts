@@ -6,4 +6,4 @@ import app from "./app";
 admin.initializeApp();
 
 // Export the Express app as a Cloud Function
-export const api = onRequest(app);
+export const apiV2 = onRequest(app);
