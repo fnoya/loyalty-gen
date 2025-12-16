@@ -1,3 +1,5 @@
+'use client';
+
 import { auth } from "@/lib/firebase";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
