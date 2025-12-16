@@ -1,6 +1,6 @@
 {
   "projects": {
-    "default": "loyalty-gen"
+    "default": "geoloyaltycloud"
   },
   "targets": {},
   "etags": {}
