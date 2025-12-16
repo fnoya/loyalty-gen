@@ -60,6 +60,7 @@ export default function ClientsPage() {
 
   const fetchClients = async (cursor?: string | null) => {
     try {
+      console.log("Fetching clients...", { cursor });
       if (!cursor) {
         setLoading(true);
       } else {
@@ -74,7 +75,10 @@ export default function ClientsPage() {
         params.append("next_cursor", cursor);
       }
 
-      const data = await apiRequest(`/clients?${params.toString()}`);
+      const url = `/clients?${params.toString()}`;
+      console.log("Requesting URL:", url);
+      const data = await apiRequest(url);
+      console.log("Clients fetched successfully:", { count: data.data?.length });
       const newClients = data.data || [];
 
       if (cursor) {

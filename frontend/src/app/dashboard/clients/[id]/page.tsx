@@ -95,9 +95,12 @@ export default function ClientDetailPage() {
       setClient(clientData);
       setAccounts(accountsData);
     } catch (err: unknown) {
+      console.error("Error fetching client details:", err);
       setError(
         err instanceof Error ? err.message : "Failed to fetch client details",
       );
+      // Do not redirect automatically on error to debug
+      // router.push("/dashboard/clients");
     } finally {
       setLoading(false);
     }

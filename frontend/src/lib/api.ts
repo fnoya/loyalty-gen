@@ -19,19 +19,29 @@ export async function apiRequest<T = any>(
   options: RequestInit = {},
 ): Promise<T> {
   const headers = await getHeaders();
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      ...headers,
-      ...options.headers,
-    },
-  });
+  const url = `${API_URL}${endpoint}`;
+  console.log(`API Request: ${options.method || 'GET'} ${url}`);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        ...headers,
+        ...options.headers,
+      },
+    });
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error?.message || "API request failed");
+    if (!response.ok) {
+      console.error(`API Error: ${response.status} ${response.statusText} for ${url}`);
+      const errorData = await response.json().catch(() => ({}));
+      console.error("API Error Details:", errorData);
+      throw new Error(errorData.error?.message || "API request failed");
+    }
+
+    if (response.status === 204) return null as T;
+    return response.json();
+  } catch (error) {
+    console.error("API Request Failed (Network/Fetch Error):", error);
+    throw error;
   }
-
-  if (response.status === 204) return null as T;
-  return response.json();
 }
