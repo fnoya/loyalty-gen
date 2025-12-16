@@ -1,21 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useAuthStore } from "@/store/auth-store";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { setUser, setLoading } = useAuthStore();
-  const [isMounted, setIsMounted] = useState(false);
+  const isMountedRef = useRef(false);
 
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  useEffect(() => {
-    // Only initialize Firebase auth listener on the client
-    if (!isMounted) return;
+    // Mark as mounted and initialize Firebase auth listener only on the client
+    isMountedRef.current = true;
 
     const firebaseAuth = auth();
     const unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
@@ -24,7 +20,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [setUser, setLoading, isMounted]);
+  }, [setUser, setLoading]);
 
   return <>{children}</>;
 }
