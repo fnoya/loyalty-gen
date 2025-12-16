@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
 import { Sidebar } from "@/components/dashboard/sidebar";
@@ -12,23 +12,20 @@ export default function DashboardLayout({
 }) {
   const { user, loading } = useAuthStore();
   const router = useRouter();
-  const [isMounted, setIsMounted] = useState(false);
+  const isMountedRef = useRef(false);
 
-  // Track when we're on the client (after hydration)
+  // Track mounting and handle redirect in a single effect
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
+    isMountedRef.current = true;
 
-  // Only redirect after mounting (client-side only)
-  useEffect(() => {
-    if (isMounted && !loading && !user) {
+    // Only redirect after component has mounted and auth state is resolved
+    if (!loading && !user) {
       router.push("/login");
     }
-  }, [user, loading, router, isMounted]);
+  }, [user, loading, router]);
 
-  // During SSR or before hydration, show loading state
-  // This prevents any auth-related rendering issues during SSR
-  if (!isMounted || loading) {
+  // During SSR or while loading, show loading state
+  if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
         Loading...
