@@ -42,6 +42,25 @@ export const createGroupRequestSchema = z.object({
 export type CreateGroupRequest = z.infer<typeof createGroupRequestSchema>;
 
 /**
+ * Update group request schema
+ */
+export const updateGroupRequestSchema = z.object({
+  name: z
+    .string()
+    .min(1, "Group name is required")
+    .max(100, "Group name too long")
+    .optional()
+    .describe("Group name"),
+  description: z
+    .string()
+    .max(500, "Description too long")
+    .optional()
+    .describe("Group description"),
+});
+
+export type UpdateGroupRequest = z.infer<typeof updateGroupRequestSchema>;
+
+/**
  * Assign client to group request
  */
 export const assignClientToGroupRequestSchema = z.object({

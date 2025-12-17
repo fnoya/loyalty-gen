@@ -4,7 +4,10 @@ import {
   authenticate,
   AuthenticatedRequest,
 } from "../middleware/auth.middleware";
-import { createGroupRequestSchema } from "../../schemas/group.schema";
+import {
+  createGroupRequestSchema,
+  updateGroupRequestSchema,
+} from "../../schemas/group.schema";
 import { AuditActor } from "../../schemas/audit.schema";
 
 const router = Router();
@@ -52,6 +55,70 @@ router.post(
       const validated = createGroupRequestSchema.parse(req.body);
       const group = await groupService.instance.createGroup(validated, actor);
       res.status(201).json(group);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * @route GET /api/v1/groups/:groupId
+ * @desc Get a specific affinity group
+ * @access Protected
+ */
+router.get(
+  "/:groupId",
+  authenticate,
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { groupId } = req.params;
+      const group = await groupService.instance.getGroup(groupId!);
+      res.status(200).json(group);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * @route PUT /api/v1/groups/:groupId
+ * @desc Update an affinity group
+ * @access Protected
+ */
+router.put(
+  "/:groupId",
+  authenticate,
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { groupId } = req.params;
+      const actor = getActor(req);
+      const validated = updateGroupRequestSchema.parse(req.body);
+      const group = await groupService.instance.updateGroup(
+        groupId!,
+        validated,
+        actor
+      );
+      res.status(200).json(group);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * @route DELETE /api/v1/groups/:groupId
+ * @desc Delete an affinity group
+ * @access Protected
+ */
+router.delete(
+  "/:groupId",
+  authenticate,
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { groupId } = req.params;
+      const actor = getActor(req);
+      await groupService.instance.deleteGroup(groupId!, actor);
+      res.status(204).send();
     } catch (error) {
       next(error);
     }
