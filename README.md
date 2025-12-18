@@ -347,6 +347,7 @@ Toda la documentación detallada se encuentra en el directorio [`/docs`](./docs/
 | 📝 [Especificaciones](docs/SPECS.md) | Requisitos funcionales y no funcionales |
 | 👤 [Historias de Usuario](docs/USER-STORIES.md) | Funcionalidades del frontend |
 | 💻 [Directrices de Código](docs/GUIDELINES.md) | Estilo de código y políticas de seguridad |
+| 🔒 [**Prácticas de Seguridad**](docs/SECURITY-PRACTICES.md) | **⭐ Guía de manejo de datos sensibles y seguridad** |
 | 🔥 [**Firebase Best Practices**](docs/FIREBASE-BEST-PRACTICES.md) | **⭐ Patrones críticos para Firebase/Firestore** |
 | 🎨 [Guía UI/UX](docs/UI-UX-GUIDELINES.md) | Principios de diseño de interfaz |
 | 📜 [Manifiesto](docs/STEERING.md) | Visión, misión y principios rectores |

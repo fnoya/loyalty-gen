@@ -47,6 +47,30 @@ This document outlines security practices for the LoyaltyGen project, with a foc
 
 ---
 
+## Firebase Configuration Files
+
+### `.firebaserc`
+
+This file contains the Firebase project ID and is required for Firebase CLI operations. While it contains a project identifier, it's a necessary configuration file for development.
+
+**For public repositories:**
+- Consider using `.firebaserc.example` with placeholders
+- Add `.firebaserc` to `.gitignore`
+- Document the setup process for new developers
+
+**For private repositories:**
+- It's generally safe to commit `.firebaserc`
+- The project ID alone doesn't provide access without credentials
+
+### Setting Up for New Developers
+
+1. Copy `.firebaserc.example` to `.firebaserc`
+2. Replace `[YOUR_PROJECT_ID]` with the actual project ID
+3. Run `firebase login` to authenticate
+4. Run `firebase use --add` to set the project
+
+---
+
 ## Protecting Sensitive Data
 
 ### 1. Environment Variables
@@ -59,7 +83,7 @@ NEXT_PUBLIC_FIREBASE_API_KEY=[YOUR_FIREBASE_API_KEY]
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=[YOUR_PROJECT_ID]
 
 # ❌ WRONG - Never hardcode actual values
-NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyCgnoUdjZeaby9djiGeE-SO6RN_zdzOKFk
+NEXT_PUBLIC_FIREBASE_API_KEY=[YOUR_ACTUAL_API_KEY_HERE]
 ```
 
 ### 2. .gitignore Configuration
@@ -93,7 +117,7 @@ env:
 
 # ❌ WRONG
 env:
-  PROJECT_ID: geoloyaltycloud
+  PROJECT_ID: your-actual-project-id
 ```
 
 ### 4. Documentation Guidelines
@@ -113,7 +137,7 @@ When writing documentation:
 curl https://us-central1-[YOUR_PROJECT_ID].cloudfunctions.net/api/health
 
 # ❌ BAD
-curl https://us-central1-geoloyaltycloud.cloudfunctions.net/api/health
+curl https://us-central1-your-actual-project-id.cloudfunctions.net/api/health
 ```
 
 ---

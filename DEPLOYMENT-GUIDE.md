@@ -188,12 +188,12 @@ firebase deploy --only storage
 Production environment file already created at `frontend/.env.production`:
 
 ```env
-NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyCgnoUdjZeaby9djiGeE-SO6RN_zdzOKFk
+NEXT_PUBLIC_FIREBASE_API_KEY=[YOUR_FIREBASE_API_KEY]
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=[YOUR_PROJECT_ID].firebaseapp.com
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=[YOUR_PROJECT_ID]
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=[YOUR_PROJECT_ID].firebasestorage.app
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=774327833344
-NEXT_PUBLIC_FIREBASE_APP_ID=1:774327833344:web:7032a884658f78c3fd59e5
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=[YOUR_MESSAGING_SENDER_ID]
+NEXT_PUBLIC_FIREBASE_APP_ID=[YOUR_APP_ID]
 NEXT_PUBLIC_API_BASE_URL=https://us-central1-[YOUR_PROJECT_ID].cloudfunctions.net/api/v1
 ```
 
@@ -528,7 +528,7 @@ Use this checklist for each deployment:
 
 ## 📞 Support Contacts
 
-- **Project Lead:** Francisco Noya (francisco.noya@gmail.com)
+- **Project Lead:** [YOUR_NAME] ([YOUR_EMAIL])
 - **Firebase Console:** https://console.firebase.google.com/project/[YOUR_PROJECT_ID]
 - **GCP Console:** https://console.cloud.google.com/home/dashboard?project=[YOUR_PROJECT_ID]
 - **Documentation:** See `docs/` directory
