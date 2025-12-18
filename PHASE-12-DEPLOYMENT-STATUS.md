@@ -18,15 +18,15 @@
 - **Code Quality:** 0 ESLint errors (24 warnings acceptable)
 
 ### 2. Firebase Project Setup ✅
-- **Project ID:** geoloyaltycloud
-- **Project Number:** 774327833344
+- **Project ID:** [YOUR_PROJECT_ID]
+- **Project Number:** [YOUR_PROJECT_NUMBER]
 - **Plan:** Blaze (pay-as-you-go) ✅
 - **Firestore:** Deployed with indexes and security rules
-- **Web App Created:** `1:774327833344:web:7032a884658f78c3fd59e5`
+- **Web App Created:** `[YOUR_APP_ID]`
 
 ### 3. Backend Deployment ✅ **PRODUCTION READY**
 - **Cloud Functions:** Successfully deployed
-- **API Endpoint:** https://us-central1-geoloyaltycloud.cloudfunctions.net/api
+- **API Endpoint:** https://us-central1-[YOUR_PROJECT_ID].cloudfunctions.net/api
 - **Health Check:** ✅ Passing
   ```json
   {
@@ -36,7 +36,7 @@
     "version": "1.0.0"
   }
   ```
-- **Function URL:** https://us-central1-geoloyaltycloud.cloudfunctions.net/api
+- **Function URL:** https://us-central1-[YOUR_PROJECT_ID].cloudfunctions.net/api
 
 ### 4. Documentation ✅
 - **Deployment Guide:** `DEPLOYMENT-GUIDE.md` created
@@ -168,7 +168,7 @@ This will automatically handle Next.js SSR/SSG through Firebase Functions.
 
 | Component | Status | URL/Details |
 |-----------|--------|-------------|
-| **Backend API** | ✅ Live | https://us-central1-geoloyaltycloud.cloudfunctions.net/api |
+| **Backend API** | ✅ Live | https://us-central1-[YOUR_PROJECT_ID].cloudfunctions.net/api |
 | **Firestore** | ✅ Live | Database: `(default)`, Region: `nam5` |
 | **Security Rules** | ✅ Deployed | Firestore rules active |
 | **Authentication** | ✅ Ready | Firebase Auth configured |
@@ -180,7 +180,7 @@ This will automatically handle Next.js SSR/SSG through Firebase Functions.
 
 ### Test API Health
 ```bash
-curl https://us-central1-geoloyaltycloud.cloudfunctions.net/api/health
+curl https://us-central1-[YOUR_PROJECT_ID].cloudfunctions.net/api/health
 ```
 
 **Expected Response:**
@@ -195,7 +195,7 @@ curl https://us-central1-geoloyaltycloud.cloudfunctions.net/api/health
 
 ### Test API Version Endpoint
 ```bash
-curl https://us-central1-geoloyaltycloud.cloudfunctions.net/api/v1
+curl https://us-central1-[YOUR_PROJECT_ID].cloudfunctions.net/api/v1
 ```
 
 ### Test with Authentication
@@ -203,7 +203,7 @@ curl https://us-central1-geoloyaltycloud.cloudfunctions.net/api/v1
 # Get auth token from Firebase Console
 TOKEN="your-token-here"
 
-curl -X POST https://us-central1-geoloyaltycloud.cloudfunctions.net/api/v1/clients \
+curl -X POST https://us-central1-[YOUR_PROJECT_ID].cloudfunctions.net/api/v1/clients \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -220,7 +220,7 @@ curl -X POST https://us-central1-geoloyaltycloud.cloudfunctions.net/api/v1/clien
 ## 📝 Files Created/Modified
 
 ### Created
-- `.firebaserc` - Updated to use `geoloyaltycloud` project
+- `.firebaserc` - Updated to use `[YOUR_PROJECT_ID]` project
 - `frontend/.env.production` - Firebase SDK configuration
 - `frontend/src/app/dashboard/transactions/[id]/layout.tsx` - Attempted fix for static export
 - `frontend/src/app/dashboard/clients/[id]/layout.tsx` - Attempted fix for static export
@@ -268,8 +268,8 @@ curl -X POST https://us-central1-geoloyaltycloud.cloudfunctions.net/api/v1/clien
 
 ## 📞 Support & Resources
 
-- **Firebase Console:** https://console.firebase.google.com/project/geoloyaltycloud
-- **API Endpoint:** https://us-central1-geoloyaltycloud.cloudfunctions.net/api
+- **Firebase Console:** https://console.firebase.google.com/project/[YOUR_PROJECT_ID]
+- **API Endpoint:** https://us-central1-[YOUR_PROJECT_ID].cloudfunctions.net/api
 - **Documentation:** `/docs/` directory
 - **Deployment Guide:** `DEPLOYMENT-GUIDE.md`
 - **Operations Runbook:** `OPERATIONS-RUNBOOK.md`

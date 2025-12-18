@@ -2,7 +2,7 @@
 
 **Last Updated:** December 15, 2025  
 **Project:** LoyaltyGen Customer Loyalty Platform  
-**Environment:** Production (geoloyaltycloud)
+**Environment:** Production ([YOUR_PROJECT_ID])
 
 ---
 
@@ -10,12 +10,12 @@
 
 | Service | URL | Console |
 |---------|-----|---------|
-| **Frontend** | https://geoloyaltycloud.web.app | [Hosting Console](https://console.firebase.google.com/project/geoloyaltycloud/hosting) |
-| **API** | https://us-central1-geoloyaltycloud.cloudfunctions.net/api | [Functions Console](https://console.firebase.google.com/project/geoloyaltycloud/functions) |
-| **Database** | Firestore (nam5) | [Firestore Console](https://console.firebase.google.com/project/geoloyaltycloud/firestore) |
-| **Authentication** | Firebase Auth | [Auth Console](https://console.firebase.google.com/project/geoloyaltycloud/authentication) |
-| **Storage** | Firebase Storage | [Storage Console](https://console.firebase.google.com/project/geoloyaltycloud/storage) |
-| **Logs** | Cloud Logging | [Logs Console](https://console.cloud.google.com/logs/query?project=geoloyaltycloud) |
+| **Frontend** | https://[YOUR_PROJECT_ID].web.app | [Hosting Console](https://console.firebase.google.com/project/[YOUR_PROJECT_ID]/hosting) |
+| **API** | https://us-central1-[YOUR_PROJECT_ID].cloudfunctions.net/api | [Functions Console](https://console.firebase.google.com/project/[YOUR_PROJECT_ID]/functions) |
+| **Database** | Firestore (nam5) | [Firestore Console](https://console.firebase.google.com/project/[YOUR_PROJECT_ID]/firestore) |
+| **Authentication** | Firebase Auth | [Auth Console](https://console.firebase.google.com/project/[YOUR_PROJECT_ID]/authentication) |
+| **Storage** | Firebase Storage | [Storage Console](https://console.firebase.google.com/project/[YOUR_PROJECT_ID]/storage) |
+| **Logs** | Cloud Logging | [Logs Console](https://console.cloud.google.com/logs/query?project=[YOUR_PROJECT_ID]) |
 
 ---
 
@@ -26,10 +26,10 @@
 1. **Check Service Status**
    ```bash
    # Frontend
-   curl -I https://geoloyaltycloud.web.app
+   curl -I https://[YOUR_PROJECT_ID].web.app
    
    # Backend API
-   curl https://us-central1-geoloyaltycloud.cloudfunctions.net/api/health
+   curl https://us-central1-[YOUR_PROJECT_ID].cloudfunctions.net/api/health
    ```
 
 2. **Check Firebase Status**
@@ -47,7 +47,7 @@
 ### Database Emergency
 
 1. **Check Firestore Health**
-   - Visit: https://console.firebase.google.com/project/geoloyaltycloud/firestore
+   - Visit: https://console.firebase.google.com/project/[YOUR_PROJECT_ID]/firestore
    - Check "Usage" tab for anomalies
 
 2. **Review Recent Changes**
@@ -73,10 +73,10 @@ Run these every 5 minutes via monitoring tool:
 
 ```bash
 # Frontend health
-curl -f https://geoloyaltycloud.web.app/ || echo "Frontend DOWN"
+curl -f https://[YOUR_PROJECT_ID].web.app/ || echo "Frontend DOWN"
 
 # API health
-curl -f https://us-central1-geoloyaltycloud.cloudfunctions.net/api/health || echo "API DOWN"
+curl -f https://us-central1-[YOUR_PROJECT_ID].cloudfunctions.net/api/health || echo "API DOWN"
 ```
 
 ### Performance Metrics
@@ -91,10 +91,10 @@ curl -f https://us-central1-geoloyaltycloud.cloudfunctions.net/api/health || ech
 **Access Metrics:**
 ```bash
 # Cloud Functions metrics
-gcloud functions describe api --region=us-central1 --project=geoloyaltycloud
+gcloud functions describe api --region=us-central1 --project=[YOUR_PROJECT_ID]
 
 # Firestore usage
-# Visit: https://console.firebase.google.com/project/geoloyaltycloud/firestore/usage
+# Visit: https://console.firebase.google.com/project/[YOUR_PROJECT_ID]/firestore/usage
 ```
 
 ### Log Analysis
@@ -109,7 +109,7 @@ firebase functions:log --since 1h
 
 # Filter by severity
 gcloud logging read "resource.type=cloud_function AND severity>=ERROR" \
-  --limit 50 --project=geoloyaltycloud
+  --limit 50 --project=[YOUR_PROJECT_ID]
 ```
 
 **Common Log Queries:**
@@ -117,15 +117,15 @@ gcloud logging read "resource.type=cloud_function AND severity>=ERROR" \
 ```bash
 # Authentication errors
 gcloud logging read 'jsonPayload.message=~"INVALID_TOKEN"' \
-  --limit 20 --project=geoloyaltycloud
+  --limit 20 --project=[YOUR_PROJECT_ID]
 
 # Database errors
 gcloud logging read 'jsonPayload.message=~"Firestore"' \
-  --limit 20 --project=geoloyaltycloud
+  --limit 20 --project=[YOUR_PROJECT_ID]
 
 # Slow queries (> 1s)
 gcloud logging read 'jsonPayload.duration>1000' \
-  --limit 20 --project=geoloyaltycloud
+  --limit 20 --project=[YOUR_PROJECT_ID]
 ```
 
 ---
@@ -135,7 +135,7 @@ gcloud logging read 'jsonPayload.duration>1000' \
 ### Rollback Cloud Functions
 
 **Via Console (Recommended):**
-1. Go to: https://console.firebase.google.com/project/geoloyaltycloud/functions
+1. Go to: https://console.firebase.google.com/project/[YOUR_PROJECT_ID]/functions
 2. Click on function name
 3. Go to "Version History" tab
 4. Select previous working version
@@ -154,7 +154,7 @@ git checkout main  # Return to current branch
 ### Rollback Frontend (Hosting)
 
 **Via Console (Recommended):**
-1. Go to: https://console.firebase.google.com/project/geoloyaltycloud/hosting
+1. Go to: https://console.firebase.google.com/project/[YOUR_PROJECT_ID]/hosting
 2. Click "Release History"
 3. Find last working version
 4. Click three dots > "Restore"
@@ -198,11 +198,11 @@ git checkout main -- storage.rules
 ```bash
 # Failed login attempts
 gcloud logging read 'resource.type=firebase_auth AND severity>=WARNING' \
-  --limit 50 --project=geoloyaltycloud
+  --limit 50 --project=[YOUR_PROJECT_ID]
 
 # New user signups
 gcloud logging read 'resource.type=firebase_auth AND jsonPayload.event_type="user.create"' \
-  --limit 20 --project=geoloyaltycloud
+  --limit 20 --project=[YOUR_PROJECT_ID]
 ```
 
 ### Audit Trail Review
@@ -238,7 +238,7 @@ firebase emulators:start --only firestore,auth
 ### Revoke User Access
 
 **Via Console:**
-1. Go to: https://console.firebase.google.com/project/geoloyaltycloud/authentication/users
+1. Go to: https://console.firebase.google.com/project/[YOUR_PROJECT_ID]/authentication/users
 2. Find user by email/UID
 3. Click three dots > "Disable user"
 
@@ -260,13 +260,13 @@ firebase auth:disable <uid>
 **Manual Backup:**
 ```bash
 # Export all collections
-gcloud firestore export gs://geoloyaltycloud-backups/$(date +%Y-%m-%d) \
-  --project=geoloyaltycloud \
+gcloud firestore export gs://[YOUR_PROJECT_ID]-backups/$(date +%Y-%m-%d) \
+  --project=[YOUR_PROJECT_ID] \
   --collection-ids=clients,affinityGroups,auditLogs
 ```
 
 **Automated Backup (Recommended):**
-1. Go to: https://console.cloud.google.com/firestore/schedules?project=geoloyaltycloud
+1. Go to: https://console.cloud.google.com/firestore/schedules?project=[YOUR_PROJECT_ID]
 2. Click "Create Schedule"
 3. Set frequency: Daily at 2 AM UTC
 4. Set retention: 30 days
@@ -275,11 +275,11 @@ gcloud firestore export gs://geoloyaltycloud-backups/$(date +%Y-%m-%d) \
 
 ```bash
 # List available backups
-gsutil ls gs://geoloyaltycloud-backups/
+gsutil ls gs://[YOUR_PROJECT_ID]-backups/
 
 # Restore from backup
-gcloud firestore import gs://geoloyaltycloud-backups/2025-12-15 \
-  --project=geoloyaltycloud
+gcloud firestore import gs://[YOUR_PROJECT_ID]-backups/2025-12-15 \
+  --project=[YOUR_PROJECT_ID]
 ```
 
 ### Database Maintenance
@@ -345,10 +345,10 @@ const deletedClients = await db.collection('clients')
 4. **Post-Deployment Verification**
    ```bash
    # Test API
-   curl https://us-central1-geoloyaltycloud.cloudfunctions.net/api/health
+   curl https://us-central1-[YOUR_PROJECT_ID].cloudfunctions.net/api/health
    
    # Test frontend
-   curl -I https://geoloyaltycloud.web.app
+   curl -I https://[YOUR_PROJECT_ID].web.app
    
    # Monitor logs
    firebase functions:log --limit 20
@@ -400,10 +400,10 @@ For critical production issues:
 # Daily health check script
 #!/bin/bash
 echo "=== Daily Health Check ==="
-echo "Frontend:" && curl -I https://geoloyaltycloud.web.app | head -1
-echo "API:" && curl https://us-central1-geoloyaltycloud.cloudfunctions.net/api/health
+echo "Frontend:" && curl -I https://[YOUR_PROJECT_ID].web.app | head -1
+echo "API:" && curl https://us-central1-[YOUR_PROJECT_ID].cloudfunctions.net/api/health
 echo "Errors in last 24h:"
-gcloud logging read "severity>=ERROR" --limit 10 --project=geoloyaltycloud --format="table(timestamp,jsonPayload.message)"
+gcloud logging read "severity>=ERROR" --limit 10 --project=[YOUR_PROJECT_ID] --format="table(timestamp,jsonPayload.message)"
 ```
 
 ### Weekly Tasks
@@ -432,10 +432,10 @@ gcloud logging read "severity>=ERROR" --limit 10 --project=geoloyaltycloud --for
 
 ```bash
 # Firebase usage
-# Visit: https://console.firebase.google.com/project/geoloyaltycloud/usage/details
+# Visit: https://console.firebase.google.com/project/[YOUR_PROJECT_ID]/usage/details
 
 # GCP billing
-# Visit: https://console.cloud.google.com/billing?project=geoloyaltycloud
+# Visit: https://console.cloud.google.com/billing?project=[YOUR_PROJECT_ID]
 ```
 
 ### Cost Optimization Tips
@@ -465,7 +465,7 @@ gcloud logging read "severity>=ERROR" --limit 10 --project=geoloyaltycloud --for
 ### Budget Alerts
 
 Set up in GCP Console:
-1. Go to: https://console.cloud.google.com/billing/budgets?project=geoloyaltycloud
+1. Go to: https://console.cloud.google.com/billing/budgets?project=[YOUR_PROJECT_ID]
 2. Create budget alert for monthly spend
 3. Set thresholds: 50%, 75%, 100%
 4. Configure email notifications
@@ -498,7 +498,7 @@ Set up in GCP Console:
 
 ### Contact List
 
-- **On-Call Engineer:** Francisco Noya (francisco.noya@gmail.com)
+- **On-Call Engineer:** [YOUR_NAME] ([YOUR_EMAIL])
 - **Backup Engineer:** TBD
 - **Product Owner:** TBD
 - **DevOps Lead:** TBD
@@ -568,4 +568,4 @@ Set up in GCP Console:
 
 **Document Version:** 1.0  
 **Status:** Production Ready  
-**Maintained by:** Francisco Noya
+**Maintained by:** [YOUR_NAME]

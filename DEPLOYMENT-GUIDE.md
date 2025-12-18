@@ -3,7 +3,7 @@
 **Project:** LoyaltyGen Customer Loyalty Platform  
 **Date:** December 15, 2025  
 **Status:** Phase 12 - Production Deployment Ready  
-**Firebase Project:** geoloyaltycloud
+**Firebase Project:** [YOUR_PROJECT_ID]
 
 ---
 
@@ -26,7 +26,7 @@
 
 ### Required Accounts & Access
 - ✅ Firebase/GCP account with billing enabled
-- ✅ Firebase project created: `geoloyaltycloud`
+- ✅ Firebase project created: `[YOUR_PROJECT_ID]`
 - ✅ Firebase CLI installed: `npm install -g firebase-tools`
 - ✅ Authenticated to Firebase: `firebase login`
 - ✅ Node.js 24+ LTS installed
@@ -85,11 +85,11 @@ cd ../frontend && npm audit --audit-level=high
 ## 🔥 Firebase Project Setup
 
 ### 1. Project Information
-- **Project ID:** `geoloyaltycloud`
-- **Project Number:** `774327833344`
+- **Project ID:** `[YOUR_PROJECT_ID]`
+- **Project Number:** `[YOUR_PROJECT_NUMBER]`
 - **Region:** `us-central1` (Cloud Functions)
 - **Firestore Region:** `nam5` (North America)
-- **Console:** https://console.firebase.google.com/project/geoloyaltycloud/overview
+- **Console:** https://console.firebase.google.com/project/[YOUR_PROJECT_ID]/overview
 
 ### 2. Enable Required Services
 
@@ -97,7 +97,7 @@ cd ../frontend && npm audit --audit-level=high
 
 Cloud Functions require the Blaze (pay-as-you-go) plan. Visit:
 ```
-https://console.firebase.google.com/project/geoloyaltycloud/usage/details
+https://console.firebase.google.com/project/[YOUR_PROJECT_ID]/usage/details
 ```
 
 **Required APIs:**
@@ -122,7 +122,7 @@ Already completed:
 ### 4. Web App Configuration
 
 Web app created with following details:
-- **App ID:** `1:774327833344:web:7032a884658f78c3fd59e5`
+- **App ID:** `[YOUR_APP_ID]`
 - **Display Name:** LoyaltyGen Web App
 - **Configuration saved to:** `frontend/.env.production`
 
@@ -153,7 +153,7 @@ Expected output:
 ✔  functions: Finished running predeploy script.
 i  functions: preparing codebase default for deployment
 ✔  functions[api(us-central1)]: Successful create operation.
-Function URL (api(us-central1)): https://us-central1-geoloyaltycloud.cloudfunctions.net/api
+Function URL (api(us-central1)): https://us-central1-[YOUR_PROJECT_ID].cloudfunctions.net/api
 ✔  Deploy complete!
 ```
 
@@ -161,7 +161,7 @@ Function URL (api(us-central1)): https://us-central1-geoloyaltycloud.cloudfuncti
 
 ```bash
 # Test health endpoint
-curl https://us-central1-geoloyaltycloud.cloudfunctions.net/api/health
+curl https://us-central1-[YOUR_PROJECT_ID].cloudfunctions.net/api/health
 
 # Expected response:
 # {"status":"ok","timestamp":"2025-12-15T..."}
@@ -171,7 +171,7 @@ curl https://us-central1-geoloyaltycloud.cloudfunctions.net/api/health
 
 **Note:** Firebase Storage must be initialized in console first:
 ```
-https://console.firebase.google.com/project/geoloyaltycloud/storage
+https://console.firebase.google.com/project/[YOUR_PROJECT_ID]/storage
 ```
 
 Then deploy rules:
@@ -189,12 +189,12 @@ Production environment file already created at `frontend/.env.production`:
 
 ```env
 NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyCgnoUdjZeaby9djiGeE-SO6RN_zdzOKFk
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=geoloyaltycloud.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=geoloyaltycloud
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=geoloyaltycloud.firebasestorage.app
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=[YOUR_PROJECT_ID].firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=[YOUR_PROJECT_ID]
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=[YOUR_PROJECT_ID].firebasestorage.app
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=774327833344
 NEXT_PUBLIC_FIREBASE_APP_ID=1:774327833344:web:7032a884658f78c3fd59e5
-NEXT_PUBLIC_API_BASE_URL=https://us-central1-geoloyaltycloud.cloudfunctions.net/api/v1
+NEXT_PUBLIC_API_BASE_URL=https://us-central1-[YOUR_PROJECT_ID].cloudfunctions.net/api/v1
 ```
 
 ### 2. Build Next.js Application
@@ -227,11 +227,11 @@ firebase deploy --only hosting
 
 Expected output:
 ```
-✔  hosting[geoloyaltycloud]: file upload complete
-✔  hosting[geoloyaltycloud]: version finalized
-✔  hosting[geoloyaltycloud]: release complete
+✔  hosting[[YOUR_PROJECT_ID]]: file upload complete
+✔  hosting[[YOUR_PROJECT_ID]]: version finalized
+✔  hosting[[YOUR_PROJECT_ID]]: release complete
 
-Hosting URL: https://geoloyaltycloud.web.app
+Hosting URL: https://[YOUR_PROJECT_ID].web.app
 ```
 
 ### 4. Complete Deployment (All Services)
@@ -247,7 +247,7 @@ firebase deploy
 
 ### 1. Frontend Health Check
 
-Visit: https://geoloyaltycloud.web.app
+Visit: https://[YOUR_PROJECT_ID].web.app
 
 Expected:
 - ✅ Login page loads
@@ -258,15 +258,15 @@ Expected:
 
 ```bash
 # Health endpoint
-curl https://us-central1-geoloyaltycloud.cloudfunctions.net/api/health
+curl https://us-central1-[YOUR_PROJECT_ID].cloudfunctions.net/api/health
 
 # Get API version
-curl https://us-central1-geoloyaltycloud.cloudfunctions.net/api/v1
+curl https://us-central1-[YOUR_PROJECT_ID].cloudfunctions.net/api/v1
 ```
 
 ### 3. Authentication Flow
 
-1. Navigate to: https://geoloyaltycloud.web.app
+1. Navigate to: https://[YOUR_PROJECT_ID].web.app
 2. Click "Sign In with Google"
 3. Complete authentication
 4. Verify redirect to dashboard
@@ -279,7 +279,7 @@ curl https://us-central1-geoloyaltycloud.cloudfunctions.net/api/v1
 
 AUTH_TOKEN="<your-token-here>"
 
-curl -X POST https://us-central1-geoloyaltycloud.cloudfunctions.net/api/v1/clients \
+curl -X POST https://us-central1-[YOUR_PROJECT_ID].cloudfunctions.net/api/v1/clients \
   -H "Authorization: Bearer $AUTH_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -295,7 +295,7 @@ curl -X POST https://us-central1-geoloyaltycloud.cloudfunctions.net/api/v1/clien
 
 Check Firebase Console:
 ```
-https://console.firebase.google.com/project/geoloyaltycloud/firestore
+https://console.firebase.google.com/project/[YOUR_PROJECT_ID]/firestore
 ```
 
 Verify collections:
@@ -311,7 +311,7 @@ Verify collections:
 
 View logs in Firebase Console:
 ```
-https://console.firebase.google.com/project/geoloyaltycloud/functions/logs
+https://console.firebase.google.com/project/[YOUR_PROJECT_ID]/functions/logs
 ```
 
 Or via CLI:
@@ -323,20 +323,20 @@ firebase functions:log
 
 Monitor at:
 ```
-https://console.firebase.google.com/project/geoloyaltycloud/firestore/usage
+https://console.firebase.google.com/project/[YOUR_PROJECT_ID]/firestore/usage
 ```
 
 ### 3. Hosting Analytics
 
 ```
-https://console.firebase.google.com/project/geoloyaltycloud/hosting
+https://console.firebase.google.com/project/[YOUR_PROJECT_ID]/hosting
 ```
 
 ### 4. Error Reporting
 
 Enable Google Cloud Error Reporting:
 ```
-https://console.cloud.google.com/errors?project=geoloyaltycloud
+https://console.cloud.google.com/errors?project=[YOUR_PROJECT_ID]
 ```
 
 ### 5. Performance Monitoring
@@ -362,7 +362,7 @@ const perf = getPerformance(app);
 firebase functions:log
 
 # Rollback to previous version (via Console)
-# https://console.firebase.google.com/project/geoloyaltycloud/functions
+# https://console.firebase.google.com/project/[YOUR_PROJECT_ID]/functions
 # Select function > Version History > Rollback
 ```
 
@@ -373,7 +373,7 @@ firebase functions:log
 firebase hosting:channel:list
 
 # Rollback via Console
-# https://console.firebase.google.com/project/geoloyaltycloud/hosting
+# https://console.firebase.google.com/project/[YOUR_PROJECT_ID]/hosting
 # Release History > Previous Release > Restore
 ```
 
@@ -393,13 +393,13 @@ firebase deploy --only firestore:rules
 
 **Frontend** (`frontend/.env.production`):
 ```env
-NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyCgnoUdjZeaby9djiGeE-SO6RN_zdzOKFk
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=geoloyaltycloud.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=geoloyaltycloud
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=geoloyaltycloud.firebasestorage.app
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=774327833344
-NEXT_PUBLIC_FIREBASE_APP_ID=1:774327833344:web:7032a884658f78c3fd59e5
-NEXT_PUBLIC_API_BASE_URL=https://us-central1-geoloyaltycloud.cloudfunctions.net/api/v1
+NEXT_PUBLIC_FIREBASE_API_KEY=[YOUR_FIREBASE_API_KEY]
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=[YOUR_PROJECT_ID].firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=[YOUR_PROJECT_ID]
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=[YOUR_PROJECT_ID].firebasestorage.app
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=[YOUR_MESSAGING_SENDER_ID]
+NEXT_PUBLIC_FIREBASE_APP_ID=[YOUR_APP_ID]
+NEXT_PUBLIC_API_BASE_URL=https://us-central1-[YOUR_PROJECT_ID].cloudfunctions.net/api/v1
 ```
 
 **Backend** (Cloud Functions - set via Firebase):
@@ -423,14 +423,14 @@ firebase deploy --only functions
 
 **Solution:** Upgrade to Blaze plan:
 ```
-https://console.firebase.google.com/project/geoloyaltycloud/usage/details
+https://console.firebase.google.com/project/[YOUR_PROJECT_ID]/usage/details
 ```
 
 ### Issue: "Storage not initialized"
 
 **Solution:** Initialize Storage in console:
 ```
-https://console.firebase.google.com/project/geoloyaltycloud/storage
+https://console.firebase.google.com/project/[YOUR_PROJECT_ID]/storage
 Click "Get Started"
 ```
 
@@ -529,8 +529,8 @@ Use this checklist for each deployment:
 ## 📞 Support Contacts
 
 - **Project Lead:** Francisco Noya (francisco.noya@gmail.com)
-- **Firebase Console:** https://console.firebase.google.com/project/geoloyaltycloud
-- **GCP Console:** https://console.cloud.google.com/home/dashboard?project=geoloyaltycloud
+- **Firebase Console:** https://console.firebase.google.com/project/[YOUR_PROJECT_ID]
+- **GCP Console:** https://console.cloud.google.com/home/dashboard?project=[YOUR_PROJECT_ID]
 - **Documentation:** See `docs/` directory
 
 ---

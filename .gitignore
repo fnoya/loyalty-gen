@@ -12,6 +12,15 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Environment files with sensitive data
+.env
+.env.local
+.env.*.local
+.env.production
+frontend/.env
+frontend/.env.local
+frontend/.env.production
+
 # OS
 .DS_Store
 Thumbs.db

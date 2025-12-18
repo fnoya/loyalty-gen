@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 env:
-  PROJECT_ID: geoloyaltycloud
+  PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
   NODE_VERSION: 20
 
 jobs:
